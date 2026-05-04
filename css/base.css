@@ -1,0 +1,78 @@
+/* ============================================================
+   base.css — Reset, variáveis e tipografia global
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --color-primary: #185fa5;
+    --color-primary-dark: #0c447c;
+    --color-primary-light: #e6f1fb;
+
+    --color-bg: #ea9815d8; /*#F5F4F0*/
+    --color-surface: #ffffff;
+    --color-surface-alt: #f1efe8;
+
+    --color-border: #e2e0d8;
+    --color-border-light: #eceae3;
+
+    --color-text: #1a1917;
+    --color-text-muted: #6b6a65;
+    --color-text-subtle: #9e9c96;
+
+    --color-green-bg: #eaf3de;
+    --color-green-fg: #3b6d11;
+    --color-amber-bg: #faeeda;
+    --color-amber-fg: #854f0b;
+    --color-red-bg: #fcebeb;
+    --color-red-fg: #a32d2d;
+    --color-blue-bg: #e6f1fb;
+    --color-blue-fg: #185fa5;
+    --color-teal-bg: #e1f5ee;
+    --color-teal-fg: #0f6e56;
+    --color-coral-bg: #faece7;
+    --color-coral-fg: #993c1d;
+    --color-gray-bg: #f1efe8;
+    --color-gray-fg: #5f5e5a;
+
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 10px;
+
+    --font-sans:
+        -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial,
+        sans-serif;
+}
+
+html,
+body {
+    height: 100%;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--color-text);
+    background: var(--color-bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+input,
+select,
+textarea {
+    font-family: inherit;
+    font-size: 13px;
+}
+
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
