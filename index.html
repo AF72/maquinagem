@@ -28,10 +28,12 @@
                             stroke="currentColor"
                             stroke-width="1.5"
                         >
-                            <rect x="1" y="1" width="6" height="6" rx="1" />
-                            <rect x="9" y="1" width="6" height="6" rx="1" />
-                            <rect x="1" y="9" width="6" height="6" rx="1" />
-                            <rect x="9" y="9" width="6" height="6" rx="1" />
+                        <rect x="1" y="1" width="6" height="6" rx="1" fill="orange"/>
+                        <rect x="9" y="1" width="6" height="6" rx="1"/>
+                        <rect x="1" y="9" width="6" height="6" rx="1"/>
+                        <rect x="9" y="9" width="6" height="6" rx="1" fill="orange"/>
+                        &gt;
+                        </svg>
                         </svg>
                         Dashboard
                     </div>
@@ -111,7 +113,12 @@
             <!-- MAIN -->
             <div class="main">
                 <header class="topbar">
-                    <span class="topbar-title" id="page-title">Dashboard</span>
+                    <div class="topbar-brand">
+                        <span class="topbar-logo" id="page-logo"></span>
+                        <span class="topbar-title" id="page-title"
+                            >Dashboard</span
+                        >
+                    </div>
                 </header>
 
                 <div class="content">
