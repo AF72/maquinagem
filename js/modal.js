@@ -14,6 +14,7 @@ function openModal(type, extra) {
     novoCliente:  'Novo cliente',
     colaborador:  'Novo colaborador',
     pedido:       'Novo pedido',
+    editPedido:   'Editar pedido',
     peca:         'Nova peça',
   };
   document.getElementById('modal-title').textContent = titles[type] || '';
@@ -39,6 +40,7 @@ function buildModalForm(type, extra) {
     case 'novoCliente':  return formNovoCliente();
     case 'colaborador':  return formColaborador(extra);
     case 'pedido':       return formPedido();
+    case 'editPedido':   return formEditPedido(extra);
     case 'peca':         return formPeca();
     default: return '';
   }
@@ -146,6 +148,44 @@ function formPedido() {
   </div>`;
 }
 
+/* ---------- Editar pedido ---------- */
+function formEditPedido(pedidoId) {
+  const p = DB.pedidos.find(x => x.id === pedidoId);
+  if (!p) return '';
+
+  const colabOpts = DB.colaboradores.map(c => {
+    const emp = getEmpresa(c.empresaId);
+    const sel = (p.clienteTipo === 'colaborador' && p.clienteId === c.id) ? 'selected' : '';
+    return `<option value="colab:${c.id}" ${sel}>${c.nome} — ${emp.nome}</option>`;
+  }).join('');
+  const partOpts = DB.particulares.map(part => {
+    const sel = (p.clienteTipo === 'particular' && p.clienteId === part.id) ? 'selected' : '';
+    return `<option value="part:${part.id}" ${sel}>${part.nome} (particular)</option>`;
+  }).join('');
+  const pecaOpts = DB.pecas.map(peca => {
+    const sel = (p.pecaId === peca.id) ? 'selected' : '';
+    return `<option value="${peca.id}" ${sel}>${peca.nome} — ${peca.material}</option>`;
+  }).join('');
+
+  return `
+  <div class="form-grid">
+    <div class="form-group full">
+      <label class="form-label">Solicitado por</label>
+      <select id="f-clienteKey">
+        <optgroup label="Colaboradores de empresa">${colabOpts}</optgroup>
+        <optgroup label="Particulares">${partOpts}</optgroup>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Peça</label><select id="f-pecaId">${pecaOpts}</select></div>
+    <div class="form-group"><label class="form-label">Quantidade</label><input id="f-qtd" type="number" min="1" value="${p.qtd}"></div>
+    <div class="form-group full"><label class="form-label">Data</label><input id="f-data" type="date" value="${p.data}"></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveEditPedido(${pedidoId})">Guardar alterações</button>
+  </div>`;
+}
+
 /* ---------- Nova peça ---------- */
 function formPeca() {
   return `
@@ -234,6 +274,23 @@ function savePedido() {
     estado:      'Pendente',
     data:        document.getElementById('f-data').value || today(),
   });
+  closeModal();
+  renderAll();
+}
+
+function saveEditPedido(pedidoId) {
+  const p = DB.pedidos.find(x => x.id === pedidoId);
+  if (!p) return;
+
+  const key  = document.getElementById('f-clienteKey').value;
+  const [tipo, idStr] = key.split(':');
+  
+  p.clienteTipo = tipo === 'colab' ? 'colaborador' : 'particular';
+  p.clienteId   = parseInt(idStr);
+  p.pecaId      = parseInt(document.getElementById('f-pecaId').value);
+  p.qtd         = parseInt(document.getElementById('f-qtd').value) || 1;
+  p.data        = document.getElementById('f-data').value || today();
+  
   closeModal();
   renderAll();
 }

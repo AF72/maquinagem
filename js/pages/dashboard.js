@@ -32,6 +32,16 @@ function renderDashboard() {
         <div class="metric-sub">clientes individuais</div>
       </div>
       <div class="metric-card">
+        <div class="metric-label">Total de pedidos</div>
+        <div class="metric-value">${DB.pedidos.length}</div>
+        <div class="metric-sub">total de pedidos</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Ordens por faturar</div>
+        <div class="metric-value">${DB.ordens.length}</div>
+        <div class="metric-sub">ordens por faturar</div>
+      </div>
+      <div class="metric-card">
         <div class="metric-label">Ordens ativas</div>
         <div class="metric-value">${ativas}</div>
         <div class="metric-sub">em produção</div>

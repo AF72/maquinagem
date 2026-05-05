@@ -42,7 +42,10 @@ function _pedidosRows() {
       <td>${pc.material}</td>
       <td>${estadoBadge(p.estado)}</td>
       <td>${p.data}</td>
-      <td>${canOT ? `<button class="btn btn-sm" onclick="criarOT(${p.id})">Criar OT</button>` : '—'}</td>
+      <td>
+        ${canOT ? `<button class="btn btn-sm" onclick="criarOT(${p.id})">Criar OT</button>` : ''}
+        <button class="btn btn-sm" onclick="openModal('editPedido', ${p.id})">Editar</button>
+      </td>
     </tr>`;
   }).join('');
 }
