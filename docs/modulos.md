@@ -51,7 +51,7 @@ Representa o trabalho efetivo na oficina/fábrica.
 
 ---
 
-## 4. Módulo de Peças (`pages/pecas.js`)
+## 4. Módulo de Dados do Pedido (`pages/dados_pedido.js`)
 
 Catálogo de peças que a empresa produz.
 
@@ -112,7 +112,7 @@ Componente de diálogo genérico usado em todos os formulários de criação.
 - `novoCliente` — toggle entre Empresa e Particular
 - `colaborador` — adicionar colaborador a uma empresa existente
 - `pedido` — novo pedido (lista todos os colaboradores e particulares)
-- `peca` — nova peça no catálogo
+- `dados_pedido` — novo registo de dados do pedido
 
 ---
 
@@ -124,7 +124,7 @@ Armazena todo o estado da aplicação em memória (substituir por API + BD em pr
 - `DB.empresas` — empresas clientes
 - `DB.colaboradores` — colaboradores das empresas
 - `DB.particulares` — clientes particulares
-- `DB.pecas` — catálogo de peças
+- `DB.dados_pedido` — registos de dados do pedido
 - `DB.pedidos` — pedidos de clientes
 - `DB.ordens` — ordens de trabalho
 
@@ -139,7 +139,7 @@ Funções partilhadas por todos os módulos:
 | `getEmpresa(id)`    | Lookup de empresa por id                       |
 | `getColab(id)`      | Lookup de colaborador por id                   |
 | `getParticular(id)` | Lookup de particular por id                    |
-| `getPeca(id)`       | Lookup de peça por id                          |
+| `getDadosPedido(id)`       | Lookup de dados do pedido por id                          |
 | `getPedido(id)`     | Lookup de pedido por id                        |
 | `resolveCliente()`  | Resolve nome/avatar de qualquer tipo de cliente|
 | `estadoBadge()`     | Gera HTML do badge de estado                   |

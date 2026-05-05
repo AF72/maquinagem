@@ -15,8 +15,7 @@ function renderDashboard() {
         .filter((o) => o.estado === 'Em curso')
         .reduce((s, o) => {
             const pd = getPedido(o.pedidoId);
-            const pc = getPeca(pd.pecaId);
-            return s + pc.custo * pd.qtd + o.moObra;
+            return s + o.moObra;
         }, 0);
 
     document.getElementById('page-dashboard').innerHTML = `
@@ -74,7 +73,7 @@ function renderDashboard() {
         <thead>
           <tr>
             <th>OT</th><th>Cliente</th><th>Tipo</th>
-            <th>Peça</th><th>Estado</th><th>Prazo</th>
+            <th>Equipamento</th><th>Estado</th><th>Prazo</th>
           </tr>
         </thead>
         <tbody>${_dashOrdensRows()}</tbody>
@@ -91,16 +90,15 @@ function _dashOrdensRows() {
         .map((o) => {
             const pd = getPedido(o.pedidoId);
             const cl = resolveCliente(pd.clienteTipo, pd.clienteId);
-            const pc = getPeca(pd.pecaId);
-            const label =
-                pd.clienteTipo === 'particular'
-                    ? cl.nome
-                    : `${cl.nome} <span style="font-size:11px;color:var(--color-text-muted)">(${cl.subtexto})</span>`;
+            const dp = getDadosPedido(pd.dadosPedidoId);
+            const label = pd.clienteTipo === 'particular'
+              ? `<div style="line-height:1.2;"><div>${cl.nome}</div><div style="font-size:11px;color:var(--color-text-muted)">Particular</div></div>`
+              : `<div style="line-height:1.2;"><div>${cl.subtexto}</div><div style="font-size:11px;color:var(--color-text-muted)">${cl.nome}</div></div>`;
             return `<tr>
       <td>${o.num}</td>
       <td>${inlineFlex(avatarHtml(cl.nome, cl.avClass, true), label)}</td>
       <td>${tipoBadge(pd.clienteTipo)}</td>
-      <td>${pc.nome}</td>
+      <td>${dp.equipamento}</td>
       <td>${estadoBadge(o.estado)}</td>
       <td>${o.prazo}</td>
     </tr>`;

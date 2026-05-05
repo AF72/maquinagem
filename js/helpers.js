@@ -10,8 +10,8 @@
 function getEmpresa(id)     { return DB.empresas.find(e => e.id === id)       || { nome: '—', nif: '—' }; }
 function getColab(id)       { return DB.colaboradores.find(c => c.id === id)  || { nome: '—', cargo: '—', empresaId: null }; }
 function getParticular(id)  { return DB.particulares.find(p => p.id === id)   || { nome: '—', cc: '—' }; }
-function getPeca(id)        { return DB.pecas.find(p => p.id === id)          || { nome: '—', material: '—', custo: 0, ref: '—' }; }
-function getPedido(id)      { return DB.pedidos.find(p => p.id === id)        || { ref: '—', qtd: 0, pecaId: 0, clienteTipo: '', clienteId: 0 }; }
+function getDadosPedido(id) { return DB.dados_pedido.find(p => p.id === id) || { ref: '—', equipamento: '—', orgao: '—', parte: '—', breveDescricao: '—', imagem: '' }; }
+function getPedido(id)      { return DB.pedidos.find(p => p.id === id)        || { ref: '—', qtd: 0, dadosPedidoId: 0, clienteTipo: '', clienteId: 0 }; }
 
 /**
  * Resolve cliente a partir de tipo e id.

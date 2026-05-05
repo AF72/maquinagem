@@ -40,7 +40,7 @@ maquinagem/
 │       ├── clientes.js     ← Gestão de empresas, colaboradores e particulares
 │       ├── pedidos.js      ← Lista de pedidos e criação de ordens de trabalho
 │       ├── ordens.js       ← Ordens de trabalho e conclusão
-│       ├── pecas.js        ← Catálogo de peças
+│       ├── dados_pedido.js ← Catálogo de Dados do Pedido (equipamento, órgão, parte, etc.)
 │       └── custos.js       ← Análise de custos por ordem e por material
 │
 └── docs/
@@ -80,8 +80,9 @@ Todas as outras funcionalidades usam apenas APIs nativas do browser.
 - Atribuição de operador e prazo
 - Conclusão de ordem (atualiza estado do pedido)
 
-### Peças
-- Catálogo de peças com referência, material, espessura, peso e acabamento
+### Dados do Pedido
+- Alterado o conceito de 'Peças' para 'Dados do Pedido' para abranger detalhes mais granulares como equipamento, órgão e parte.
+- Novo campo para imagem, facilitando a identificação visual.
 - Custo unitário de produção por peça
 
 ### Custos

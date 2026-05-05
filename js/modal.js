@@ -15,7 +15,8 @@ function openModal(type, extra) {
     colaborador:  'Novo colaborador',
     pedido:       'Novo pedido',
     editPedido:   'Editar pedido',
-    peca:         'Nova peça',
+    viewPedido:   'Detalhes do pedido',
+    dados_pedido: 'Novos dados de pedido',
   };
   document.getElementById('modal-title').textContent = titles[type] || '';
   document.getElementById('modal-body').innerHTML    = buildModalForm(type, extra);
@@ -41,7 +42,8 @@ function buildModalForm(type, extra) {
     case 'colaborador':  return formColaborador(extra);
     case 'pedido':       return formPedido();
     case 'editPedido':   return formEditPedido(extra);
-    case 'peca':         return formPeca();
+    case 'viewPedido':   return formViewPedido(extra);
+    case 'dados_pedido': return formDadosPedido();
     default: return '';
   }
 }
@@ -125,8 +127,8 @@ function formPedido() {
   const partOpts = DB.particulares.map(p =>
     `<option value="part:${p.id}">${p.nome} (particular)</option>`
   ).join('');
-  const pecaOpts = DB.pecas.map(p =>
-    `<option value="${p.id}">${p.nome} — ${p.material}</option>`
+  const dadosOpts = DB.dados_pedido.map(p =>
+    `<option value="${p.id}">${p.ref} — ${p.equipamento} (${p.orgao})</option>`
   ).join('');
 
   return `
@@ -138,7 +140,7 @@ function formPedido() {
         <optgroup label="Particulares">${partOpts}</optgroup>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">Peça</label><select id="f-pecaId">${pecaOpts}</select></div>
+    <div class="form-group"><label class="form-label">Dados do Pedido</label><select id="f-dadosPedidoId">${dadosOpts}</select></div>
     <div class="form-group"><label class="form-label">Quantidade</label><input id="f-qtd" type="number" min="1" placeholder="0"></div>
     <div class="form-group full"><label class="form-label">Data</label><input id="f-data" type="date" value="${today()}"></div>
   </div>
@@ -162,9 +164,9 @@ function formEditPedido(pedidoId) {
     const sel = (p.clienteTipo === 'particular' && p.clienteId === part.id) ? 'selected' : '';
     return `<option value="part:${part.id}" ${sel}>${part.nome} (particular)</option>`;
   }).join('');
-  const pecaOpts = DB.pecas.map(peca => {
-    const sel = (p.pecaId === peca.id) ? 'selected' : '';
-    return `<option value="${peca.id}" ${sel}>${peca.nome} — ${peca.material}</option>`;
+  const dadosOpts = DB.dados_pedido.map(dp => {
+    const sel = (p.dadosPedidoId === dp.id) ? 'selected' : '';
+    return `<option value="${dp.id}" ${sel}>${dp.ref} — ${dp.equipamento} (${dp.orgao})</option>`;
   }).join('');
 
   return `
@@ -176,7 +178,7 @@ function formEditPedido(pedidoId) {
         <optgroup label="Particulares">${partOpts}</optgroup>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">Peça</label><select id="f-pecaId">${pecaOpts}</select></div>
+    <div class="form-group"><label class="form-label">Dados do Pedido</label><select id="f-dadosPedidoId">${dadosOpts}</select></div>
     <div class="form-group"><label class="form-label">Quantidade</label><input id="f-qtd" type="number" min="1" value="${p.qtd}"></div>
     <div class="form-group full"><label class="form-label">Data</label><input id="f-data" type="date" value="${p.data}"></div>
   </div>
@@ -186,27 +188,42 @@ function formEditPedido(pedidoId) {
   </div>`;
 }
 
-/* ---------- Nova peça ---------- */
-function formPeca() {
+/* ---------- Ver pedido ---------- */
+function formViewPedido(pedidoId) {
+  const p = DB.pedidos.find(x => x.id === pedidoId);
+  if (!p) return '';
+  const cl = resolveCliente(p.clienteTipo, p.clienteId);
+  const dp = getDadosPedido(p.dadosPedidoId);
+
+  return `
+  <div style="margin-bottom:1.5rem; line-height: 1.6;">
+    <p><strong>Referência:</strong> ${p.ref}</p>
+    <p><strong>Cliente:</strong> ${cl.nome} <span style="color:var(--color-text-muted);font-size:11px">(${cl.subtexto})</span></p>
+    <p><strong>Dados do Pedido:</strong> ${dp.ref} — ${dp.equipamento} <span style="color:var(--color-text-muted);font-size:11px">(${dp.orgao} / ${dp.parte})</span></p>
+    <p><strong>Quantidade:</strong> ${p.qtd}</p>
+    <p><strong>Data:</strong> ${p.data}</p>
+    <p><strong>Estado:</strong> ${estadoBadge(p.estado)}</p>
+  </div>
+  <div class="form-actions">
+    <button class="btn" onclick="closeModal()">Fechar</button>
+    <button class="btn btn-primary" onclick="openModal('editPedido', ${pedidoId})">Editar</button>
+  </div>`;
+}
+
+/* ---------- Novos dados de pedido ---------- */
+function formDadosPedido() {
   return `
   <div class="form-grid">
-    <div class="form-group"><label class="form-label">Referência</label><input id="f-ref" placeholder="P-XXX"></div>
-    <div class="form-group"><label class="form-label">Designação</label><input id="f-nomepeca" placeholder="Nome da peça"></div>
-    <div class="form-group">
-      <label class="form-label">Material</label>
-      <select id="f-material">
-        <option>Aço</option><option>Alumínio</option><option>Cobre</option>
-        <option>Polímero</option><option>Inox</option>
-      </select>
-    </div>
-    <div class="form-group"><label class="form-label">Espessura</label><input id="f-esp" placeholder="ex: 10mm"></div>
-    <div class="form-group"><label class="form-label">Peso (kg)</label><input id="f-peso" type="number" step="0.1" placeholder="0.0"></div>
-    <div class="form-group"><label class="form-label">Acabamento</label><input id="f-acab" placeholder="ex: Polido"></div>
-    <div class="form-group"><label class="form-label">Custo unitário (€)</label><input id="f-custo" type="number" step="0.01" placeholder="0.00"></div>
+    <div class="form-group"><label class="form-label">Referência</label><input id="f-refdp" placeholder="DP-XXX"></div>
+    <div class="form-group"><label class="form-label">Equipamento</label><input id="f-equipamento" placeholder="Ex: Torno CNC"></div>
+    <div class="form-group"><label class="form-label">Órgão</label><input id="f-orgao" placeholder="Ex: Cabeçote"></div>
+    <div class="form-group"><label class="form-label">Parte</label><input id="f-parte" placeholder="Ex: Flange Frontal"></div>
+    <div class="form-group full"><label class="form-label">Breve Descrição</label><input id="f-brevedesc" placeholder="Breve descrição da necessidade"></div>
+    <div class="form-group full"><label class="form-label">Imagem</label><input id="f-imagem" type="text" placeholder="URL ou nome da imagem"></div>
   </div>
   <div class="form-actions">
     <button class="btn" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-primary" onclick="savePeca()">Guardar peça</button>
+    <button class="btn btn-primary" onclick="saveDadosPedido()">Guardar dados</button>
   </div>`;
 }
 
@@ -266,10 +283,10 @@ function savePedido() {
   const n = DB.pedidos.length + 1;
   DB.pedidos.push({
     id:          nextId(),
-    ref:         'PD-' + padNum(n, 4),
+    ref:         'PD' + new Date().getFullYear().toString().slice(-2) + '-' + padNum(n, 4),
     clienteTipo: tipo === 'colab' ? 'colaborador' : 'particular',
     clienteId:   parseInt(idStr),
-    pecaId:      parseInt(document.getElementById('f-pecaId').value),
+    dadosPedidoId: parseInt(document.getElementById('f-dadosPedidoId').value),
     qtd:         parseInt(document.getElementById('f-qtd').value) || 1,
     estado:      'Pendente',
     data:        document.getElementById('f-data').value || today(),
@@ -287,7 +304,7 @@ function saveEditPedido(pedidoId) {
   
   p.clienteTipo = tipo === 'colab' ? 'colaborador' : 'particular';
   p.clienteId   = parseInt(idStr);
-  p.pecaId      = parseInt(document.getElementById('f-pecaId').value);
+  p.dadosPedidoId = parseInt(document.getElementById('f-dadosPedidoId').value);
   p.qtd         = parseInt(document.getElementById('f-qtd').value) || 1;
   p.data        = document.getElementById('f-data').value || today();
   
@@ -295,17 +312,16 @@ function saveEditPedido(pedidoId) {
   renderAll();
 }
 
-function savePeca() {
-  const n = DB.pecas.length + 1;
-  DB.pecas.push({
-    id:         nextId(),
-    ref:        document.getElementById('f-ref').value || 'P-' + padNum(n, 3),
-    nome:       document.getElementById('f-nomepeca').value,
-    material:   document.getElementById('f-material').value,
-    esp:        document.getElementById('f-esp').value,
-    peso:       parseFloat(document.getElementById('f-peso').value)  || 0,
-    acabamento: document.getElementById('f-acab').value,
-    custo:      parseFloat(document.getElementById('f-custo').value) || 0,
+function saveDadosPedido() {
+  const n = DB.dados_pedido.length + 1;
+  DB.dados_pedido.push({
+    id:             nextId(),
+    ref:            document.getElementById('f-refdp').value || 'DP-' + padNum(n, 3),
+    equipamento:    document.getElementById('f-equipamento').value,
+    orgao:          document.getElementById('f-orgao').value,
+    parte:          document.getElementById('f-parte').value,
+    breveDescricao: document.getElementById('f-brevedesc').value,
+    imagem:         document.getElementById('f-imagem').value,
   });
   closeModal();
   renderAll();

@@ -31,14 +31,13 @@ const DB = {
   ],
 
   /**
-   * Catálogo de peças
-   * material: 'Aço' | 'Alumínio' | 'Cobre' | 'Polímero' | 'Inox'
+   * Catálogo de Dados do Pedido
    */
-  pecas: [
-    { id: 1, ref: 'P-001', nome: 'Flange DN80',   material: 'Aço',      esp: '10mm', peso: 2.4, acabamento: 'Polido',    custo: 45 },
-    { id: 2, ref: 'P-002', nome: 'Suporte L200',  material: 'Alumínio', esp: '6mm',  peso: 0.8, acabamento: 'Anodizado', custo: 28 },
-    { id: 3, ref: 'P-003', nome: 'Casquilho Ø50', material: 'Cobre',    esp: '5mm',  peso: 0.5, acabamento: 'Natural',   custo: 62 },
-    { id: 4, ref: 'P-004', nome: 'Tampa guia',    material: 'Polímero', esp: '8mm',  peso: 0.3, acabamento: 'Natural',   custo: 15 },
+  dados_pedido: [
+    { id: 1, ref: 'DP-001', equipamento: 'Torno CNC', orgao: 'Cabeçote', parte: 'Flange Frontal', breveDescricao: 'Substituição de flange por desgaste mecânico', imagem: '' },
+    { id: 2, ref: 'DP-002', equipamento: 'Fresa Universal', orgao: 'Mesa', parte: 'Apoio lateral', breveDescricao: 'Apoio para fixação de peças de grande porte', imagem: '' },
+    { id: 3, ref: 'DP-003', equipamento: 'Prensa 500T', orgao: 'Matriz', parte: 'Casquilho guia', breveDescricao: 'Casquilho em bronze para guia do êmbolo', imagem: '' },
+    { id: 4, ref: 'DP-004', equipamento: 'Injetora PL', orgao: 'Molde', parte: 'Placa extratora', breveDescricao: 'Placa com furação especial para novos pinos', imagem: '' },
   ],
 
   /**
@@ -47,11 +46,11 @@ const DB = {
    * estado: 'Pendente' | 'Em produção' | 'Concluído' | 'Cancelado'
    */
   pedidos: [
-    { id: 1, ref: 'PD-0001', clienteTipo: 'colaborador', clienteId: 1, pecaId: 1, qtd: 10, estado: 'Em produção', data: '2025-04-10' },
-    { id: 2, ref: 'PD-0002', clienteTipo: 'colaborador', clienteId: 3, pecaId: 2, qtd: 25, estado: 'Pendente',    data: '2025-04-15' },
-    { id: 3, ref: 'PD-0003', clienteTipo: 'particular',  clienteId: 1, pecaId: 3, qtd:  2, estado: 'Concluído',  data: '2025-04-05' },
-    { id: 4, ref: 'PD-0004', clienteTipo: 'colaborador', clienteId: 2, pecaId: 4, qtd: 50, estado: 'Em produção', data: '2025-04-18' },
-    { id: 5, ref: 'PD-0005', clienteTipo: 'particular',  clienteId: 2, pecaId: 1, qtd:  1, estado: 'Pendente',   data: '2025-04-20' },
+    { id: 1, ref: 'PD26-0001', clienteTipo: 'colaborador', clienteId: 1, dadosPedidoId: 1, qtd: 10, estado: 'Em produção', data: '2025-04-10' },
+    { id: 2, ref: 'PD26-0002', clienteTipo: 'colaborador', clienteId: 3, dadosPedidoId: 2, qtd: 25, estado: 'Pendente',    data: '2025-04-15' },
+    { id: 3, ref: 'PD26-0003', clienteTipo: 'particular',  clienteId: 1, dadosPedidoId: 3, qtd:  2, estado: 'Concluído',  data: '2025-04-05' },
+    { id: 4, ref: 'PD26-0004', clienteTipo: 'colaborador', clienteId: 2, dadosPedidoId: 4, qtd: 50, estado: 'Em produção', data: '2025-04-18' },
+    { id: 5, ref: 'PD26-0005', clienteTipo: 'particular',  clienteId: 2, dadosPedidoId: 1, qtd:  1, estado: 'Pendente',   data: '2025-04-20' },
   ],
 
   /**

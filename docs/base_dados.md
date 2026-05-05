@@ -53,18 +53,17 @@ CREATE TABLE particulares (
 
 ---
 
-### `pecas`
+### `dados_pedido`
 ```sql
-CREATE TABLE pecas (
-  id          SERIAL PRIMARY KEY,
-  ref         VARCHAR(30)  UNIQUE NOT NULL,
-  nome        VARCHAR(150) NOT NULL,
-  material    VARCHAR(50)  NOT NULL,   -- 'Aço','Alumínio','Cobre','Polímero','Inox'
-  espessura   VARCHAR(20),
-  peso_kg     NUMERIC(8,3),
-  acabamento  VARCHAR(100),
-  custo_unit  NUMERIC(10,2) NOT NULL DEFAULT 0,
-  criado_em   TIMESTAMP DEFAULT NOW()
+CREATE TABLE dados_pedido (
+  id               SERIAL PRIMARY KEY,
+  ref              VARCHAR(30)  UNIQUE NOT NULL,
+  equipamento      VARCHAR(100),
+  orgao            VARCHAR(100),
+  parte            VARCHAR(100),
+  breve_descricao  VARCHAR(255),
+  imagem           VARCHAR(255),
+  criado_em        TIMESTAMP DEFAULT NOW()
 );
 ```
 
@@ -78,7 +77,7 @@ CREATE TABLE pedidos (
   cliente_tipo     VARCHAR(20)  NOT NULL,             -- 'colaborador' | 'particular'
   colaborador_id   INTEGER REFERENCES colaboradores(id),
   particular_id    INTEGER REFERENCES particulares(id),
-  peca_id          INTEGER NOT NULL REFERENCES pecas(id),
+  dados_pedido_id  INTEGER NOT NULL REFERENCES dados_pedido(id),
   quantidade       INTEGER NOT NULL DEFAULT 1,
   estado           VARCHAR(30)  NOT NULL DEFAULT 'Pendente',
   -- 'Pendente' | 'Em produção' | 'Concluído' | 'Cancelado'

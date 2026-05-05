@@ -11,11 +11,10 @@ let _chartCustos = null;
 function renderCustos() {
   const rows = DB.ordens.map(o => {
     const pd       = getPedido(o.pedidoId);
-    const pc       = getPeca(pd.pecaId);
+    const dp       = getDadosPedido(pd.dadosPedidoId);
     const cl       = resolveCliente(pd.clienteTipo, pd.clienteId);
-    const matCusto = pc.custo * pd.qtd;
-    const total    = matCusto + o.moObra;
-    return { o, pd, pc, cl, matCusto, total };
+    const total    = o.moObra;
+    return { o, pd, dp, cl, total };
   });
 
   const totalGeral = rows.reduce((s, r) => s + r.total, 0);
@@ -32,7 +31,7 @@ function renderCustos() {
       <div class="metric-card">
         <div class="metric-label">Custo médio por ordem</div>
         <div class="metric-value">${medioPorOrdem} €</div>
-        <div class="metric-sub">material + mão de obra</div>
+        <div class="metric-sub">mão de obra</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Ordens concluídas</div>
@@ -46,9 +45,8 @@ function renderCustos() {
       <table class="table">
         <thead>
           <tr>
-            <th>OT Nº</th><th>Peça</th><th>Cliente</th><th>Tipo</th>
-            <th>Qtd.</th><th>Custo unit. €</th><th>Mão de obra €</th>
-            <th>Material €</th><th>Total €</th><th>Estado</th>
+            <th>OT Nº</th><th>Equipamento</th><th>Cliente</th><th>Tipo</th>
+            <th>Qtd.</th><th>Total €</th><th>Estado</th>
           </tr>
         </thead>
         <tbody>${_custosRows(rows)}</tbody>
@@ -56,7 +54,7 @@ function renderCustos() {
     </div>
 
     <div class="card" style="margin-top:1rem">
-      <div class="card-title">Custo acumulado por material</div>
+      <div class="card-title">Custo acumulado por equipamento</div>
       <div style="position:relative;height:220px">
         <canvas id="chart-custos"></canvas>
       </div>
@@ -73,13 +71,10 @@ function _custosRows(rows) {
   return rows.map(r => `
     <tr>
       <td><strong>${r.o.num}</strong></td>
-      <td>${r.pc.nome}</td>
+      <td>${r.dp.equipamento || '—'}</td>
       <td>${r.cl.nome}</td>
       <td>${tipoBadge(r.pd.clienteTipo)}</td>
       <td>${r.pd.qtd}</td>
-      <td>${r.pc.custo.toFixed(2)}</td>
-      <td>${r.o.moObra.toFixed(0)}</td>
-      <td>${r.matCusto.toFixed(0)}</td>
       <td><strong>${r.total.toFixed(0)} €</strong></td>
       <td>${estadoBadge(r.o.estado)}</td>
     </tr>`).join('');
@@ -91,8 +86,8 @@ function _drawCustosChart() {
   const mc = {};
   DB.ordens.forEach(o => {
     const pd = getPedido(o.pedidoId);
-    const pc = getPeca(pd.pecaId);
-    mc[pc.material] = (mc[pc.material] || 0) + pc.custo * pd.qtd;
+    const dp = getDadosPedido(pd.dadosPedidoId);
+    mc[dp.equipamento || 'Outro'] = (mc[dp.equipamento || 'Outro'] || 0) + o.moObra;
   });
 
   _chartCustos = new Chart(document.getElementById('chart-custos'), {

@@ -79,7 +79,7 @@
                         </svg>
                         Ordens de Trabalho
                     </div>
-                    <div class="nav-item" data-page="pecas">
+                    <div class="nav-item" data-page="dados_pedido">
                         <svg
                             class="nav-icon"
                             viewBox="0 0 16 16"
@@ -90,7 +90,7 @@
                             <polygon points="8,1 15,5 15,11 8,15 1,11 1,5" />
                             <circle cx="8" cy="8" r="2.5" />
                         </svg>
-                        Peças
+                        Dados do Pedido
                     </div>
                     <div class="nav-item" data-page="custos">
                         <svg
@@ -128,8 +128,9 @@
                     <div id="page-dashboard" class="page active"></div>
                     <div id="page-clientes" class="page"></div>
                     <div id="page-pedidos" class="page"></div>
+                    <div id="page-pedido_detalhe" class="page"></div>
                     <div id="page-ordens" class="page"></div>
-                    <div id="page-pecas" class="page"></div>
+                    <div id="page-dados_pedido" class="page"></div>
                     <div id="page-custos" class="page"></div>
                 </div>
             </div>
@@ -154,59 +155,7 @@
         <script src="js/pages/clientes.js"></script>
         <script src="js/pages/pedidos.js"></script>
         <script src="js/pages/ordens.js"></script>
-        <script src="js/pages/pecas.js"></script>
-        <script src="js/pages/custos.js"></script>
-        <script src="js/app.js"></script>
-    </body>
-</html>
-                        </svg>
-                        Custos
-                    </div>
-                </nav>
-            </aside>
-
-            <!-- MAIN -->
-            <div class="main">
-                <header class="topbar">
-                    <div class="topbar-brand">
-                        <span class="topbar-logo" id="page-logo"></span>
-                        <span class="topbar-title" id="page-title"
-                            >Dashboard</span
-                        >
-                    </div>
-                </header>
-
-                <div class="content">
-                    <div id="page-dashboard" class="page active"></div>
-                    <div id="page-clientes" class="page"></div>
-                    <div id="page-pedidos" class="page"></div>
-                    <div id="page-ordens" class="page"></div>
-                    <div id="page-pecas" class="page"></div>
-                    <div id="page-custos" class="page"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODAL -->
-        <div class="modal-wrap" id="modal-wrap">
-            <div class="modal">
-                <div class="modal-title" id="modal-title"></div>
-                <div id="modal-body"></div>
-            </div>
-        </div>
-
-        <!-- Chart.js CDN -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-
-        <!-- App modules -->
-        <script src="js/data.js"></script>
-        <script src="js/helpers.js"></script>
-        <script src="js/modal.js"></script>
-        <script src="js/pages/dashboard.js"></script>
-        <script src="js/pages/clientes.js"></script>
-        <script src="js/pages/pedidos.js"></script>
-        <script src="js/pages/ordens.js"></script>
-        <script src="js/pages/pecas.js"></script>
+        <script src="js/pages/dados_pedido.js"></script>
         <script src="js/pages/custos.js"></script>
         <script src="js/app.js"></script>
     </body>

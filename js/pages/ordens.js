@@ -15,7 +15,7 @@ function renderOrdens() {
         <thead>
           <tr>
             <th>OT Nº</th><th>Pedido</th><th>Cliente</th><th>Tipo</th>
-            <th>Peça</th><th>Qtd.</th><th>Estado</th><th>Operador</th><th>Prazo</th><th>Ação</th>
+            <th>Equipamento</th><th>Qtd.</th><th>Estado</th><th>Operador</th><th>Prazo</th><th>Ação</th>
           </tr>
         </thead>
         <tbody>${_ordensRows()}</tbody>
@@ -31,18 +31,18 @@ function _ordensRows() {
   return DB.ordens.map(o => {
     const pd  = getPedido(o.pedidoId);
     const cl  = resolveCliente(pd.clienteTipo, pd.clienteId);
-    const pc  = getPeca(pd.pecaId);
+    const dp  = getDadosPedido(pd.dadosPedidoId);
     const canConc = o.estado === 'Em curso';
     const label = pd.clienteTipo === 'particular'
-      ? cl.nome
-      : `${cl.nome} <span style="font-size:11px;color:var(--color-text-muted)">(${cl.subtexto})</span>`;
+      ? `<div style="line-height:1.2;"><div>${cl.nome}</div><div style="font-size:11px;color:var(--color-text-muted)">Particular</div></div>`
+      : `<div style="line-height:1.2;"><div>${cl.subtexto}</div><div style="font-size:11px;color:var(--color-text-muted)">${cl.nome}</div></div>`;
 
     return `<tr>
       <td><strong>${o.num}</strong></td>
       <td>${pd.ref}</td>
       <td>${inlineFlex(avatarHtml(cl.nome, cl.avClass, true), label)}</td>
       <td>${tipoBadge(pd.clienteTipo)}</td>
-      <td>${pc.nome}</td>
+      <td>${dp.equipamento}</td>
       <td>${pd.qtd}</td>
       <td>${estadoBadge(o.estado)}</td>
       <td>${o.operador}</td>
