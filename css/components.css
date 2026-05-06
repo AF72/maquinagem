@@ -100,8 +100,7 @@
 .table th {
     text-align: left;
     padding: 6px 8px;
-    color: var(--color-text-muted);
-    font-weight: 500;
+    color: var(--color-primary-dark);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.04em;

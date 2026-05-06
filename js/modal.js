@@ -7,12 +7,18 @@
  */
 
 let _modalCtx = {};
-
+/*Abre o modal com o tipo de formulário e os dados extras.
+ * @param {string} type - Tipo de formulário.
+ * @param {*} extra - Dados extras.
+ */
 function openModal(type, extra) {
     _modalCtx = { type, extra };
     const titles = {
         novoCliente: 'Novo cliente',
+        editEmpresa: 'Editar empresa',
+        editParticular: 'Editar particular',
         colaborador: 'Novo colaborador',
+        editColaborador: 'Editar colaborador',
         pedido: 'Novo pedido',
         editPedido: 'Editar pedido',
         viewPedido: 'Detalhes do pedido',
@@ -26,6 +32,7 @@ function openModal(type, extra) {
     document.getElementById('modal-wrap').classList.add('open');
 }
 
+/*Fecha o modal*/
 function closeModal() {
     document.getElementById('modal-wrap').classList.remove('open');
 }
@@ -43,8 +50,14 @@ function buildModalForm(type, extra) {
     switch (type) {
         case 'novoCliente':
             return formNovoCliente();
+        case 'editEmpresa':
+            return formEditEmpresa(extra);
+        case 'editParticular':
+            return formEditParticular(extra);
         case 'colaborador':
             return formColaborador(extra);
+        case 'editColaborador':
+            return formEditColaborador(extra);
         case 'pedido':
             return formPedido();
         case 'editPedido':
@@ -72,7 +85,9 @@ function formNovoCliente() {
       <div class="form-group"><label class="form-label">NIF</label><input id="f-nif" placeholder="NIF"></div>
       <div class="form-group"><label class="form-label">Telefone</label><input id="f-tel" placeholder="2XX XXX XXX"></div>
       <div class="form-group"><label class="form-label">Email</label><input id="f-email" placeholder="geral@empresa.pt"></div>
-      <div class="form-group"><label class="form-label">Morada</label><input id="f-morada" placeholder="Rua, nº, cidade"></div>
+      <div class="form-group full"><label class="form-label">Morada</label><input id="f-morada" placeholder="Rua, nº"></div>
+      <div class="form-group"><label class="form-label">Código Postal</label><input id="f-cp" placeholder="XXXX-XXX"></div>
+      <div class="form-group"><label class="form-label">Localidade</label><input id="f-localidade" placeholder="Cidade / Vila"></div>
     </div>
   </div>
 
@@ -82,7 +97,9 @@ function formNovoCliente() {
       <div class="form-group"><label class="form-label">Nº Cartão Cidadão</label><input id="f-cc" placeholder="XXXXXXXX"></div>
       <div class="form-group"><label class="form-label">Telefone</label><input id="f-tel-p" placeholder="9XX XXX XXX"></div>
       <div class="form-group"><label class="form-label">Email</label><input id="f-email-p" placeholder="nome@email.com"></div>
-      <div class="form-group full"><label class="form-label">Morada</label><input id="f-morada-p" placeholder="Rua, nº, cidade"></div>
+      <div class="form-group full"><label class="form-label">Morada</label><input id="f-morada-p" placeholder="Rua, nº"></div>
+      <div class="form-group"><label class="form-label">Código Postal</label><input id="f-cp-p" placeholder="XXXX-XXX"></div>
+      <div class="form-group"><label class="form-label">Localidade</label><input id="f-localidade-p" placeholder="Cidade / Vila"></div>
     </div>
   </div>
 
@@ -127,10 +144,79 @@ function formColaborador(empresaId) {
     <div class="form-group"><label class="form-label">Cargo</label><input id="f-cargo" placeholder="Ex: Engenheiro"></div>
     <div class="form-group"><label class="form-label">Email</label><input id="f-email" placeholder="nome@empresa.pt"></div>
     <div class="form-group"><label class="form-label">Telefone</label><input id="f-tel" placeholder="9XX XXX XXX"></div>
+    <div class="form-group" style="display: flex; flex-direction: row; align-items: center; gap: 8px; margin-top: auto; padding-bottom: 8px;">
+      <input type="checkbox" id="f-ativo" checked style="width: auto; margin: 0; padding: 0;">
+      <label class="form-label" style="margin: 0; cursor: pointer;" for="f-ativo">Ativo</label>
+    </div>
   </div>
   <div class="form-actions">
     <button class="btn" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-primary" onclick="saveColaborador(${empresaId})">Guardar colaborador</button>
+  </div>`;
+}
+
+/* ---------- Editar Empresa ---------- */
+function formEditEmpresa(id) {
+    const emp = DB.empresas.find((e) => e.id === id);
+    if (!emp) return '';
+    return `
+  <div class="form-grid">
+    <div class="form-group full"><label class="form-label">Nome da empresa</label><input id="f-nome" value="${emp.nome}"></div>
+    <div class="form-group"><label class="form-label">NIF</label><input id="f-nif" value="${emp.nif}"></div>
+    <div class="form-group"><label class="form-label">Telefone</label><input id="f-tel" value="${emp.tel}"></div>
+    <div class="form-group"><label class="form-label">Email</label><input id="f-email" value="${emp.email}"></div>
+    <div class="form-group full"><label class="form-label">Morada</label><input id="f-morada" value="${emp.morada}"></div>
+    <div class="form-group"><label class="form-label">Código Postal</label><input id="f-cp" value="${emp.codigo_postal || ''}"></div>
+    <div class="form-group"><label class="form-label">Localidade</label><input id="f-localidade" value="${emp.localidade || ''}"></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveEditEmpresa(${id})">Guardar</button>
+  </div>`;
+}
+
+/* ---------- Editar Particular ---------- */
+function formEditParticular(id) {
+    const p = DB.particulares.find((e) => e.id === id);
+    if (!p) return '';
+    return `
+  <div class="form-grid">
+    <div class="form-group"><label class="form-label">Nome completo</label><input id="f-nome-p" value="${p.nome}"></div>
+    <div class="form-group"><label class="form-label">Nº Cartão Cidadão</label><input id="f-cc" value="${p.cc}"></div>
+    <div class="form-group"><label class="form-label">Telefone</label><input id="f-tel-p" value="${p.tel}"></div>
+    <div class="form-group"><label class="form-label">Email</label><input id="f-email-p" value="${p.email}"></div>
+    <div class="form-group full"><label class="form-label">Morada</label><input id="f-morada-p" value="${p.morada}"></div>
+    <div class="form-group"><label class="form-label">Código Postal</label><input id="f-cp-p" value="${p.codigo_postal || ''}"></div>
+    <div class="form-group"><label class="form-label">Localidade</label><input id="f-localidade-p" value="${p.localidade || ''}"></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveEditParticular(${id})">Guardar</button>
+  </div>`;
+}
+
+/* ---------- Editar Colaborador ---------- */
+function formEditColaborador(id) {
+    const c = DB.colaboradores.find((e) => e.id === id);
+    if (!c) return '';
+    const emp = getEmpresa(c.empresaId);
+    return `
+  <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:1rem">
+    Empresa: <strong>${emp.nome}</strong>
+  </p>
+  <div class="form-grid">
+    <div class="form-group"><label class="form-label">Nome</label><input id="f-nome" value="${c.nome}"></div>
+    <div class="form-group"><label class="form-label">Cargo</label><input id="f-cargo" value="${c.cargo}"></div>
+    <div class="form-group"><label class="form-label">Email</label><input id="f-email" value="${c.email}"></div>
+    <div class="form-group"><label class="form-label">Telefone</label><input id="f-tel" value="${c.tel}"></div>
+    <div class="form-group" style="display: flex; flex-direction: row; align-items: center; gap: 8px; margin-top: auto; padding-bottom: 8px;">
+      <input type="checkbox" id="f-ativo" ${c.ativo !== false ? 'checked' : ''} style="width: auto; margin: 0; padding: 0;">
+      <label class="form-label" style="margin: 0; cursor: pointer;" for="f-ativo">Ativo</label>
+    </div>
+  </div>
+  <div class="form-actions">
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveEditColaborador(${id})">Guardar</button>
   </div>`;
 }
 
@@ -274,6 +360,8 @@ function saveEmpresa() {
         tel: document.getElementById('f-tel').value,
         email: document.getElementById('f-email').value,
         morada: document.getElementById('f-morada').value,
+        codigo_postal: document.getElementById('f-cp').value,
+        localidade: document.getElementById('f-localidade').value,
     });
     closeModal();
     renderAll();
@@ -289,6 +377,8 @@ function saveParticular() {
         tel: document.getElementById('f-tel-p').value,
         email: document.getElementById('f-email-p').value,
         morada: document.getElementById('f-morada-p').value,
+        codigo_postal: document.getElementById('f-cp-p').value,
+        localidade: document.getElementById('f-localidade-p').value,
     });
     closeModal();
     renderAll();
@@ -304,8 +394,49 @@ function saveColaborador(empresaId) {
         cargo: document.getElementById('f-cargo').value,
         email: document.getElementById('f-email').value,
         tel: document.getElementById('f-tel').value,
+        ativo: document.getElementById('f-ativo').checked,
     });
     DB.expanded['e' + empresaId] = true;
+    closeModal();
+    renderAll();
+}
+
+function saveEditEmpresa(id) {
+    const emp = DB.empresas.find((e) => e.id === id);
+    if (!emp) return;
+    emp.nome = document.getElementById('f-nome').value.trim();
+    emp.nif = document.getElementById('f-nif').value;
+    emp.tel = document.getElementById('f-tel').value;
+    emp.email = document.getElementById('f-email').value;
+    emp.morada = document.getElementById('f-morada').value;
+    emp.codigo_postal = document.getElementById('f-cp').value;
+    emp.localidade = document.getElementById('f-localidade').value;
+    closeModal();
+    renderAll();
+}
+
+function saveEditParticular(id) {
+    const p = DB.particulares.find((e) => e.id === id);
+    if (!p) return;
+    p.nome = document.getElementById('f-nome-p').value.trim();
+    p.cc = document.getElementById('f-cc').value;
+    p.tel = document.getElementById('f-tel-p').value;
+    p.email = document.getElementById('f-email-p').value;
+    p.morada = document.getElementById('f-morada-p').value;
+    p.codigo_postal = document.getElementById('f-cp-p').value;
+    p.localidade = document.getElementById('f-localidade-p').value;
+    closeModal();
+    renderAll();
+}
+
+function saveEditColaborador(id) {
+    const c = DB.colaboradores.find((e) => e.id === id);
+    if (!c) return;
+    c.nome = document.getElementById('f-nome').value.trim();
+    c.cargo = document.getElementById('f-cargo').value;
+    c.email = document.getElementById('f-email').value;
+    c.tel = document.getElementById('f-tel').value;
+    c.ativo = document.getElementById('f-ativo').checked;
     closeModal();
     renderAll();
 }

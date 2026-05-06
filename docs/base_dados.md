@@ -16,6 +16,8 @@ CREATE TABLE empresas (
   nome      VARCHAR(150) NOT NULL,
   nif       VARCHAR(20)  UNIQUE,
   morada    VARCHAR(255),
+  codigo_postal VARCHAR(20),
+  localidade VARCHAR(100),
   email     VARCHAR(150),
   tel       VARCHAR(30),
   criado_em TIMESTAMP DEFAULT NOW()
@@ -34,6 +36,7 @@ CREATE TABLE colaboradores (
   cargo      VARCHAR(100),
   email      VARCHAR(150),
   tel        VARCHAR(30),
+  ativo      BOOLEAN DEFAULT TRUE,
   criado_em  TIMESTAMP DEFAULT NOW()
 );
 ```
@@ -48,6 +51,8 @@ CREATE TABLE particulares (
   nome      VARCHAR(150) NOT NULL,
   cc        VARCHAR(20)  UNIQUE,   -- Cartão de Cidadão
   morada    VARCHAR(255),
+  codigo_postal VARCHAR(20),
+  localidade VARCHAR(100),
   email     VARCHAR(150),
   tel       VARCHAR(30),
   criado_em TIMESTAMP DEFAULT NOW()
