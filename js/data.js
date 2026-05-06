@@ -91,10 +91,8 @@ const DB = {
             breveDescricao: 'Substituição de flange por desgaste mecânico',
             imagem: '',
             tipo_contacto: '',
-            orcamento: '',
             ordem_compra: '',
             custo_total: '',
-            ordem_trabalho: '',
         },
         {
             id: 2,
@@ -105,10 +103,8 @@ const DB = {
             breveDescricao: 'Apoio para fixação de peças de grande porte',
             imagem: '',
             tipo_contacto: '',
-            orcamento: '',
             ordem_compra: '',
             custo_total: '',
-            ordem_trabalho: '',
         },
         {
             id: 3,
@@ -119,10 +115,8 @@ const DB = {
             breveDescricao: 'Casquilho em bronze para guia do êmbolo',
             imagem: '',
             tipo_contacto: '',
-            orcamento: '',
             ordem_compra: '',
             custo_total: '',
-            ordem_trabalho: '',
         },
         {
             id: 4,
@@ -133,10 +127,8 @@ const DB = {
             breveDescricao: 'Placa com furação especial para novos pinos',
             imagem: '',
             tipo_contacto: '',
-            orcamento: '',
             ordem_compra: '',
             custo_total: '',
-            ordem_trabalho: '',
         },
     ],
 
@@ -152,10 +144,9 @@ const DB = {
             clienteTipo: 'colaborador',
             clienteId: 1,
             dadosPedidoId: 1,
-            qtd: 10,
+            ordemTrabalhoId: 1,
             estado: 'Em produção',
             data: '2025-04-10',
-            ordemTrabalhoId: 1,
         },
         {
             id: 2,
@@ -163,10 +154,8 @@ const DB = {
             clienteTipo: 'colaborador',
             clienteId: 3,
             dadosPedidoId: 2,
-            qtd: 25,
             estado: 'Pendente',
             data: '2025-04-15',
-            ordemTrabalhoId: null,
         },
         {
             id: 3,
@@ -174,10 +163,9 @@ const DB = {
             clienteTipo: 'particular',
             clienteId: 1,
             dadosPedidoId: 3,
-            qtd: 2,
+            ordemTrabalhoId: 2,
             estado: 'Concluído',
             data: '2025-04-05',
-            ordemTrabalhoId: 2,
         },
         {
             id: 4,
@@ -185,10 +173,9 @@ const DB = {
             clienteTipo: 'colaborador',
             clienteId: 2,
             dadosPedidoId: 4,
-            qtd: 50,
+            ordemTrabalhoId: 3,
             estado: 'Em produção',
             data: '2025-04-18',
-            ordemTrabalhoId: 3,
         },
         {
             id: 5,
@@ -196,10 +183,8 @@ const DB = {
             clienteTipo: 'particular',
             clienteId: 2,
             dadosPedidoId: 1,
-            qtd: 1,
             estado: 'Pendente',
             data: '2025-04-20',
-            ordemTrabalhoId: null,
         },
     ],
 
@@ -210,7 +195,7 @@ const DB = {
     ordens: [
         {
             id: 1,
-            num: 'OT-0001',
+            num: 'OT26-0001',
             pedidoId: 1,
             operador: 'Miguel Costa',
             estado: 'Em curso',
@@ -219,7 +204,7 @@ const DB = {
         },
         {
             id: 2,
-            num: 'OT-0002',
+            num: 'OT26-0002',
             pedidoId: 3,
             operador: 'Sofia Lima',
             estado: 'Concluída',
@@ -228,12 +213,40 @@ const DB = {
         },
         {
             id: 3,
-            num: 'OT-0003',
+            num: 'OT26-0003',
             pedidoId: 4,
             operador: 'Miguel Costa',
             estado: 'Em curso',
             prazo: '2025-05-05',
             moObra: 200,
+        },
+    ],
+
+    /**
+     * Orçamentos
+     * Um orçamento por pedido (relação um-para-um)
+     * estado: 'Pendente' | 'Aprovado' | 'Rejeitado'
+     */
+    orcamentos: [
+        {
+            id: 1,
+            pedidoId: 1,
+            valor: 450,
+            dataEmissao: '2025-04-10',
+            dataValidade: '2025-05-10',
+            descricao: 'Orçamento inicial para PD26-0001',
+            estado: 'Aprovado',
+            notas: 'Aceite do cliente',
+        },
+        {
+            id: 2,
+            pedidoId: 3,
+            valor: 320,
+            dataEmissao: '2025-04-05',
+            dataValidade: '2025-05-05',
+            descricao: 'Orçamento para PD26-0003',
+            estado: 'Aprovado',
+            notas: '',
         },
     ],
 

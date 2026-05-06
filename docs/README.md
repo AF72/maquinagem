@@ -79,13 +79,13 @@ Todas as outras funcionalidades usam apenas APIs nativas do browser.
 
 ### Ordens de Trabalho
 
-- Geração automática de referência (OT-XXXX)
+- Geração automática de referência (OT26-XXXX)
 - Atribuição de operador e prazo
 - Conclusão de ordem (atualiza estado do pedido)
 
 ### Custos
 
-- Cálculo automático: custo de material × quantidade + mão de obra
+- Cálculo automático: custo de material + mão de obra
 - Tabela detalhada por ordem de trabalho
 - Gráfico de custo acumulado por tipo de material
 

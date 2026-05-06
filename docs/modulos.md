@@ -30,7 +30,6 @@ Registo de intenções de encomenda, antes de avançarem para produção.
 - Referência automática (PD-XXXX)
 - Solicitado por: colaborador de empresa ou particular
 - Peça selecionada do catálogo
-- Quantidade
 - Data do pedido
 - Estado: `Pendente` → `Em produção` → `Concluído`
 
@@ -44,7 +43,7 @@ Representa o trabalho efetivo na oficina/fábrica.
 
 **Campos:**
 
-- Número da ordem (OT-XXXX)
+- Número da ordem (OT26-XXXX)
 - Pedido de origem
 - Operador responsável
 - Prazo de entrega
@@ -62,7 +61,7 @@ Análise financeira das ordens de trabalho.
 **Cálculo por ordem:**
 
 ```
-Custo de material = custo_unitário_peça × quantidade
+Custo de material = custo_unitário_peça
 Total             = custo_material + mão_de_obra
 ```
 

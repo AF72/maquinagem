@@ -9,6 +9,7 @@ com PostgreSQL, MySQL ou SQLite.
 ## Tabelas
 
 ### `empresas`
+
 ```sql
 CREATE TABLE empresas (
   id        SERIAL PRIMARY KEY,
@@ -24,6 +25,7 @@ CREATE TABLE empresas (
 ---
 
 ### `colaboradores`
+
 ```sql
 CREATE TABLE colaboradores (
   id         SERIAL PRIMARY KEY,
@@ -39,6 +41,7 @@ CREATE TABLE colaboradores (
 ---
 
 ### `particulares`
+
 ```sql
 CREATE TABLE particulares (
   id        SERIAL PRIMARY KEY,
@@ -54,6 +57,7 @@ CREATE TABLE particulares (
 ---
 
 ### `dados_pedido`
+
 ```sql
 CREATE TABLE dados_pedido (
   id               SERIAL PRIMARY KEY,
@@ -70,15 +74,15 @@ CREATE TABLE dados_pedido (
 ---
 
 ### `pedidos`
+
 ```sql
 CREATE TABLE pedidos (
   id               SERIAL PRIMARY KEY,
-  ref              VARCHAR(20)  UNIQUE NOT NULL,     -- PD-XXXX
+  ref              VARCHAR(20)  UNIQUE NOT NULL,     -- PDYY-XXXX
   cliente_tipo     VARCHAR(20)  NOT NULL,             -- 'colaborador' | 'particular'
   colaborador_id   INTEGER REFERENCES colaboradores(id),
   particular_id    INTEGER REFERENCES particulares(id),
   dados_pedido_id  INTEGER NOT NULL REFERENCES dados_pedido(id),
-  quantidade       INTEGER NOT NULL DEFAULT 1,
   estado           VARCHAR(30)  NOT NULL DEFAULT 'Pendente',
   -- 'Pendente' | 'Em produção' | 'Concluído' | 'Cancelado'
   data_pedido      DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -97,10 +101,11 @@ CREATE TABLE pedidos (
 ---
 
 ### `ordens_trabalho`
+
 ```sql
 CREATE TABLE ordens_trabalho (
   id          SERIAL PRIMARY KEY,
-  num         VARCHAR(20)  UNIQUE NOT NULL,    -- OT-XXXX
+  num         VARCHAR(20)  UNIQUE NOT NULL,    -- OTYY-XXXX
   pedido_id   INTEGER NOT NULL REFERENCES pedidos(id),
   operador    VARCHAR(150),
   estado      VARCHAR(30)  NOT NULL DEFAULT 'Em curso',
@@ -143,10 +148,11 @@ CREATE INDEX idx_ordens_estado         ON ordens_trabalho(estado);
 ## Views úteis
 
 ### Vista de pedidos com cliente resolvido
+
 ```sql
 CREATE VIEW v_pedidos AS
 SELECT
-  p.id, p.ref, p.estado, p.data_pedido, p.quantidade,
+  p.id, p.ref, p.estado, p.data_pedido,
   pc.nome   AS peca_nome, pc.material, pc.custo_unit,
   CASE p.cliente_tipo
     WHEN 'colaborador' THEN c.nome
@@ -165,15 +171,15 @@ JOIN      pecas         pc ON pc.id = p.peca_id;
 ```
 
 ### Vista de custo por ordem
+
 ```sql
 CREATE VIEW v_custos_ordens AS
 SELECT
   ot.num, ot.estado, ot.mo_obra,
   pc.nome   AS peca, pc.material,
-  vp.quantidade,
   pc.custo_unit,
-  (pc.custo_unit * vp.quantidade)          AS custo_material,
-  (pc.custo_unit * vp.quantidade + ot.mo_obra) AS custo_total,
+  pc.custo_unit          AS custo_material,
+  (pc.custo_unit + ot.mo_obra) AS custo_total,
   vp.cliente_nome, vp.empresa_nome, vp.cliente_tipo
 FROM ordens_trabalho ot
 JOIN v_pedidos vp ON vp.id = ot.pedido_id
