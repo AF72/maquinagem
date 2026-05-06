@@ -37,6 +37,7 @@ function _pedidosRows() {
         .map((p) => {
             const cl = resolveCliente(p.clienteTipo, p.clienteId);
             const canOT = p.estado === 'Pendente';
+            const ot = DB.ordens.find((o) => o.pedidoId === p.id);
             const label =
                 p.clienteTipo === 'particular'
                     ? `<div style="line-height:1.2;"><div>${cl.nome}</div><div style="font-size:11px;color:var(--color-text-muted)">Particular</div></div>`
@@ -50,7 +51,7 @@ function _pedidosRows() {
       <td>${p.data}</td>
       <td>
         <button class="btn btn-ghost btn-sm" title="Ver pedido" onclick="showPedidoDetalhe(${p.id})">${ICON_VIEW}</button>
-        ${canOT ? `<button class="btn btn-ghost btn-sm" title="Criar OT" onclick="criarOT(${p.id})">${ICON_CREATE_OT}</button>` : ''}
+        ${ot ? `<span class="badge badge-blue">${ot.num}</span>` : canOT ? `<button class="btn btn-ghost btn-sm" title="Criar OT" onclick="criarOT(${p.id})">${ICON_CREATE_OT}</button>` : ''}
       </td>
     </tr>`;
         })
@@ -62,8 +63,9 @@ function _pedidosRows() {
  */
 function criarOT(pedidoId) {
     const n = DB.ordens.length + 1;
+    const newId = nextId();
     DB.ordens.push({
-        id: nextId(),
+        id: newId,
         num: 'OT-' + padNum(n, 4),
         pedidoId,
         operador: 'Operador',
@@ -72,14 +74,19 @@ function criarOT(pedidoId) {
         moObra: 100,
     });
     const p = DB.pedidos.find((p) => p.id === pedidoId);
-    if (p) p.estado = 'Em produção';
+    if (p) {
+        p.estado = 'Em produção';
+        p.ordemTrabalhoId = newId;
+    }
     renderAll();
 }
 
 let _currentPedidoId = null;
+let _isEditMode = false;
 
 function showPedidoDetalhe(id) {
     _currentPedidoId = id;
+    _isEditMode = false;
     showPage('pedido_detalhe');
 }
 
@@ -109,8 +116,18 @@ function renderPedidoDetalhe() {
               parte: '',
               breveDescricao: '',
               imagem: '',
+              tipo_contacto: '',
+              orcamento: '',
+              ordem_compra: '',
+              custo_total: '',
+              ordem_trabalho: '',
           }
         : getDadosPedido(p.dadosPedidoId);
+
+    const ot =
+        !isNew && p.ordemTrabalhoId
+            ? DB.ordens.find((o) => o.id === p.ordemTrabalhoId)
+            : null;
 
     const colabOpts = DB.colaboradores
         .map((c) => {
@@ -140,12 +157,13 @@ function renderPedidoDetalhe() {
   <div class="form-grid">
     <div class="form-group"><label class="form-label">Referência do Pedido</label><input id="f-ref" value="${p.ref}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
     <div class="form-group"><label class="form-label">Data de Criação</label><input id="f-data" type="date" value="${p.data}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
+    <div class="form-group"><label class="form-label">Ordem de Trabalho</label><input id="f-dp-ordem_trabalho" value="${ot ? ot.num : ''}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
 
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Dados do Cliente</h4><hr style="border:none; border-top: 1px solid var(--color-border); margin-bottom: 1rem;"></div>
     
     <div class="form-group full">
       <label class="form-label">Solicitado por</label>
-      <select id="f-clienteKey">
+      <select id="f-clienteKey" ${!isNew && !_isEditMode ? 'disabled' : ''}>
         <optgroup label="Colaboradores de empresa">${colabOpts}</optgroup>
         <optgroup label="Particulares">${partOpts}</optgroup>
       </select>
@@ -153,20 +171,30 @@ function renderPedidoDetalhe() {
     
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Dados do Equipamento / Peça</h4><hr style="border:none; border-top: 1px solid var(--color-border); margin-bottom: 1rem;"></div>
     
-    <div class="form-group"><label class="form-label">Ref. Equipamento</label><input id="f-dp-ref" value="${dp.ref}" placeholder="Ex: DP-005"></div>
-    <div class="form-group"><label class="form-label">Equipamento</label><input id="f-dp-equipamento" value="${dp.equipamento || ''}"></div>
-    <div class="form-group"><label class="form-label">Órgão</label><input id="f-dp-orgao" value="${dp.orgao || ''}"></div>
-    <div class="form-group"><label class="form-label">Parte</label><input id="f-dp-parte" value="${dp.parte || ''}"></div>
-    <div class="form-group full"><label class="form-label">Breve Descrição</label><input id="f-dp-breve" value="${dp.breveDescricao || ''}"></div>
-    <div class="form-group full"><label class="form-label">Imagem (URL ou Nome)</label><input id="f-dp-imagem" value="${dp.imagem || ''}"></div>
+    <div class="form-group"><label class="form-label">Ref. Equipamento</label><input id="f-dp-ref" value="${dp.ref}" placeholder="Ex: DP-005" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
+    <div class="form-group"><label class="form-label">Equipamento</label><input id="f-dp-equipamento" value="${dp.equipamento || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
+    <div class="form-group"><label class="form-label">Órgão</label><input id="f-dp-orgao" value="${dp.orgao || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
+    <div class="form-group"><label class="form-label">Parte</label><input id="f-dp-parte" value="${dp.parte || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
+    <div class="form-group full"><label class="form-label">Breve Descrição</label><input id="f-dp-breve" value="${dp.breveDescricao || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
+    <div class="form-group full"><label class="form-label">Imagem (URL ou Nome)</label><input id="f-dp-imagem" value="${dp.imagem || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
+    <div class="form-group"><label class="form-label">Tipo de Contacto</label><input id="f-dp-tipo_contacto" value="${dp.tipo_contacto || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
+    <div class="form-group"><label class="form-label">Orçamento</label><input id="f-dp-orcamento" value="${dp.orcamento || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
+    <div class="form-group"><label class="form-label">Ordem de Compra</label><input id="f-dp-ordem_compra" value="${dp.ordem_compra || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
+    <div class="form-group"><label class="form-label">Custo Total</label><input id="f-dp-custo_total" value="${dp.custo_total || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
     
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Detalhes Adicionais</h4><hr style="border:none; border-top: 1px solid var(--color-border); margin-bottom: 1rem;"></div>
     
-    <div class="form-group"><label class="form-label">Quantidade</label><input id="f-qtd" type="number" min="1" value="${p.qtd}"></div>
+    <div class="form-group"><label class="form-label">Quantidade</label><input id="f-qtd" type="number" min="1" value="${p.qtd}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
   </div>
   <div class="form-actions" style="margin-top: 2rem;">
     <button class="btn" onclick="showPage('pedidos')">Cancelar</button>
-    <button class="btn btn-primary" onclick="savePedidoDetalhe(${isNew ? 'null' : p.id})">${isNew ? 'Criar Pedido' : 'Guardar alterações'}</button>
+    ${
+        isNew
+            ? `<button class="btn btn-primary" onclick="savePedidoDetalhe(null)">Criar Pedido</button>`
+            : !_isEditMode
+              ? `<button class="btn btn-primary" onclick="toggleEditMode()">Editar</button>`
+              : `<button class="btn btn-primary" onclick="savePedidoDetalhe(${p.id})">Guardar alterações</button>`
+    }
   </div>`;
 
     document.getElementById('page-pedido_detalhe').innerHTML = `
@@ -178,6 +206,11 @@ function renderPedidoDetalhe() {
       ${formHtml}
     </div>
   `;
+}
+
+function toggleEditMode() {
+    _isEditMode = true;
+    renderPedidoDetalhe();
 }
 
 function savePedidoDetalhe(id) {
@@ -223,6 +256,10 @@ function savePedidoDetalhe(id) {
     dp.parte = document.getElementById('f-dp-parte').value;
     dp.breveDescricao = document.getElementById('f-dp-breve').value;
     dp.imagem = document.getElementById('f-dp-imagem').value;
+    dp.tipo_contacto = document.getElementById('f-dp-tipo_contacto').value;
+    dp.orcamento = document.getElementById('f-dp-orcamento').value;
+    dp.ordem_compra = document.getElementById('f-dp-ordem_compra').value;
+    dp.custo_total = document.getElementById('f-dp-custo_total').value;
 
     p.dadosPedidoId = dp.id;
 

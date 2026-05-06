@@ -40,7 +40,6 @@ maquinagem/
 │       ├── clientes.js     ← Gestão de empresas, colaboradores e particulares
 │       ├── pedidos.js      ← Lista de pedidos e criação de ordens de trabalho
 │       ├── ordens.js       ← Ordens de trabalho e conclusão
-│       ├── dados_pedido.js ← Catálogo de Dados do Pedido (equipamento, órgão, parte, etc.)
 │       └── custos.js       ← Análise de custos por ordem e por material
 │
 └── docs/
@@ -55,7 +54,7 @@ maquinagem/
 ## Dependências externas
 
 | Biblioteca | Versão | Uso                          | CDN |
-|------------|--------|------------------------------|-----|
+| ---------- | ------ | ---------------------------- | --- |
 | Chart.js   | 4.4.1  | Gráficos (dashboard, custos) | ✅  |
 
 Todas as outras funcionalidades usam apenas APIs nativas do browser.
@@ -65,32 +64,33 @@ Todas as outras funcionalidades usam apenas APIs nativas do browser.
 ## Funcionalidades implementadas
 
 ### Clientes
+
 - Registo de empresas com NIF, morada, email e telefone
 - Colaboradores associados a cada empresa (expansíveis na lista)
 - Registo de clientes particulares (Cartão de Cidadão, sem colaboradores)
 - Filtro rápido: Todos / Empresas / Particulares
 
 ### Pedidos
+
 - Criação de pedidos por colaborador de empresa ou particular
 - Estados: Pendente → Em produção → Concluído
 - Conversão de pedido em Ordem de Trabalho
+- Uso de um catálogo interno de dados do pedido para equipamento, órgão e parte
 
 ### Ordens de Trabalho
+
 - Geração automática de referência (OT-XXXX)
 - Atribuição de operador e prazo
 - Conclusão de ordem (atualiza estado do pedido)
 
-### Dados do Pedido
-- Alterado o conceito de 'Peças' para 'Dados do Pedido' para abranger detalhes mais granulares como equipamento, órgão e parte.
-- Novo campo para imagem, facilitando a identificação visual.
-- Custo unitário de produção por peça
-
 ### Custos
+
 - Cálculo automático: custo de material × quantidade + mão de obra
 - Tabela detalhada por ordem de trabalho
 - Gráfico de custo acumulado por tipo de material
 
 ### Dashboard
+
 - Métricas em tempo real (empresas, particulares, ordens ativas, faturação estimada)
 - Gráfico de ordens por estado
 - Gráfico de pedidos por tipo de cliente (empresa vs particular)
