@@ -87,13 +87,12 @@ function initials(name) {
 
 function estadoBadge(estado) {
     const map = {
-        'Em produção': 'badge-blue',
-        'Em curso': 'badge-blue',
-        Pendente: 'badge-amber',
-        Concluído: 'badge-green',
-        Concluída: 'badge-green',
-        Cancelado: 'badge-red',
-        Cancelada: 'badge-red',
+        'Produção': 'badge-blue',
+        'Pendente': 'badge-amber',
+        'Orçamentar': 'badge-gray',
+        'Faturar': 'badge-red',
+        'Concluido': 'badge-green',
+        'Cancelado': 'badge-black',
     };
     return `<span class="badge ${map[estado] || 'badge-gray'}">${estado}</span>`;
 }

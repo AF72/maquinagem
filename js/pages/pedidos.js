@@ -52,7 +52,7 @@ function _pedidosRows() {
         .map((p) => {
             const cl = resolveCliente(p.clienteTipo, p.clienteId);
             const dp = getDadosPedido(p.dadosPedidoId);
-            const canOT = p.estado === 'Pendente';
+            const canOT = p.estado_pedido === 'Pendente';
             const ot = DB.ordens.find((o) => o.pedidoId === p.id);
             const label =
                 p.clienteTipo === 'particular'
@@ -68,11 +68,13 @@ function _pedidosRows() {
       <td>${dp.orgao || '-'}</td>
       <td>${dp.parte || '-'}</td>
       <td>${dp.custo_total || '-'}</td>
-      <td>
-      <button class="btn btn-ghost btn-sm" title="Ver pedido" onclick="showPedidoDetalhe(${p.id})">${ICON_VIEW}</button>
-      ${ot ? `<span class="badge badge-blue">${ot.num}</span>` : canOT ? `<button class="btn btn-ghost btn-sm" title="Criar OT" onclick="criarOT(${p.id})">${ICON_CREATE_OT}</button>` : ''}
+      <td style="vertical-align: middle;">
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <button class="btn btn-ghost btn-sm" title="Ver pedido" onclick="showPedidoDetalhe(${p.id})">${ICON_VIEW}</button>
+          ${ot ? `<span class="badge badge-blue">${ot.num}</span>` : canOT ? `<button class="btn btn-ghost btn-sm" title="Criar OT" onclick="criarOT(${p.id})">${ICON_CREATE_OT}</button>` : ''}
+        </div>
       </td>
-      <td>${estadoBadge(p.estado)}</td>
+      <td>${estadoBadge(p.estado_pedido)}</td>
     </tr>`;
         })
         .join('');
@@ -95,7 +97,7 @@ function criarOT(pedidoId) {
     });
     const p = DB.pedidos.find((p) => p.id === pedidoId);
     if (p) {
-        p.estado = 'Em produção';
+        p.estado_pedido = 'Produção';
         p.ordemTrabalhoId = newId;
     }
     renderAll();
@@ -103,19 +105,91 @@ function criarOT(pedidoId) {
 
 let _currentPedidoId = null;
 let _isEditMode = false;
-
+/*
+ * Mostra os detalhes de um pedido
+ */
 function showPedidoDetalhe(id) {
     _currentPedidoId = id;
     _isEditMode = false;
     showPage('pedido_detalhe');
 }
 
+/*
+ * Edita um pedido existente
+ */
+function editarPedido(id) {
+    _currentPedidoId = id;
+    _isEditMode = true;
+    showPage('pedido_detalhe');
+}
+
+/*
+ * Encerra um pedido existente
+ */
+function encerrarPedido(id) {
+    const p = DB.pedidos.find(x => x.id === id);
+    if (!p) return;
+
+    // Encontrar OT associada
+    const ot = DB.ordens.find(o => o.pedidoId === id);
+    if (ot) {
+        ot.estado = 'Concluída';
+        ot.dataFim = today();
+    }
+
+    p.estado_pedido = 'Concluido';
+
+    // Calcular custos finais
+    const dp = getDadosPedido(p.dadosPedidoId);
+    constorc = DB.orcamentos.find(o => o.pedidoId === id);
+    if (orc) {
+        orc.custoReal = orc.custoUnitario * orc.quantidade;
+    }
+
+    renderAll();
+    showPage('pedidos_lista');
+}
+
+/*
+ * Manipula o upload de imagem e mostra o preview
+ */
+function handleImageUpload(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const base64 = e.target.result;
+            document.getElementById('f-dp-imagem').value = base64;
+            document.getElementById('image-preview').innerHTML = `<img src="${base64}" style="width: 100%; height: 100%; object-fit: contain;">`;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+/*
+ * Abre o modal de consulta de detalhes do cliente selecionado
+ */
+function verDetalhesCliente() {
+    const key = document.getElementById('f-clienteKey').value;
+    if (!key) return;
+    const [tipo, idStr] = key.split(':');
+    const id = parseInt(idStr);
+    if (tipo === 'colab') {
+        openModal('viewColaborador', id);
+    } else {
+        openModal('viewParticular', id);
+    }
+}
+
+/*
+ * Renderiza os detalhes de um pedido
+ */
 function renderPedidoDetalhe() {
     const isNew = !_currentPedidoId;
     const p = isNew
         ? {
               ref:
-                  'PD' +
+                  'PT' +
                   new Date().getFullYear().toString().slice(-2) +
                   '-' +
                   padNum(DB.pedidos.length + 1, 4),
@@ -137,6 +211,7 @@ function renderPedidoDetalhe() {
               imagem: '',
               tipo_contacto: '',
               ordem_compra: '',
+              data_rececao_oc: '',
               custo_total: '',
           }
         : getDadosPedido(p.dadosPedidoId);
@@ -176,17 +251,41 @@ function renderPedidoDetalhe() {
     const formHtml = `
   <div class="form-grid">
     <div class="form-group"><label class="form-label">Referência do Pedido</label><input id="f-ref" value="${p.ref}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
-    <div class="form-group"><label class="form-label">Data de Criação PD</label><input id="f-data" type="date" value="${p.data}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
+    <div class="form-group"><label class="form-label">Data de Criação PT</label><input id="f-pt-data" type="date" value="${p.data}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
     <div class="form-group"><label class="form-label">Ordem de Trabalho</label><input id="f-dp-ordem_trabalho" value="${ot ? ot.num : ''}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
-    <div class="form-group"><label class="form-label">Data de Criação OT</label><input id="f-data" type="date" value="" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
-    <div class="form-group"><label class="form-label">Ordem de Compra</label><input id="f-dp-ordem_compra" value=""></div>
+    <div class="form-group"><label class="form-label">Data de Criação OT</label><input id="f-ot-data" type="date" value="${today()}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
+    <div class="form-group"><label class="form-label">Ordem de Compra</label><input id="f-dp-ordem_compra" value="${dp.ordem_compra || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''} style="height:30px; box-sizing:border-box;"></div>
+    <div class="form-group"><label class="form-label">Data de Receção OC</label><input id="f-dp-data_rececao_oc" type="date" value="${dp.data_rececao_oc || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''} style="height:30px; box-sizing:border-box;"></div>
 
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Dados do Cliente</h4></div>
     <div class="form-group full">
       <label class="form-label">Solicitado por</label>
-      <select id="f-clienteKey" ${!isNew && !_isEditMode ? 'disabled' : ''}>
-        <optgroup label="Colaboradores de empresa">${colabOpts}</optgroup>
-        <optgroup label="Particulares">${partOpts}</optgroup>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <select id="f-clienteKey" ${!isNew && !_isEditMode ? 'disabled' : ''} style="flex: 1;">
+          <optgroup label="Colaboradores de empresa">${colabOpts}</optgroup>
+          <optgroup label="Particulares">${partOpts}</optgroup>
+        </select>
+        <button class="btn btn-ghost" title="Ver detalhes do cliente" onclick="verDetalhesCliente()">${ICON_VIEW}</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo de Contacto</label>
+      <select id="f-dp-tipo_contacto" ${!isNew && !_isEditMode ? 'disabled' : ''}>
+        <option value="" ${!dp.tipo_contacto ? 'selected' : ''}>Selecione...</option>
+        <option value="Instalações Cliente" ${dp.tipo_contacto === 'Instalações Cliente' ? 'selected' : ''}>Instalações Cliente</option>
+        <option value="Instalações DM" ${dp.tipo_contacto === 'Instalações DM' ? 'selected' : ''}>Instalações DM</option>
+        <option value="E-mail" ${dp.tipo_contacto === 'E-mail' ? 'selected' : ''}>E-mail</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Estado do Pedido</label>
+      <select id="f-pt-estado" ${!isNew && !_isEditMode ? 'disabled' : ''}>
+        <option value="Orçamentar" ${p.estado_pedido === 'Orçamentar' ? 'selected' : ''}>Orçamentar</option>
+        <option value="Pendente" ${p.estado_pedido === 'Pendente' ? 'selected' : ''}>Pendente</option>
+        <option value="Produção" ${p.estado_pedido === 'Produção' ? 'selected' : ''}>Produção</option>
+        <option value="Faturar" ${p.estado_pedido === 'Faturar' ? 'selected' : ''}>Faturar</option>
+        <option value="Concluido" ${p.estado_pedido === 'Concluido' ? 'selected' : ''}>Concluido</option>
+        <option value="Cancelado" ${p.estado_pedido === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
       </select>
     </div>
     
@@ -197,11 +296,20 @@ function renderPedidoDetalhe() {
     <div class="form-group"><label class="form-label">Órgão</label><input id="f-dp-orgao" value="${dp.orgao || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
     <div class="form-group"><label class="form-label">Parte</label><input id="f-dp-parte" value="${dp.parte || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
     <div class="form-group full"><label class="form-label">Breve Descrição</label><input id="f-dp-breve" value="${dp.breveDescricao || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
-    <div class="form-group full"><label class="form-label">Imagem (URL ou Nome)</label><input id="f-dp-imagem" value="${dp.imagem || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
-    <div class="form-group"><label class="form-label">Tipo de Contacto</label><input id="f-dp-tipo_contacto" value="${dp.tipo_contacto || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
+    <div class="form-group">
+      <label class="form-label">Imagem (.png)</label>
+      <input id="f-dp-imagem-file" type="file" accept=".png" ${!isNew && !_isEditMode ? 'disabled' : ''} onchange="handleImageUpload(this)">
+      <input id="f-dp-imagem" type="hidden" value="${dp.imagem || ''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Pré-visualização</label>
+      <div id="image-preview" style="width: 100%; height: 200px; border: 1px solid var(--color-border); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; background: var(--color-surface-alt); overflow: hidden;">
+        ${dp.imagem ? `<img src="${dp.imagem}" style="width: 100%; height: 100%; object-fit: contain;">` : '<span style="font-size: 10px; color: var(--color-text-muted);">Sem imagem</span>'}
+      </div>
+    </div>
     <div class="form-group"><label class="form-label">Custo Total</label><input id="f-dp-custo_total" value="${dp.custo_total || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
     
-    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Detalhes Adicionais</h4></div>
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Lista de Peças</h4></div>
   </div>
   <div class="form-actions" style="margin-top: 2rem;">
     <button class="btn" onclick="showPage('pedidos')">Cancelar</button>
@@ -224,12 +332,16 @@ function renderPedidoDetalhe() {
     </div>
   `;
 }
-
+/*
+ * Alterna o modo de edição
+ */
 function toggleEditMode() {
     _isEditMode = true;
     renderPedidoDetalhe();
 }
-
+/*
+ * Guarda os detalhes de um pedido
+ */
 function savePedidoDetalhe(id) {
     const isNew = !id;
     let p;
@@ -238,16 +350,18 @@ function savePedidoDetalhe(id) {
         p = {
             id: nextId(),
             ref:
-                'PD' +
+                'PT' +
                 new Date().getFullYear().toString().slice(-2) +
                 '-' +
                 padNum(DB.pedidos.length + 1, 4),
-            estado: 'Pendente',
+            estado_pedido: 'Orçamentar',
         };
     } else {
         p = DB.pedidos.find((x) => x.id === id);
         if (!p) return;
     }
+
+    p.estado_pedido = document.getElementById('f-pt-estado').value;
 
     const key = document.getElementById('f-clienteKey').value;
     const [tipo, idStr] = key.split(':');
@@ -274,12 +388,13 @@ function savePedidoDetalhe(id) {
     dp.imagem = document.getElementById('f-dp-imagem').value;
     dp.tipo_contacto = document.getElementById('f-dp-tipo_contacto').value;
     dp.ordem_compra = document.getElementById('f-dp-ordem_compra').value;
+    dp.data_rececao_oc = document.getElementById('f-dp-data_rececao_oc').value;
     dp.custo_total = document.getElementById('f-dp-custo_total').value;
 
     p.dadosPedidoId = dp.id;
 
     if (isNew) {
-        p.data = document.getElementById('f-data').value || today();
+        p.data = document.getElementById('f-pt-data').value || today();
         DB.pedidos.push(p);
     }
 

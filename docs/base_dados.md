@@ -72,6 +72,9 @@ CREATE TABLE dados_pedido (
   parte            VARCHAR(100),
   breve_descricao  VARCHAR(255),
   imagem           VARCHAR(255),
+  ordem_compra     VARCHAR(50),
+  data_rececao_oc  DATE,
+  custo_total      NUMERIC(10,2),
   criado_em        TIMESTAMP DEFAULT NOW()
 );
 ```
@@ -83,13 +86,13 @@ CREATE TABLE dados_pedido (
 ```sql
 CREATE TABLE pedidos (
   id               SERIAL PRIMARY KEY,
-  ref              VARCHAR(20)  UNIQUE NOT NULL,     -- PDYY-XXXX
+  ref              VARCHAR(20)  UNIQUE NOT NULL,     -- PTYY-XXXX
   cliente_tipo     VARCHAR(20)  NOT NULL,             -- 'colaborador' | 'particular'
   colaborador_id   INTEGER REFERENCES colaboradores(id),
   particular_id    INTEGER REFERENCES particulares(id),
   dados_pedido_id  INTEGER NOT NULL REFERENCES dados_pedido(id),
-  estado           VARCHAR(30)  NOT NULL DEFAULT 'Pendente',
-  -- 'Pendente' | 'Em produção' | 'Concluído' | 'Cancelado'
+  estado_pedido    VARCHAR(30)  NOT NULL DEFAULT 'Orçamentar',
+  -- 'Orçamentar' | 'Pendente' | 'Produção' | 'Faturar' | 'Concluido' | 'Cancelado'
   data_pedido      DATE NOT NULL DEFAULT CURRENT_DATE,
   observacoes      TEXT,
   criado_em        TIMESTAMP DEFAULT NOW(),

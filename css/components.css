@@ -133,12 +133,18 @@
 
 /* ---------- Badges ---------- */
 .badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 2px 8px;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 500;
     white-space: nowrap;
+    width: 80px;
+    height: 20px;
+    text-align: center;
+    vertical-align: middle;
 }
 .badge-green {
     background: var(--color-green-bg);
@@ -168,6 +174,11 @@
     background: var(--color-gray-bg);
     color: var(--color-gray-fg);
 }
+.badge-black {
+    background: var(--color-black-bg);
+    color: var(--color-black-fg);
+}
+
 
 /* ---------- Avatars ---------- */
 .avatar {

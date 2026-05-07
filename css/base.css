@@ -40,6 +40,10 @@
     --color-coral-fg: #993c1d;
     --color-gray-bg: #f1efe8;
     --color-gray-fg: #5f5e5a;
+    --color-black-bg: #000000;
+    --color-black-fg: #ffffff;
+    --color-orange-bg: #ef7d1a46;
+    --color-orange-fg: #ef7d1a;
 
     --radius-sm: 4px;
     --radius-md: 6px;

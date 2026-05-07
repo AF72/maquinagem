@@ -1,0 +1,21 @@
+Listed directory knowledge
+Viewed mcp_config.json
+
+Como seu assistente de programação, posso sugerir e implementar várias "skills" (competências técnicas e funcionalidades) que elevarão a qualidade e a robustez deste projeto:
+
+### 1. Refatoração para Módulos (ES6 Modules)
+Atualmente, o projeto utiliza variáveis globais e ficheiros carregados sequencialmente no `index.html`. Uma skill importante seria converter o projeto para **Módulos JS**, o que melhoraria a organização, evitaria conflitos de nomes e facilitaria a manutenção.
+
+### 2. Validação de Formulários
+Podemos criar uma skill de **Validação Centralizada**, garantindo que todos os campos obrigatórios (como NIF, Emails e Datas) sejam validados antes de serem guardados no `DB`, evitando dados corrompidos.
+
+### 3. Geração de Documentos (PDF)
+Para um sistema de gestão de produção, a capacidade de **gerar PDFs** (Orçamentos, Folhas de Obra) diretamente no browser é fundamental. Posso integrar bibliotecas como `jspdf` para isto.
+
+### 4. Persistência e Backend
+Atualmente, os dados são voláteis (estão no objeto `DB` em memória). Uma skill crítica seria implementar a **persistência em LocalStorage** ou preparar a integração com uma **API/Base de Dados real** (PostgreSQL/MySQL), conforme sugerido no seu ficheiro `base_dados.md`.
+
+### 5. Skill de UX Avançado
+Posso implementar **notificações (toasts)** para confirmar ações (ex: "Pedido guardado com sucesso!") e **gráficos dinâmicos** mais avançados no Dashboard usando Chart.js para análise de custos e produtividade.
+
+**Gostaria que eu começasse a trabalhar em alguma destas melhorias ou tem alguma outra funcionalidade específica em mente?**

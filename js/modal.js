@@ -23,6 +23,9 @@ function openModal(type, extra) {
         editPedido: 'Editar pedido',
         viewPedido: 'Detalhes do pedido',
         dados_pedido: 'Novos dados de pedido',
+        viewEmpresa: 'Detalhes da empresa',
+        viewParticular: 'Detalhes do particular',
+        viewColaborador: 'Detalhes do colaborador',
     };
     document.getElementById('modal-title').textContent = titles[type] || '';
     document.getElementById('modal-body').innerHTML = buildModalForm(
@@ -66,6 +69,12 @@ function buildModalForm(type, extra) {
             return formViewPedido(extra);
         case 'dados_pedido':
             return formDadosPedido();
+        case 'viewEmpresa':
+            return formViewEmpresa(extra);
+        case 'viewParticular':
+            return formViewParticular(extra);
+        case 'viewColaborador':
+            return formViewColaborador(extra);
         default:
             return '';
     }
@@ -321,7 +330,7 @@ function formViewPedido(pedidoId) {
     <p><strong>Cliente:</strong> ${cl.nome} <span style="color:var(--color-text-muted);font-size:11px">(${cl.subtexto})</span></p>
     <p><strong>Dados do Pedido:</strong> ${dp.ref} — ${dp.equipamento} <span style="color:var(--color-text-muted);font-size:11px">(${dp.orgao} / ${dp.parte})</span></p>
     <p><strong>Data:</strong> ${p.data}</p>
-    <p><strong>Estado:</strong> ${estadoBadge(p.estado)}</p>
+    <p><strong>Estado:</strong> ${estadoBadge(p.estado_pedido)}</p>
   </div>
   <div class="form-actions">
     <button class="btn" onclick="closeModal()">Fechar</button>
@@ -448,7 +457,7 @@ function savePedido() {
     DB.pedidos.push({
         id: nextId(),
         ref:
-            'PD' +
+            'PT' +
             new Date().getFullYear().toString().slice(-2) +
             '-' +
             padNum(n, 4),
@@ -495,4 +504,65 @@ function saveDadosPedido() {
     });
     closeModal();
     renderAll();
+}
+/* ---------- Ver Empresa (Consulta) ---------- */
+function formViewEmpresa(id) {
+    const emp = DB.empresas.find((e) => e.id === id);
+    if (!emp) return '';
+    return `
+  <div class="form-grid">
+    <div class="form-group full"><label class="form-label">Nome da empresa</label><input value="${emp.nome}" disabled></div>
+    <div class="form-group"><label class="form-label">NIF</label><input value="${emp.nif}" disabled></div>
+    <div class="form-group"><label class="form-label">Telefone</label><input value="${emp.tel}" disabled></div>
+    <div class="form-group"><label class="form-label">Email</label><input value="${emp.email}" disabled></div>
+    <div class="form-group full"><label class="form-label">Morada</label><input value="${emp.morada}" disabled></div>
+    <div class="form-group"><label class="form-label">Código Postal</label><input value="${emp.codigo_postal || ''}" disabled></div>
+    <div class="form-group"><label class="form-label">Localidade</label><input value="${emp.localidade || ''}" disabled></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-primary" onclick="closeModal()">Fechar</button>
+  </div>`;
+}
+
+/* ---------- Ver Particular (Consulta) ---------- */
+function formViewParticular(id) {
+    const p = DB.particulares.find((e) => e.id === id);
+    if (!p) return '';
+    return `
+  <div class="form-grid">
+    <div class="form-group"><label class="form-label">Nome completo</label><input value="${p.nome}" disabled></div>
+    <div class="form-group"><label class="form-label">Nº Cartão Cidadão</label><input value="${p.cc}" disabled></div>
+    <div class="form-group"><label class="form-label">Telefone</label><input value="${p.tel}" disabled></div>
+    <div class="form-group"><label class="form-label">Email</label><input value="${p.email}" disabled></div>
+    <div class="form-group full"><label class="form-label">Morada</label><input value="${p.morada}" disabled></div>
+    <div class="form-group"><label class="form-label">Código Postal</label><input value="${p.codigo_postal || ''}" disabled></div>
+    <div class="form-group"><label class="form-label">Localidade</label><input value="${p.localidade || ''}" disabled></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-primary" onclick="closeModal()">Fechar</button>
+  </div>`;
+}
+
+/* ---------- Ver Colaborador (Consulta) ---------- */
+function formViewColaborador(id) {
+    const c = DB.colaboradores.find((e) => e.id === id);
+    if (!c) return '';
+    const emp = getEmpresa(c.empresaId);
+    return `
+  <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:1rem">
+    Empresa: <strong>${emp.nome}</strong> <button class="btn btn-ghost btn-sm" onclick="openModal('viewEmpresa', ${emp.id})">(Ver empresa)</button>
+  </p>
+  <div class="form-grid">
+    <div class="form-group"><label class="form-label">Nome</label><input value="${c.nome}" disabled></div>
+    <div class="form-group"><label class="form-label">Cargo</label><input value="${c.cargo}" disabled></div>
+    <div class="form-group"><label class="form-label">Email</label><input value="${c.email}" disabled></div>
+    <div class="form-group"><label class="form-label">Telefone</label><input value="${c.tel}" disabled></div>
+    <div class="form-group" style="display: flex; flex-direction: row; align-items: center; gap: 8px; margin-top: auto; padding-bottom: 8px;">
+      <input type="checkbox" ${c.ativo !== false ? 'checked' : ''} disabled style="width: auto; margin: 0; padding: 0;">
+      <label class="form-label" style="margin: 0;">Ativo</label>
+    </div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-primary" onclick="closeModal()">Fechar</button>
+  </div>`;
 }

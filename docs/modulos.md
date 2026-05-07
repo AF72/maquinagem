@@ -27,7 +27,7 @@ Registo de intenções de encomenda, antes de avançarem para produção.
 
 **Campos:**
 
-- Referência automática (PD-XXXX)
+- Referência automática (PT-XXXX)
 - Solicitado por: colaborador de empresa ou particular
 - Peça selecionada do catálogo
 - Data do pedido
