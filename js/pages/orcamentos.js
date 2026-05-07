@@ -6,8 +6,8 @@
  */
 
 /*Constantes de ícones*/
-const ICON_ORCAMENTO_VIEW = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 6h6M5 10h4"/></svg>`;
-const ICON_ORCAMENTO_EDIT = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14h3l8-8-3-3-8 8v3z"/><circle cx="12" cy="4" r="0.5"/></svg>`;
+const ICON_ORCAMENTO_VIEW = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>`;
+const ICON_ORCAMENTO_EDIT = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="matrix(1.05 0 0 1.05 12 12)"><path style="fill: currentColor;" transform="translate(-12.5, -11.5)" d="M 19.171875 2 C 18.448125 2 17.724375 2.275625 17.171875 2.828125 L 16 4 L 20 8 L 21.171875 6.828125 C 22.275875 5.724125 22.275875 3.933125 21.171875 2.828125 C 20.619375 2.275625 19.895625 2 19.171875 2 z M 14.5 5.5 L 5 15 C 5 15 6.005 15.005 6.5 15.5 C 6.995 15.995 6.984375 16.984375 6.984375 16.984375 C 6.984375 16.984375 8.004 17.004 8.5 17.5 C 8.996 17.996 9 19 9 19 L 18.5 9.5 L 14.5 5.5 z M 3.6699219 17 L 3.0136719 20.503906 C 2.9606719 20.789906 3.2100938 21.039328 3.4960938 20.986328 L 7 20.330078 L 3.6699219 17 z" /></g></svg>`;
 
 /**
  * Renderiza a lista de orçamentos
@@ -22,7 +22,7 @@ function renderOrcamentos() {
       <table class="table">
         <thead>
           <tr>
-            <th>Pedido</th><th>Cliente</th><th>Valor (€)</th><th>Data Emissão</th><th>Validade</th><th>Estado</th><th>Ação</th>
+            <th>Ref. Orçamento</th><th>Pedido</th><th>Cliente</th><th>Valor (€)</th><th>Data Emissão</th><th>Validade</th><th>Estado</th><th>Ação</th>
           </tr>
         </thead>
         <tbody>${_orcamentosRows()}</tbody>
@@ -49,16 +49,23 @@ function _orcamentosRows() {
                       ? 'badge-red'
                       : 'badge-orange';
 
+            const label =
+                pedido.clienteTipo === 'particular'
+                    ? `<div style="line-height:1.2;"><div>${cliente.nome}</div><div style="font-size:11px;color:var(--color-text-muted)">Particular</div></div>`
+                    : `<div style="line-height:1.2;"><div>${cliente.subtexto}</div><div style="font-size:11px;color:var(--color-text-muted)">${cliente.nome}</div></div>`;
+
             return `<tr>
-      <td><strong>${pedido.ref}</strong></td>
-      <td>${cliente.nome}</td>
-      <td><strong>${orc.valor.toFixed(2)}</strong></td>
+      <td><strong>${orc.ref || '-'}</strong></td>
+      <td>${pedido.ref}</td>
+      <td>${inlineFlex(avatarHtml(cliente.nome, cliente.avClass, true), label)}</td>
+      <td><strong>${(orc.valor || 0).toFixed(2)}</strong></td>
       <td>${orc.dataEmissao}</td>
       <td>${orc.dataValidade}</td>
       <td><span class="badge ${estadoBg}">${orc.estado}</span></td>
-      <td>
-        <button class="btn btn-ghost btn-sm" title="Ver orçamento" onclick="showOrcamentoDetalhe(${orc.id})">${ICON_ORCAMENTO_VIEW}</button>
-        <button class="btn btn-ghost btn-sm" title="Editar" onclick="editarOrcamento(${orc.id})">${ICON_ORCAMENTO_EDIT}</button>
+      <td style="vertical-align: middle;">
+        <button class="btn btn-ghost btn-sm" style="display: flex; align-items: center; gap: 5px;" onclick="editarOrcamento(${orc.id})">
+          ${ICON_ORCAMENTO_EDIT}
+        </button>
       </td>
     </tr>`;
         })
@@ -84,6 +91,7 @@ function renderOrcamentoDetalhe() {
     const isNew = !_currentOrcamentoId;
     const orc = isNew
         ? {
+              ref: 'ORC' + new Date().getFullYear().toString().slice(-2) + '-' + padNum(DB.orcamentos.length + 1, 4),
               pedidoId: null,
               valor: '',
               dataEmissao: today(),
@@ -96,13 +104,21 @@ function renderOrcamentoDetalhe() {
 
     if (!orc && !isNew) return;
 
-    // Listar pedidos sem orçamento (ou o atual)
+    // Listar pedidos sem orçamento (ou o atual) e que não estejam finalizados
+    const invalidStatuses = ['Concluido', 'Cancelado', 'Faturar'];
+
     const pedidoOpts = DB.pedidos
         .map((p) => {
             const existing = DB.orcamentos.find((o) => o.pedidoId === p.id);
             const sel = orc && orc.pedidoId === p.id ? 'selected' : '';
+
             // Mostrar pedidos sem orçamento ou o pedido atual se em edição
             if (existing && existing.id !== (orc?.id || -1)) return '';
+
+            // Filtrar pedidos com estados finalizados (a menos que já seja o pedido deste orçamento)
+            if (invalidStatuses.includes(p.estado_pedido) && orc?.pedidoId !== p.id)
+                return '';
+
             const cliente = resolveCliente(p.clienteTipo, p.clienteId);
             return `<option value="${p.id}" ${sel}>${p.ref} — ${cliente.nome}</option>`;
         })
@@ -110,6 +126,10 @@ function renderOrcamentoDetalhe() {
 
     const formHtml = `
   <div class="form-grid">
+    <div class="form-group">
+      <label class="form-label">Ref. Orçamento</label>
+      <input id="f-orcamento-ref" value="${orc.ref || ''}" readonly style="background:#ddedda; cursor:not-allowed;">
+    </div>
     <div class="form-group">
       <label class="form-label">Pedido</label>
       <select id="f-orcamento-pedido" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
@@ -199,6 +219,7 @@ function saveOrcamento(id) {
     }
 
     orc.pedidoId = pedidoId;
+    orc.ref = document.getElementById('f-orcamento-ref').value;
     orc.valor =
         parseFloat(document.getElementById('f-orcamento-valor').value) || 0;
     orc.dataEmissao = document.getElementById('f-orcamento-emissao').value;

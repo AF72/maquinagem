@@ -16,6 +16,7 @@ const PAGE_TITLES = {
     ordens: 'Ordens de Trabalho',
     custos: 'Custos',
     pedido_detalhe: 'Detalhe do Pedido',
+    orcamento_detalhe: 'Detalhe do Orçamento',
 };
 
 /*As seguintes constantes definem os icons*/
@@ -37,6 +38,7 @@ const PAGE_RENDERERS = {
     ordens: renderOrdens,
     custos: renderCustos,
     pedido_detalhe: renderPedidoDetalhe,
+    orcamento_detalhe: renderOrcamentoDetalhe,
 };
 
 let _currentPage = 'dashboard';

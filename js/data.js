@@ -254,6 +254,7 @@ const DB = {
     orcamentos: [
         {
             id: 1,
+            ref: 'ORC26-0001',
             pedidoId: 1,
             valor: 450,
             dataEmissao: '2025-04-10',
@@ -264,6 +265,7 @@ const DB = {
         },
         {
             id: 2,
+            ref: 'ORC26-0002',
             pedidoId: 3,
             valor: 320,
             dataEmissao: '2025-04-05',
