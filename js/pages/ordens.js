@@ -63,7 +63,7 @@ function concluirOT(otId) {
     if (o) {
         o.estado = 'Concluída';
         const pd = DB.pedidos.find((p) => p.id === o.pedidoId);
-        if (pd) pd.estado = 'Concluído';
+        if (pd) pd.estado_pedido = 'Concluido';
     }
     renderAll();
 }

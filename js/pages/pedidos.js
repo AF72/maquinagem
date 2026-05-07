@@ -105,6 +105,7 @@ function criarOT(pedidoId) {
 
 let _currentPedidoId = null;
 let _isEditMode = false;
+let _preSelectedPedidoId = null;
 /*
  * Mostra os detalhes de um pedido
  */
@@ -127,11 +128,11 @@ function editarPedido(id) {
  * Encerra um pedido existente
  */
 function encerrarPedido(id) {
-    const p = DB.pedidos.find(x => x.id === id);
+    const p = DB.pedidos.find((x) => x.id === id);
     if (!p) return;
 
     // Encontrar OT associada
-    const ot = DB.ordens.find(o => o.pedidoId === id);
+    const ot = DB.ordens.find((o) => o.pedidoId === id);
     if (ot) {
         ot.estado = 'Concluída';
         ot.dataFim = today();
@@ -141,13 +142,13 @@ function encerrarPedido(id) {
 
     // Calcular custos finais
     const dp = getDadosPedido(p.dadosPedidoId);
-    constorc = DB.orcamentos.find(o => o.pedidoId === id);
+    const orc = DB.orcamentos.find((o) => o.pedidoId === id);
     if (orc) {
         orc.custoReal = orc.custoUnitario * orc.quantidade;
     }
 
     renderAll();
-    showPage('pedidos_lista');
+    showPage('pedidos');
 }
 
 /*
@@ -160,7 +161,8 @@ function handleImageUpload(input) {
         reader.onload = function (e) {
             const base64 = e.target.result;
             document.getElementById('f-dp-imagem').value = base64;
-            document.getElementById('image-preview').innerHTML = `<img src="${base64}" style="width: 100%; height: 100%; object-fit: contain;">`;
+            document.getElementById('image-preview').innerHTML =
+                `<img src="${base64}" style="width: 100%; height: 100%; object-fit: contain;">`;
         };
         reader.readAsDataURL(file);
     }
@@ -222,7 +224,12 @@ function renderPedidoDetalhe() {
           )
         : null;
 
-    const orc = !isNew ? DB.orcamentos.find((o) => o.pedidoId === p.id) : null;
+    const orcAtivo = !isNew
+        ? DB.orcamentos.find((o) => o.pedidoId === p.id && o.ativo)
+        : null;
+    const orcList = !isNew
+        ? DB.orcamentos.filter((o) => o.pedidoId === p.id)
+        : [];
 
     const colabOpts = DB.colaboradores
         .map((c) => {
@@ -289,6 +296,7 @@ function renderPedidoDetalhe() {
       </select>
     </div>
     
+    <!-- Seccao dados do equipamento -->
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Dados do Equipamento / Peça</h4></div>
     
     <div class="form-group"><label class="form-label">Ref. Equipamento</label><input id="f-dp-ref" value="${dp.ref}" placeholder="Ex: DP-005" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
@@ -307,9 +315,43 @@ function renderPedidoDetalhe() {
         ${dp.imagem ? `<img src="${dp.imagem}" style="width: 100%; height: 100%; object-fit: contain;">` : '<span style="font-size: 10px; color: var(--color-text-muted);">Sem imagem</span>'}
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Custo Total</label><input id="f-dp-custo_total" value="${dp.custo_total || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
-    
-    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Lista de Peças</h4></div>
+    <div class="form-group"><label class="form-label">Custo Total</label><input id="f-dp-custo_total" value="${dp.custo_total ? parseFloat(dp.custo_total).toFixed(2) + ' €' : ''}" readonly style="background:#ddedda; cursor:not-allowed;"></div>
+
+    <!-- Seccao de orçamentos  -->
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Orçamentos</h4></div>
+    ${
+        !isNew
+            ? `
+      <div style="grid-column: 1 / -1;">
+        <button class="btn btn-primary" onclick="criarOrcamentoParaPedido(${p.id})">+ Novo Orçamento</button>
+      </div>
+      ${
+          orcList.length > 0
+              ? `<div class="form-group full">
+        <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">Historial de orçamentos (${orcList.length})</p>
+        <table class="table" style="font-size:12px;">
+          <thead><tr><th>Ref.</th><th>Valor</th><th>Emissão</th><th>Estado</th><th>Ativo</th><th></th></tr></thead>
+          <tbody>${orcList
+              .map(
+                  (
+                      o,
+                  ) => `<tr style="${o.ativo ? 'font-weight:600;' : 'opacity:0.7;'}">
+            <td>${o.ref}</td>
+            <td>${(o.valor || 0).toFixed(2)} €</td>
+            <td>${o.dataEmissao}</td>
+            <td><span class="badge ${o.estado === 'Aprovado' ? 'badge-green' : o.estado === 'Rejeitado' ? 'badge-red' : 'badge-orange'}">${o.estado}</span></td>
+            <td>${o.ativo ? '<span class="badge badge-blue">Ativo</span>' : '<span class="badge badge-gray">—</span>'}</td>
+            <td><button class="btn btn-ghost btn-sm" onclick="editarOrcamento(${o.id})">Editar</button></td>
+          </tr>`,
+              )
+              .join('')}</tbody>
+        </table>
+      </div>`
+              : ''
+      }
+    `
+            : ''
+    }
   </div>
   <div class="form-actions" style="margin-top: 2rem;">
     <button class="btn" onclick="showPage('pedidos')">Cancelar</button>
@@ -342,6 +384,16 @@ function toggleEditMode() {
 /*
  * Guarda os detalhes de um pedido
  */
+/**
+ * Cria um novo orçamento pré-associado ao pedido e navega para o detalhe.
+ */
+function criarOrcamentoParaPedido(pedidoId) {
+    _preSelectedPedidoId = pedidoId;
+    _currentOrcamentoId = null;
+    _isOrcamentoEditMode = false;
+    showPage('orcamento_detalhe');
+}
+
 function savePedidoDetalhe(id) {
     const isNew = !id;
     let p;
@@ -389,7 +441,6 @@ function savePedidoDetalhe(id) {
     dp.tipo_contacto = document.getElementById('f-dp-tipo_contacto').value;
     dp.ordem_compra = document.getElementById('f-dp-ordem_compra').value;
     dp.data_rececao_oc = document.getElementById('f-dp-data_rececao_oc').value;
-    dp.custo_total = document.getElementById('f-dp-custo_total').value;
 
     p.dadosPedidoId = dp.id;
 

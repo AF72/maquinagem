@@ -1,7 +1,7 @@
 /**
  * pages/orcamentos.js
  * -------------------------------------------------
- * Gestão de orçamentos (um por pedido)
+ * Gestão de orçamentos (vários por pedido, com campo 'ativo')
  * -------------------------------------------------
  */
 
@@ -22,7 +22,7 @@ function renderOrcamentos() {
       <table class="table">
         <thead>
           <tr>
-            <th>Ref. Orçamento</th><th>Pedido</th><th>Cliente</th><th>Valor (€)</th><th>Data Emissão</th><th>Validade</th><th>Estado</th><th>Ação</th>
+            <th>Ref. Orçamento</th><th>Pedido</th><th>Cliente</th><th>Valor (€)</th><th>Data Emissão</th><th>Validade</th><th>Estado</th><th>Ativo</th><th>Ação</th>
           </tr>
         </thead>
         <tbody>${_orcamentosRows()}</tbody>
@@ -56,12 +56,13 @@ function _orcamentosRows() {
 
             return `<tr>
       <td><strong>${orc.ref || '-'}</strong></td>
-      <td>${pedido.ref}</td>
+      <td><a href="#" onclick="showPedidoDetalhe(${pedido.id}); return false;" style="color:var(--color-primary); text-decoration:none; cursor:pointer;">${pedido.ref}</a></td>
       <td>${inlineFlex(avatarHtml(cliente.nome, cliente.avClass, true), label)}</td>
       <td><strong>${(orc.valor || 0).toFixed(2)}</strong></td>
       <td>${orc.dataEmissao}</td>
       <td>${orc.dataValidade}</td>
       <td><span class="badge ${estadoBg}">${orc.estado}</span></td>
+      <td>${orc.ativo ? '<span class="badge badge-blue">Ativo</span>' : '<span class="badge badge-gray">Inativo</span>'}</td>
       <td style="vertical-align: middle;">
         <button class="btn btn-ghost btn-sm" style="display: flex; align-items: center; gap: 5px;" onclick="editarOrcamento(${orc.id})">
           ${ICON_ORCAMENTO_EDIT}
@@ -76,6 +77,7 @@ let _currentOrcamentoId = null;
 let _isOrcamentoEditMode = false;
 
 function showOrcamentoDetalhe(id) {
+    _preSelectedPedidoId = null;
     _currentOrcamentoId = id;
     _isOrcamentoEditMode = false;
     showPage('orcamento_detalhe');
@@ -91,8 +93,12 @@ function renderOrcamentoDetalhe() {
     const isNew = !_currentOrcamentoId;
     const orc = isNew
         ? {
-              ref: 'ORC' + new Date().getFullYear().toString().slice(-2) + '-' + padNum(DB.orcamentos.length + 1, 4),
-              pedidoId: null,
+              ref:
+                  'ORC' +
+                  new Date().getFullYear().toString().slice(-2) +
+                  '-' +
+                  padNum(DB.orcamentos.length + 1, 4),
+              pedidoId: _preSelectedPedidoId || null,
               valor: '',
               dataEmissao: today(),
               dataValidade: addDays(30),
@@ -112,12 +118,18 @@ function renderOrcamentoDetalhe() {
             const existing = DB.orcamentos.find((o) => o.pedidoId === p.id);
             const sel = orc && orc.pedidoId === p.id ? 'selected' : '';
 
-            // Mostrar pedidos sem orçamento ou o pedido atual se em edição
-            if (existing && existing.id !== (orc?.id || -1)) return '';
-
             // Filtrar pedidos com estados finalizados (a menos que já seja o pedido deste orçamento)
-            if (invalidStatuses.includes(p.estado_pedido) && orc?.pedidoId !== p.id)
+            if (
+                invalidStatuses.includes(p.estado_pedido) &&
+                orc?.pedidoId !== p.id
+            )
                 return '';
+
+            // Filtrar pedidos de colaboradores inativos
+            if (p.clienteTipo === 'colaborador' && orc?.pedidoId !== p.id) {
+                const colab = getColab(p.clienteId);
+                if (colab.ativo === false) return '';
+            }
 
             const cliente = resolveCliente(p.clienteTipo, p.clienteId);
             return `<option value="${p.id}" ${sel}>${p.ref} — ${cliente.nome}</option>`;
@@ -160,6 +172,10 @@ function renderOrcamentoDetalhe() {
         <option value="Aprovado" ${orc.estado === 'Aprovado' ? 'selected' : ''}>Aprovado</option>
         <option value="Rejeitado" ${orc.estado === 'Rejeitado' ? 'selected' : ''}>Rejeitado</option>
       </select>
+    </div>
+    <div class="form-group" style="display: flex; flex-direction: row; align-items: center; gap: 8px; margin-top: auto; padding-bottom: 8px;">
+      <input type="checkbox" id="f-orcamento-ativo" ${isNew || orc.ativo ? 'checked' : ''} ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''} style="width: auto; margin: 0; padding: 0;">
+      <label class="form-label" style="margin: 0; cursor: pointer;" for="f-orcamento-ativo">Ativo</label>
     </div>
     <div class="form-group full">
       <label class="form-label">Notas</label>
@@ -209,13 +225,14 @@ function saveOrcamento(id) {
         return;
     }
 
-    // Validar que não há outro orçamento para este pedido (a menos que seja o atual)
-    const existingOrc = DB.orcamentos.find(
-        (o) => o.pedidoId === pedidoId && o.id !== (orc.id || -1),
-    );
-    if (existingOrc && isNew) {
-        alert('Este pedido já tem um orçamento atribuído');
-        return;
+    // Se ativo, desativar outros orçamentos do mesmo pedido
+    const isAtivo = document.getElementById('f-orcamento-ativo').checked;
+    if (isAtivo) {
+        DB.orcamentos.forEach((o) => {
+            if (o.pedidoId === pedidoId && o.id !== orc.id) {
+                o.ativo = false;
+            }
+        });
     }
 
     orc.pedidoId = pedidoId;
@@ -227,9 +244,21 @@ function saveOrcamento(id) {
     orc.descricao = document.getElementById('f-orcamento-descricao').value;
     orc.estado = document.getElementById('f-orcamento-estado').value;
     orc.notas = document.getElementById('f-orcamento-notas').value;
+    orc.ativo = isAtivo;
 
     if (isNew) {
         DB.orcamentos.push(orc);
+    }
+
+    // Se ativo e aprovado, atualizar custo_total nos dados do pedido
+    if (orc.ativo && orc.estado === 'Aprovado') {
+        const pedido = getPedido(orc.pedidoId);
+        if (pedido) {
+            const dp = getDadosPedido(pedido.dadosPedidoId);
+            if (dp && dp.ref !== '—') {
+                dp.custo_total = orc.valor;
+            }
+        }
     }
 
     showPage('orcamentos');

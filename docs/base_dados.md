@@ -262,7 +262,7 @@ SELECT
 FROM pedidos p
 LEFT JOIN colaboradores c  ON c.id  = p.colaborador_id
 LEFT JOIN empresas      e  ON e.id  = c.empresa_id
-LEFT JOIN particulates  pt ON pt.id = p.particular_id
+LEFT JOIN particulares  pt ON pt.id = p.particular_id
 JOIN      dados_pedido  dp ON dp.id = p.dados_pedido_id;
 ```
 
