@@ -28,10 +28,24 @@
                             stroke="currentColor"
                             stroke-width="1.5"
                         >
-                        <rect x="1" y="1" width="6" height="6" rx="1" fill="orange"/>
-                        <rect x="9" y="1" width="6" height="6" rx="1"/>
-                        <rect x="1" y="9" width="6" height="6" rx="1"/>
-                        <rect x="9" y="9" width="6" height="6" rx="1" fill="orange"/>
+                            <rect
+                                x="1"
+                                y="1"
+                                width="6"
+                                height="6"
+                                rx="1"
+                                fill="orange"
+                            />
+                            <rect x="9" y="1" width="6" height="6" rx="1" />
+                            <rect x="1" y="9" width="6" height="6" rx="1" />
+                            <rect
+                                x="9"
+                                y="9"
+                                width="6"
+                                height="6"
+                                rx="1"
+                                fill="orange"
+                            />
                         </svg>
                         Dashboard
                     </div>
@@ -109,6 +123,32 @@
                         Custos
                     </div>
                 </nav>
+                <div
+                    id="sidebar-clock"
+                    style="
+                        margin-top: auto;
+                        padding: 0.75rem 1rem;
+                        border-top: 1px solid var(--color-border);
+                        font-size: 12px;
+                        color: var(--color-text-muted);
+                        line-height: 1.6;
+                        text-align: center;
+                    "
+                >
+                    <div
+                        id="clock-time"
+                        style="
+                            font-size: 20px;
+                            font-weight: 600;
+                            color: var(--color-text);
+                            letter-spacing: 1px;
+                        "
+                    ></div>
+                    <div
+                        id="clock-date"
+                        style="font-size: 17px; text-transform: capitalize"
+                    ></div>
+                </div>
             </aside>
 
             <!-- MAIN -->
@@ -157,5 +197,37 @@
         <script src="js/pages/ordens.js"></script>
         <script src="js/pages/custos.js"></script>
         <script src="js/app.js"></script>
+        <script>
+            (function updateClock() {
+                const now = new Date();
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                const meses = [
+                    'Jan',
+                    'Fev',
+                    'Mar',
+                    'Abr',
+                    'Mai',
+                    'Jun',
+                    'Jul',
+                    'Ago',
+                    'Set',
+                    'Out',
+                    'Nov',
+                    'Dez',
+                ];
+                const dd = String(now.getDate()).padStart(2, '0');
+                const mes = meses[now.getMonth()];
+                const yy = String(now.getFullYear()).slice(-2);
+                document.getElementById('clock-time').textContent =
+                    hh + ':' + mm;
+                document.getElementById('clock-date').textContent =
+                    dd + ' ' + mes + ' ' + yy;
+                setTimeout(
+                    updateClock,
+                    60000 - (now.getSeconds() * 1000 + now.getMilliseconds()),
+                );
+            })();
+        </script>
     </body>
 </html>
