@@ -74,7 +74,6 @@ CREATE TABLE dados_pedido (
   imagem           VARCHAR(255),
   ordem_compra     VARCHAR(50),
   data_rececao_oc  DATE,
-  custo_total      NUMERIC(10,2),
   criado_em        TIMESTAMP DEFAULT NOW()
 );
 ```
@@ -95,6 +94,7 @@ CREATE TABLE pedidos (
   -- 'Orçamentar' | 'Pendente' | 'Produção' | 'Faturar' | 'Concluido' | 'Cancelado'
   data_pedido      DATE NOT NULL DEFAULT CURRENT_DATE,
   observacoes      TEXT,
+  custo_liquido    NUMERIC(10,2),
   criado_em        TIMESTAMP DEFAULT NOW(),
 
   -- Garante que apenas um dos dois campos de cliente está preenchido
@@ -272,7 +272,7 @@ JOIN      dados_pedido  dp ON dp.id = p.dados_pedido_id;
 CREATE VIEW v_custos_ordens AS
 SELECT
   ot.num, ot.estado, ot.mo_obra,
-  dp.equipamento AS peca, dp.custo_total,
+  dp.equipamento AS peca, p.custo_liquido,
   vp.cliente_nome, vp.empresa_nome, vp.cliente_tipo
 FROM ordens_trabalho ot
 JOIN v_pedidos vp ON vp.id = ot.pedido_id

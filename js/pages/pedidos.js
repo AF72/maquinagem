@@ -36,7 +36,7 @@ function renderPedidos() {
       <table class="table">
         <thead>
           <tr>
-            <th>Ref.</th><th>Cliente</th><th>Tipo</th><th>Data</th><th>Equipamento</th><th>Órgão</th><th>Parte</th><th>Custo Total</th><th>Ação</th><th>Estado</th>
+            <th>Ref.</th><th>Cliente</th><th>Tipo</th><th>Data</th><th>Equipamento</th><th>Órgão</th><th>Parte</th><th>Custo Líquido</th><th>Ação</th><th>Estado</th>
           </tr>
         </thead>
         <tbody>${_pedidosRows()}</tbody>
@@ -52,7 +52,7 @@ function _pedidosRows() {
         .map((p) => {
             const cl = resolveCliente(p.clienteTipo, p.clienteId);
             const dp = getDadosPedido(p.dadosPedidoId);
-            const canOT = p.estado_pedido === 'Pendente';
+            const canOT = ['Orçamentar', 'Produção', 'Pendente'].includes(p.estado_pedido);
             const ot = DB.ordens.find((o) => o.pedidoId === p.id);
             const label =
                 p.clienteTipo === 'particular'
@@ -67,7 +67,7 @@ function _pedidosRows() {
       <td>${dp.equipamento || '-'}</td>
       <td>${dp.orgao || '-'}</td>
       <td>${dp.parte || '-'}</td>
-      <td>${dp.custo_total || '-'}</td>
+      <td>${p.custo_liquido ? parseFloat(p.custo_liquido).toFixed(2) + ' €' : '-'}</td>
       <td style="vertical-align: middle;">
         <div style="display: flex; align-items: center; gap: 4px;">
           <button class="btn btn-ghost btn-sm" title="Ver pedido" onclick="showPedidoDetalhe(${p.id})">${ICON_VIEW}</button>
@@ -315,7 +315,7 @@ function renderPedidoDetalhe() {
         ${dp.imagem ? `<img src="${dp.imagem}" style="width: 100%; height: 100%; object-fit: contain;">` : '<span style="font-size: 10px; color: var(--color-text-muted);">Sem imagem</span>'}
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Custo Total</label><input id="f-dp-custo_total" value="${dp.custo_total ? parseFloat(dp.custo_total).toFixed(2) + ' €' : ''}" readonly style="background:#ddedda; cursor:not-allowed;"></div>
+    <div class="form-group"><label class="form-label">Custo Líquido</label><input id="f-p-custo_liquido" value="${p.custo_liquido ? parseFloat(p.custo_liquido).toFixed(2) + ' €' : ''}" readonly style="background:#ddedda; cursor:not-allowed;"></div>
 
     <!-- Seccao de orçamentos  -->
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Orçamentos</h4></div>
@@ -330,7 +330,7 @@ function renderPedidoDetalhe() {
               ? `<div class="form-group full">
         <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">Historial de orçamentos (${orcList.length})</p>
         <table class="table" style="font-size:12px;">
-          <thead><tr><th>Ref.</th><th>Valor</th><th>Emissão</th><th>Estado</th><th>Ativo</th><th></th></tr></thead>
+          <thead><tr><th>Ref.</th><th>Custo Líquido</th><th>Emissão</th><th>Estado</th><th>Ativo</th><th></th></tr></thead>
           <tbody>${orcList
               .map(
                   (

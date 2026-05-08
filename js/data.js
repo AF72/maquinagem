@@ -104,7 +104,6 @@ const DB = {
             tipo_contacto: '',
             ordem_compra: '',
             data_rececao_oc: '',
-            custo_total: '',
         },
         {
             id: 2,
@@ -117,7 +116,6 @@ const DB = {
             tipo_contacto: '',
             ordem_compra: '',
             data_rececao_oc: '',
-            custo_total: '',
         },
         {
             id: 3,
@@ -130,7 +128,6 @@ const DB = {
             tipo_contacto: '',
             ordem_compra: '',
             data_rececao_oc: '',
-            custo_total: '',
         },
         {
             id: 4,
@@ -143,7 +140,30 @@ const DB = {
             tipo_contacto: '',
             ordem_compra: '',
             data_rececao_oc: '',
-            custo_total: '',
+        },
+        {
+            id: 5,
+            ref: 'EFM-002',
+            equipamento: 'Calibradora',
+            orgao: 'Base',
+            parte: 'Matriz',
+            breveDescricao: 'Retificar matriz (Segunda intervenção)',
+            imagem: '',
+            tipo_contacto: '',
+            ordem_compra: '',
+            data_rececao_oc: '',
+        },
+        {
+            id: 6,
+            ref: 'DOB-002',
+            equipamento: 'Dobradora',
+            orgao: 'Matriz',
+            parte: 'Cone de apoio',
+            breveDescricao: 'Retificar cone de apoio (Urgente)',
+            imagem: '',
+            tipo_contacto: '',
+            ordem_compra: '',
+            data_rececao_oc: '',
         },
     ],
 
@@ -162,6 +182,7 @@ const DB = {
             ordemTrabalhoId: 1,
             estado_pedido: 'Cancelado',
             data: '2025-04-10',
+            custo_liquido: '',
         },
         {
             id: 2,
@@ -171,6 +192,7 @@ const DB = {
             dadosPedidoId: 2,
             estado_pedido: 'Pendente',
             data: '2025-04-15',
+            custo_liquido: '',
         },
         {
             id: 3,
@@ -181,6 +203,7 @@ const DB = {
             ordemTrabalhoId: 2,
             estado_pedido: 'Concluido',
             data: '2025-04-05',
+            custo_liquido: '',
         },
         {
             id: 4,
@@ -191,24 +214,27 @@ const DB = {
             ordemTrabalhoId: 3,
             estado_pedido: 'Produção',
             data: '2025-04-18',
+            custo_liquido: '',
         },
         {
             id: 5,
             ref: 'PT26-0005',
             clienteTipo: 'particular',
             clienteId: 2,
-            dadosPedidoId: 1,
+            dadosPedidoId: 5,
             estado_pedido: 'Orçamentar',
             data: '2025-04-20',
+            custo_liquido: '',
         },
         {
             id: 6,
             ref: 'PT26-0006',
             clienteTipo: 'colaborador',
             clienteId: 1,
-            dadosPedidoId: 2,
+            dadosPedidoId: 6,
             estado_pedido: 'Faturar',
             data: '2025-04-22',
+            custo_liquido: '',
         },
     ],
 
@@ -217,15 +243,6 @@ const DB = {
      * estado: 'Em curso' | 'Concluída' | 'Cancelada'
      */
     ordens: [
-        {
-            id: 1,
-            num: 'OT26-0001',
-            pedidoId: 1,
-            operador: 'Miguel Costa',
-            estado: 'Em curso',
-            prazo: '2025-04-30',
-            moObra: 120,
-        },
         {
             id: 2,
             num: 'OT26-0002',
@@ -252,7 +269,7 @@ const DB = {
      * estado: 'Pendente' | 'Aprovado' | 'Rejeitado'
      */
     orcamentos: [
-        {
+/*         {
             id: 1,
             ref: 'ORC26-0001',
             pedidoId: 1,
@@ -275,7 +292,7 @@ const DB = {
             estado: 'Aprovado',
             notas: '',
             ativo: true,
-        },
+        }, */
     ],
 
     /** UI state */

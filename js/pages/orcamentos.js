@@ -22,7 +22,7 @@ function renderOrcamentos() {
       <table class="table">
         <thead>
           <tr>
-            <th>Ref. Orçamento</th><th>Pedido</th><th>Cliente</th><th>Valor (€)</th><th>Data Emissão</th><th>Validade</th><th>Estado</th><th>Ativo</th><th>Ação</th>
+            <th>Ref. Orçamento</th><th>Pedido</th><th>Cliente</th><th>Custo Líquido (€)</th><th>Data Emissão</th><th>Validade</th><th>Estado</th><th>Ativo</th><th>Ação</th>
           </tr>
         </thead>
         <tbody>${_orcamentosRows()}</tbody>
@@ -150,7 +150,7 @@ function renderOrcamentoDetalhe() {
       </select>
     </div>
     <div class="form-group">
-      <label class="form-label">Valor (€)</label>
+      <label class="form-label">Custo Líquido (€)</label>
       <input id="f-orcamento-valor" type="number" step="0.01" value="${orc.valor || ''}" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
     </div>
     <div class="form-group">
@@ -250,14 +250,11 @@ function saveOrcamento(id) {
         DB.orcamentos.push(orc);
     }
 
-    // Se ativo e aprovado, atualizar custo_total nos dados do pedido
+    // Se ativo e aprovado, atualizar custo_liquido no pedido
     if (orc.ativo && orc.estado === 'Aprovado') {
         const pedido = getPedido(orc.pedidoId);
         if (pedido) {
-            const dp = getDadosPedido(pedido.dadosPedidoId);
-            if (dp && dp.ref !== '—') {
-                dp.custo_total = orc.valor;
-            }
+            pedido.custo_liquido = orc.valor;
         }
     }
 
