@@ -238,7 +238,11 @@ function renderPedidoDetalhe() {
         ? DB.orcamentos.filter((o) => o.pedidoId === p.id)
         : [];
     const pecasList = !isNew
-        ? DB.pecas.filter((pc) => pc.pedidoId === p.id)
+        ? DB.pecas.filter((pc) =>
+              DB.pecas_pedidos.some(
+                  (pp) => pp.pecaId === pc.id && pp.pedidoId === p.id,
+              ),
+          )
         : [];
 
     const colabOpts = DB.colaboradores
@@ -327,6 +331,57 @@ function renderPedidoDetalhe() {
     </div>
     <div class="form-group"><label class="form-label">Custo Líquido</label><input id="f-p-custo_liquido" value="${p.custo_liquido ? parseFloat(p.custo_liquido).toFixed(2) + ' €' : ''}" readonly style="background:#ddedda; cursor:not-allowed;"></div>
 
+    <!-- Seccao de peças -->
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Peças</h4></div>
+    ${
+        !isNew
+            ? `
+      <div style="grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+        <button class="btn btn-primary" onclick="criarPecaParaPedido(${p.id})">+ Nova Peça</button>
+        <select id="f-assoc-peca" style="flex:1; min-width:200px;">
+          <option value="">Associar peça existente…</option>
+          ${DB.pecas
+              .filter(
+                  (pc) =>
+                      !DB.pecas_pedidos.some(
+                          (pp) => pp.pecaId === pc.id && pp.pedidoId === p.id,
+                      ),
+              )
+              .map((pc) => {
+                  const origem = DB.pedidos.find((x) => x.id === pc.pedidoId);
+                  return `<option value="${pc.id}">${pc.ref}${pc.denominacao ? ' — ' + pc.denominacao : ''}${origem ? ' (origem: ' + origem.ref + ')' : ''}</option>`;
+              })
+              .join('')}
+        </select>
+        <button class="btn" onclick="associarPecaAoPedido(${p.id})">Associar</button>
+      </div>
+      ${
+          pecasList.length > 0
+              ? `<div class="form-group full">
+        <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">Peças associadas (${pecasList.length})</p>
+        <table class="table" style="font-size:12px;">
+          <thead><tr><th>Ref.</th><th>Denominação</th><th>Plano</th><th>Ação</th></tr></thead>
+          <tbody>${pecasList
+              .map(
+                  (pc) => `<tr>
+            <td>${pc.ref}</td>
+            <td>${pc.denominacao || '-'}</td>
+            <td>${pc.plano || '-'}</td>
+            <td style="display:flex;gap:4px;">
+              <button class="btn btn-ghost btn-sm" onclick="showPecaDetalhe(${pc.id})">Ver</button>
+              ${pc.pedidoId !== p.id ? `<button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" onclick="removerPecaDoPedido(${p.id},${pc.id})" title="Remover associação">✕</button>` : ''}
+            </td>
+          </tr>`,
+              )
+              .join('')}</tbody>
+        </table>
+      </div>`
+              : ''
+      }
+    `
+            : ''
+    }
+
     <!-- Seccao de orçamentos  -->
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Orçamentos</h4></div>
     ${
@@ -362,41 +417,9 @@ function renderPedidoDetalhe() {
     `
             : ''
     }
-
-    <!-- Seccao de peças -->
-    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Peças</h4></div>
-    ${
-        !isNew
-            ? `
-      <div style="grid-column: 1 / -1;">
-        <button class="btn btn-primary" onclick="criarPecaParaPedido(${p.id})">+ Nova Peça</button>
-      </div>
-      ${
-          pecasList.length > 0
-              ? `<div class="form-group full">
-        <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">Peças associadas (${pecasList.length})</p>
-        <table class="table" style="font-size:12px;">
-          <thead><tr><th>Ref.</th><th>Denominação</th><th>Material</th><th>Órgão</th><th>Parte</th><th></th></tr></thead>
-          <tbody>${pecasList
-              .map(
-                  (pc) => `<tr>
-            <td>${pc.ref}</td>
-            <td>${pc.denominacao || '-'}</td>
-            <td>${pc.material || '-'}</td>
-            <td>${pc.orgao || '-'}</td>
-            <td>${pc.parte || '-'}</td>
-            <td><button class="btn btn-ghost btn-sm" onclick="showPecaDetalhe(${pc.id})">Ver</button></td>
-          </tr>`,
-              )
-              .join('')}</tbody>
-        </table>
-      </div>`
-              : ''
-      }
-    `
-            : ''
-    }
   </div>
+
+
   <div class="form-actions" style="margin-top: 2rem;">
     <button class="btn" onclick="showPage('pedidos')">Cancelar</button>
     ${
@@ -494,4 +517,37 @@ function savePedidoDetalhe(id) {
     }
 
     showPage('pedidos');
+}
+
+/*
+ * Associa uma peça existente ao pedido corrente via tabela de junção.
+ */
+function associarPecaAoPedido(pedidoId) {
+    const sel = document.getElementById('f-assoc-peca');
+    const pecaId = parseInt(sel.value);
+    if (!pecaId) return;
+
+    const jaExiste = DB.pecas_pedidos.some(
+        (pp) => pp.pecaId === pecaId && pp.pedidoId === pedidoId,
+    );
+    if (!jaExiste) {
+        DB.pecas_pedidos.push({ id: nextId(), pecaId, pedidoId });
+    }
+
+    _currentPedidoId = pedidoId;
+    renderPedidoDetalhe();
+}
+
+/*
+ * Remove a associação entre uma peça e um pedido (não apaga a peça).
+ * Só está disponível para peças não originadas neste pedido.
+ */
+function removerPecaDoPedido(pedidoId, pecaId) {
+    const idx = DB.pecas_pedidos.findIndex(
+        (pp) => pp.pecaId === pecaId && pp.pedidoId === pedidoId,
+    );
+    if (idx !== -1) DB.pecas_pedidos.splice(idx, 1);
+
+    _currentPedidoId = pedidoId;
+    renderPedidoDetalhe();
 }

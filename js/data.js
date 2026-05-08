@@ -297,10 +297,17 @@ const DB = {
 
     /**
      * Peças
-     * Cada peça está associada a um pedido via pedidoId.
-     * Um pedido pode ter múltiplas peças.
+     * pedidoId guarda o pedido de origem (usado na geração da referência).
+     * As associações efectivas pedido↔peça estão em pecas_pedidos.
      */
     pecas: [],
+
+    /**
+     * Tabela de junção peça ↔ pedido
+     * Permite que uma peça seja associada a múltiplos pedidos.
+     * { id, pecaId, pedidoId }
+     */
+    pecas_pedidos: [],
 
     /** UI state */
     expanded: {}, // chave: 'e<empresaId>' → boolean
