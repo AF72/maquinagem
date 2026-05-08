@@ -295,6 +295,13 @@ const DB = {
         }, */
     ],
 
+    /**
+     * Peças
+     * Cada peça está associada a um pedido via pedidoId.
+     * Um pedido pode ter múltiplas peças.
+     */
+    pecas: [],
+
     /** UI state */
     expanded: {}, // chave: 'e<empresaId>' → boolean
     clienteFilter: 'todos',

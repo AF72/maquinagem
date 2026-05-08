@@ -237,6 +237,9 @@ function renderPedidoDetalhe() {
     const orcList = !isNew
         ? DB.orcamentos.filter((o) => o.pedidoId === p.id)
         : [];
+    const pecasList = !isNew
+        ? DB.pecas.filter((pc) => pc.pedidoId === p.id)
+        : [];
 
     const colabOpts = DB.colaboradores
         .map((c) => {
@@ -349,6 +352,40 @@ function renderPedidoDetalhe() {
             <td><span class="badge ${o.estado === 'Aprovado' ? 'badge-green' : o.estado === 'Rejeitado' ? 'badge-red' : 'badge-orange'}">${o.estado}</span></td>
             <td>${o.ativo ? '<span class="badge badge-blue">Ativo</span>' : '<span class="badge badge-gray">—</span>'}</td>
             <td><button class="btn btn-ghost btn-sm" onclick="editarOrcamento(${o.id})">Editar</button></td>
+          </tr>`,
+              )
+              .join('')}</tbody>
+        </table>
+      </div>`
+              : ''
+      }
+    `
+            : ''
+    }
+
+    <!-- Seccao de peças -->
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Peças</h4></div>
+    ${
+        !isNew
+            ? `
+      <div style="grid-column: 1 / -1;">
+        <button class="btn btn-primary" onclick="criarPecaParaPedido(${p.id})">+ Nova Peça</button>
+      </div>
+      ${
+          pecasList.length > 0
+              ? `<div class="form-group full">
+        <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">Peças associadas (${pecasList.length})</p>
+        <table class="table" style="font-size:12px;">
+          <thead><tr><th>Ref.</th><th>Denominação</th><th>Material</th><th>Órgão</th><th>Parte</th><th></th></tr></thead>
+          <tbody>${pecasList
+              .map(
+                  (pc) => `<tr>
+            <td>${pc.ref}</td>
+            <td>${pc.denominacao || '-'}</td>
+            <td>${pc.material || '-'}</td>
+            <td>${pc.orgao || '-'}</td>
+            <td>${pc.parte || '-'}</td>
+            <td><button class="btn btn-ghost btn-sm" onclick="showPecaDetalhe(${pc.id})">Ver</button></td>
           </tr>`,
               )
               .join('')}</tbody>
