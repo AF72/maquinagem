@@ -225,14 +225,28 @@ function saveOrcamento(id) {
         return;
     }
 
-    // Se ativo, desativar outros orçamentos do mesmo pedido
     const isAtivo = document.getElementById('f-orcamento-ativo').checked;
-    if (isAtivo) {
+    const novoEstado = document.getElementById('f-orcamento-estado').value;
+
+    // Se for aprovado, garante que é o único aprovado e ativo para este pedido
+    if (novoEstado === 'Aprovado') {
+        DB.orcamentos.forEach((o) => {
+            if (o.pedidoId === pedidoId && o.id !== orc.id) {
+                if (o.estado === 'Aprovado') o.estado = 'Rejeitado';
+                o.ativo = false;
+            }
+        });
+        orc.ativo = true;
+    } else if (isAtivo) {
+        // Se apenas for marcado como ativo (sem ser aprovado), desativa os outros
         DB.orcamentos.forEach((o) => {
             if (o.pedidoId === pedidoId && o.id !== orc.id) {
                 o.ativo = false;
             }
         });
+        orc.ativo = isAtivo;
+    } else {
+        orc.ativo = isAtivo;
     }
 
     orc.pedidoId = pedidoId;
@@ -244,7 +258,6 @@ function saveOrcamento(id) {
     orc.descricao = document.getElementById('f-orcamento-descricao').value;
     orc.estado = document.getElementById('f-orcamento-estado').value;
     orc.notas = document.getElementById('f-orcamento-notas').value;
-    orc.ativo = isAtivo;
 
     if (isNew) {
         DB.orcamentos.push(orc);
