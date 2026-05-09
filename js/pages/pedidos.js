@@ -338,22 +338,7 @@ function renderPedidoDetalhe() {
             ? `
       <div style="grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
         <button class="btn btn-primary" onclick="criarPecaParaPedido(${p.id})">+ Nova Peça</button>
-        <select id="f-assoc-peca" style="flex:1; min-width:200px;">
-          <option value="">Associar peça existente…</option>
-          ${DB.pecas
-              .filter(
-                  (pc) =>
-                      !DB.pecas_pedidos.some(
-                          (pp) => pp.pecaId === pc.id && pp.pedidoId === p.id,
-                      ),
-              )
-              .map((pc) => {
-                  const origem = DB.pedidos.find((x) => x.id === pc.pedidoId);
-                  return `<option value="${pc.id}">${pc.ref}${pc.denominacao ? ' — ' + pc.denominacao : ''}${origem ? ' (origem: ' + origem.ref + ')' : ''}</option>`;
-              })
-              .join('')}
-        </select>
-        <button class="btn" onclick="associarPecaAoPedido(${p.id})">Associar</button>
+        <button class="btn" onclick="abrirPesquisaPecas(${p.id})">Pesquisar peças</button>
       </div>
       ${
           pecasList.length > 0
@@ -368,8 +353,8 @@ function renderPedidoDetalhe() {
             <td>${pc.denominacao || '-'}</td>
             <td>${pc.plano || '-'}</td>
             <td style="display:flex;gap:4px;">
-              <button class="btn btn-ghost btn-sm" onclick="showPecaDetalhe(${pc.id})">Ver</button>
-              ${pc.pedidoId !== p.id ? `<button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" onclick="removerPecaDoPedido(${p.id},${pc.id})" title="Remover associação">✕</button>` : ''}
+              <button class="btn btn-ghost btn-sm" title="Ver peça" onclick="verPecaOverlay(${pc.id})">${ICON_VIEW}</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" onclick="removerPecaDoPedido(${p.id},${pc.id})" title="Remover associação">✕</button>
             </td>
           </tr>`,
               )
@@ -520,34 +505,155 @@ function savePedidoDetalhe(id) {
 }
 
 /*
- * Associa uma peça existente ao pedido corrente via tabela de junção.
- */
-function associarPecaAoPedido(pedidoId) {
-    const sel = document.getElementById('f-assoc-peca');
-    const pecaId = parseInt(sel.value);
-    if (!pecaId) return;
-
-    const jaExiste = DB.pecas_pedidos.some(
-        (pp) => pp.pecaId === pecaId && pp.pedidoId === pedidoId,
-    );
-    if (!jaExiste) {
-        DB.pecas_pedidos.push({ id: nextId(), pecaId, pedidoId });
-    }
-
-    _currentPedidoId = pedidoId;
-    renderPedidoDetalhe();
-}
-
-/*
  * Remove a associação entre uma peça e um pedido (não apaga a peça).
- * Só está disponível para peças não originadas neste pedido.
  */
 function removerPecaDoPedido(pedidoId, pecaId) {
     const idx = DB.pecas_pedidos.findIndex(
         (pp) => pp.pecaId === pecaId && pp.pedidoId === pedidoId,
     );
     if (idx !== -1) DB.pecas_pedidos.splice(idx, 1);
-
     _currentPedidoId = pedidoId;
     renderPedidoDetalhe();
+}
+
+/* -------- Overlay de visualização de peça -------- */
+
+function verPecaOverlay(pecaId) {
+    const pc = DB.pecas.find((x) => x.id === pecaId);
+    if (!pc) return;
+
+    const existente = document.getElementById('ver-peca-overlay');
+    if (existente) existente.remove();
+
+    function campo(label, valor) {
+        return `<div class="vpc-field">
+            <span class="vpc-label">${label}</span>
+            <span class="vpc-value">${valor || '—'}</span>
+        </div>`;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'ver-peca-overlay';
+    overlay.className = 'peca-search-overlay';
+    overlay.innerHTML = `
+        <div class="peca-search-panel" style="max-width:600px;">
+            <div class="peca-search-header">
+                <h3 style="margin:0;font-size:15px;font-weight:600;">Ver Peça — ${pc.ref || '—'}</h3>
+                <button class="btn btn-ghost" onclick="fecharVerPecaOverlay()">✕</button>
+            </div>
+            <div class="peca-search-body">
+                <div class="vpc-grid">
+                    ${campo('Referência', pc.ref)}
+                    ${campo('Plano', pc.plano)}
+                    ${campo('Denominação', pc.denominacao)}
+                    ${campo('Material', pc.material)}
+                    ${campo('Órgão', pc.orgao)}
+                    ${campo('Parte', pc.parte)}
+                </div>
+                <div class="vpc-section-title">Dimensões</div>
+                <div class="vpc-grid">
+                    ${campo('Comprimento (mm)', pc.comprimento)}
+                    ${campo('Largura (mm)', pc.largura)}
+                    ${campo('Altura (mm)', pc.altura)}
+                    ${campo('Diâmetro Ext. (mm)', pc.diametro_ext)}
+                    ${campo('Diâmetro Int. (mm)', pc.diametro_int)}
+                </div>
+                ${pc.nota_descritiva ? `
+                <div class="vpc-section-title">Nota Descritiva</div>
+                <p style="font-size:13px;margin:0;">${pc.nota_descritiva}</p>` : ''}
+                ${pc.imagem ? `
+                <div class="vpc-section-title">Imagem</div>
+                <div style="width:100%;max-height:220px;overflow:hidden;border-radius:var(--radius-md);border:1px solid var(--color-border);">
+                    <img src="${pc.imagem}" style="width:100%;height:100%;object-fit:contain;">
+                </div>` : ''}
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+}
+
+function fecharVerPecaOverlay() {
+    const overlay = document.getElementById('ver-peca-overlay');
+    if (overlay) overlay.remove();
+}
+
+/* -------- Overlay de pesquisa de peças -------- */
+
+let _pedidoIdParaAssoc = null;
+
+function abrirPesquisaPecas(pedidoId) {
+    _pedidoIdParaAssoc = pedidoId;
+    const existente = document.getElementById('peca-search-overlay');
+    if (existente) existente.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'peca-search-overlay';
+    overlay.className = 'peca-search-overlay';
+    overlay.innerHTML = `
+        <div class="peca-search-panel">
+            <div class="peca-search-header">
+                <h3 style="margin:0;font-size:15px;font-weight:600;">Pesquisar Peças</h3>
+                <button class="btn btn-ghost" onclick="fecharPesquisaPecas()">✕</button>
+            </div>
+            <div class="peca-search-body">
+                <input id="peca-search-input" class="peca-search-input"
+                       placeholder="Filtrar por ref., denominação ou plano…"
+                       oninput="_renderPecaSearchRows()">
+                <div id="peca-search-rows-container"></div>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    _renderPecaSearchRows();
+    document.getElementById('peca-search-input').focus();
+}
+
+function _renderPecaSearchRows() {
+    const filtro = (document.getElementById('peca-search-input')?.value || '').toLowerCase();
+    const pedidoId = _pedidoIdParaAssoc;
+
+    const disponiveis = DB.pecas.filter((pc) => {
+        if (DB.pecas_pedidos.some((pp) => pp.pecaId === pc.id && pp.pedidoId === pedidoId)) return false;
+        if (!filtro) return true;
+        return (pc.ref || '').toLowerCase().includes(filtro) ||
+               (pc.denominacao || '').toLowerCase().includes(filtro) ||
+               (pc.plano || '').toLowerCase().includes(filtro);
+    });
+
+    const container = document.getElementById('peca-search-rows-container');
+    if (!container) return;
+
+    if (disponiveis.length === 0) {
+        container.innerHTML = `<p style="text-align:center;color:var(--color-text-muted);padding:2rem 0;">Sem peças disponíveis.</p>`;
+        return;
+    }
+
+    container.innerHTML = `
+        <table class="table" style="font-size:12px;">
+            <thead><tr><th>Ref.</th><th>Denominação</th><th>Plano</th><th>Origem</th><th></th></tr></thead>
+            <tbody>${disponiveis.map((pc) => {
+                const origem = DB.pedidos.find((x) => x.id === pc.pedidoId);
+                return `<tr>
+                    <td style="white-space:nowrap">${pc.ref || '-'}</td>
+                    <td>${pc.denominacao || '-'}</td>
+                    <td>${pc.plano || '-'}</td>
+                    <td>${origem ? `<span class="badge badge-blue">${origem.ref}</span>` : '-'}</td>
+                    <td><button class="btn btn-primary btn-sm" onclick="associarPecaDaOverlay(${pc.id})">Associar</button></td>
+                </tr>`;
+            }).join('')}</tbody>
+        </table>`;
+}
+
+function associarPecaDaOverlay(pecaId) {
+    const pedidoId = _pedidoIdParaAssoc;
+    if (!DB.pecas_pedidos.some((pp) => pp.pecaId === pecaId && pp.pedidoId === pedidoId)) {
+        DB.pecas_pedidos.push({ id: nextId(), pecaId, pedidoId });
+    }
+    _currentPedidoId = pedidoId;
+    renderPedidoDetalhe();   // actualiza a lista no fundo
+    _renderPecaSearchRows(); // actualiza a lista no overlay
+}
+
+function fecharPesquisaPecas() {
+    const overlay = document.getElementById('peca-search-overlay');
+    if (overlay) overlay.remove();
+    _pedidoIdParaAssoc = null;
 }

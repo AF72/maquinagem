@@ -268,32 +268,7 @@ const DB = {
      * Um orçamento por pedido (relação um-para-um)
      * estado: 'Pendente' | 'Aprovado' | 'Rejeitado'
      */
-    orcamentos: [
-/*         {
-            id: 1,
-            ref: 'ORC26-0001',
-            pedidoId: 1,
-            valor: 450,
-            dataEmissao: '2025-04-10',
-            dataValidade: '2025-05-10',
-            descricao: 'Orçamento inicial para PT26-0001',
-            estado: 'Aprovado',
-            notas: 'Aceite do cliente',
-            ativo: true,
-        },
-        {
-            id: 2,
-            ref: 'ORC26-0002',
-            pedidoId: 3,
-            valor: 320,
-            dataEmissao: '2025-04-05',
-            dataValidade: '2025-05-05',
-            descricao: 'Orçamento para PT26-0003',
-            estado: 'Aprovado',
-            notas: '',
-            ativo: true,
-        }, */
-    ],
+    orcamentos: [],
 
     /**
      * Peças

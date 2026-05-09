@@ -309,33 +309,10 @@ function savePecaDetalhe(id) {
     pc.imagem = document.getElementById('f-pc-imagem').value;
 
     const pedidoVal = document.getElementById('f-pc-pedidoId').value;
-    const novoPedidoId = pedidoVal ? parseInt(pedidoVal) : null;
-    const pedidoAnterior = pc.pedidoId;
-    pc.pedidoId = novoPedidoId;
+    pc.pedidoId = pedidoVal ? parseInt(pedidoVal) : null;
 
     if (isNew) {
         DB.pecas.push(pc);
-        // Registar associação de origem na tabela de junção
-        if (novoPedidoId) {
-            DB.pecas_pedidos.push({
-                id: nextId(),
-                pecaId: pc.id,
-                pedidoId: novoPedidoId,
-            });
-        }
-    } else if (novoPedidoId !== pedidoAnterior) {
-        // Pedido de origem alterado: actualizar entrada de junção original
-        const entrada = DB.pecas_pedidos.find(
-            (pp) => pp.pecaId === pc.id && pp.pedidoId === pedidoAnterior,
-        );
-        if (entrada) entrada.pedidoId = novoPedidoId;
-        else if (novoPedidoId) {
-            DB.pecas_pedidos.push({
-                id: nextId(),
-                pecaId: pc.id,
-                pedidoId: novoPedidoId,
-            });
-        }
     }
 
     // Voltar para o contexto anterior
