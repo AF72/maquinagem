@@ -345,13 +345,14 @@ function renderPedidoDetalhe() {
               ? `<div class="form-group full">
         <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">Peças associadas (${pecasList.length})</p>
         <table class="table" style="font-size:12px;">
-          <thead><tr><th>Ref.</th><th>Denominação</th><th>Plano</th><th>Ação</th></tr></thead>
+          <thead><tr><th>Ref.</th><th>Denominação</th><th>Plano</th><th>Material</th><th>Ação</th></tr></thead>
           <tbody>${pecasList
               .map(
                   (pc) => `<tr>
             <td>${pc.ref}</td>
             <td>${pc.denominacao || '-'}</td>
             <td>${pc.plano || '-'}</td>
+            <td>${_resolverMaterial(pc.materiaPrimaId)}</td>
             <td style="display:flex;gap:4px;">
               <button class="btn btn-ghost btn-sm" title="Ver peça" onclick="verPecaOverlay(${pc.id})">${ICON_VIEW}</button>
               <button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" onclick="removerPecaDoPedido(${p.id},${pc.id})" title="Remover associação">✕</button>
@@ -546,7 +547,7 @@ function verPecaOverlay(pecaId) {
                     ${campo('Referência', pc.ref)}
                     ${campo('Plano', pc.plano)}
                     ${campo('Denominação', pc.denominacao)}
-                    ${campo('Material', pc.material)}
+                    ${campo('Material', _resolverMaterial(pc.materiaPrimaId))}
                     ${campo('Órgão', pc.orgao)}
                     ${campo('Parte', pc.parte)}
                 </div>

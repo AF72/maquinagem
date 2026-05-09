@@ -152,6 +152,25 @@ CREATE TABLE pecas (
 
 ---
 
+### `materia_prima`
+
+```sql
+CREATE TABLE materia_prima (
+  id        SERIAL PRIMARY KEY,
+  ref_wnr   VARCHAR(20),           -- Werkstoffnummer (designação alemã, ex: 1.0503)
+  peso_esp  NUMERIC(6,3),          -- Peso específico (g/cm³)
+  ref_din   VARCHAR(50),           -- Designação DIN
+  ref_bs    VARCHAR(50),           -- Designação BS (British Standard)
+  ref_afnor VARCHAR(50),           -- Designação AFNOR (francesa)
+  ref_une   VARCHAR(50),           -- Designação UNE (espanhola)
+  ref_aisi  VARCHAR(50),           -- Designação AISI (americana)
+  ref_jis   VARCHAR(50),           -- Designação JIS (japonesa)
+  tipo_tt   VARCHAR(150)           -- Tipo de tratamento térmico aplicável
+);
+```
+
+---
+
 ### `servicos`
 
 ```sql
@@ -223,6 +242,8 @@ particulares >─────────────────┘         │
                                          ┌────────────────────────┤
                                          ▼                        ▼
                                        pecas                   servicos
+
+materia_prima  (tabela de referência independente — pode ser referenciada por pecas.material)
 ```
 
 ---
