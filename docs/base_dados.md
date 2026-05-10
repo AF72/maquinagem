@@ -133,20 +133,34 @@ CREATE TABLE ordens_trabalho (
 ```sql
 CREATE TABLE pecas (
   id               SERIAL PRIMARY KEY,
-  ref              VARCHAR(50) UNIQUE NOT NULL, -- Ex: DM26 001 000 00
-  plano            VARCHAR(100),                -- Plano da peça
+  ref              VARCHAR(50) UNIQUE NOT NULL,  -- Ex: DM26-0001-000-00
+  plano            VARCHAR(100),
   denominacao      VARCHAR(150) NOT NULL,
   orgao            VARCHAR(100),
   parte            VARCHAR(100),
-  material         VARCHAR(100),
-  comprimento      NUMERIC(10,2),
-  largura          NUMERIC(10,2),
-  altura           NUMERIC(10,2),
-  diametro_ext     NUMERIC(10,2),
-  diametro_int     NUMERIC(10,2),
+  materia_prima_id INTEGER REFERENCES materia_prima(id),
+  forma            VARCHAR(20) CHECK (forma IN ('quadrado', 'redondo_macico', 'redondo_oco')),
+  comprimento      NUMERIC(10,2),               -- mm
+  largura          NUMERIC(10,2),               -- mm (quadrado)
+  altura           NUMERIC(10,2),               -- mm (quadrado)
+  diametro_ext     NUMERIC(10,2),               -- mm (redondo)
+  diametro_int     NUMERIC(10,2),               -- mm (redondo oco)
   nota_descritiva  TEXT,
-  imagem           VARCHAR(255),
+  imagem           TEXT,                         -- base64 ou caminho
   criado_em        TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+### `pecas_pedidos`
+
+```sql
+CREATE TABLE pecas_pedidos (
+  id         SERIAL PRIMARY KEY,
+  peca_id    INTEGER NOT NULL REFERENCES pecas(id)   ON DELETE CASCADE,
+  pedido_id  INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+  UNIQUE (peca_id, pedido_id)
 );
 ```
 
@@ -258,6 +272,9 @@ CREATE INDEX idx_pedidos_estado        ON pedidos(estado_pedido);
 CREATE INDEX idx_ordens_pedido         ON ordens_trabalho(pedido_id);
 CREATE INDEX idx_orcamentos_pedido     ON orcamentos(pedido_id);
 CREATE INDEX idx_orc_itens_orc         ON orcamento_itens(orcamento_id);
+CREATE INDEX idx_pecas_pedidos_peca    ON pecas_pedidos(peca_id);
+CREATE INDEX idx_pecas_pedidos_pedido  ON pecas_pedidos(pedido_id);
+CREATE INDEX idx_pecas_material        ON pecas(materia_prima_id);
 ```
 
 ---

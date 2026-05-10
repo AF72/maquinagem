@@ -54,8 +54,9 @@ function _pecasRows() {
       <td>${pc.orgao || '-'}</td>
       <td>${pc.parte || '-'}</td>
       <td>${_resolverMaterial(pc.materiaPrimaId)}</td>
-      <td>
-        <button class="btn btn-ghost btn-sm" title="Ver peça" onclick="showPecaDetalhe(${pc.id})"><svg id='Pencil_24' width='20' height='20' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><rect width='24' height='24' stroke='none' fill='#000000' opacity='0'/><g transform="matrix(1.05 0 0 1.05 12 12)" ><path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" translate(-12.5, -11.5)" d="M 19.171875 2 C 18.448125 2 17.724375 2.275625 17.171875 2.828125 L 16 4 L 20 8 L 21.171875 6.828125 C 22.275875 5.724125 22.275875 3.933125 21.171875 2.828125 C 20.619375 2.275625 19.895625 2 19.171875 2 z M 14.5 5.5 L 5 15 C 5 15 6.005 15.005 6.5 15.5 C 6.995 15.995 6.984375 16.984375 6.984375 16.984375 C 6.984375 16.984375 8.004 17.004 8.5 17.5 C 8.996 17.996 9 19 9 19 L 18.5 9.5 L 14.5 5.5 z M 3.6699219 17 L 3.0136719 20.503906 C 2.9606719 20.789906 3.2100938 21.039328 3.4960938 20.986328 L 7 20.330078 L 3.6699219 17 z" stroke-linecap="round" /></g></svg></button>
+      <td style="display:flex;gap:4px;align-items:center;">
+        <button class="btn btn-ghost btn-sm" title="Ver peça" onclick="verPecaOverlay(${pc.id})">${ICON_VIEW}</button>
+        <button class="btn btn-ghost btn-sm" title="Editar peça" onclick="showPecaDetalhe(${pc.id})">${ICON_ORCAMENTO_EDIT}</button>
       </td>
     </tr>`;
         })
@@ -109,10 +110,71 @@ function _parsearSegmentos(ref, pedido) {
 /*
  * Atualiza o campo peso_esp quando o utilizador muda o material.
  */
+/* Calcula o volume (mm³) e devolve o peso em kg; '' se dados insuficientes */
+function _calcPeso(forma, c, l, h, de, di, pesoEsp) {
+    const p = parseFloat(pesoEsp);
+    if (!forma || !p) return '';
+    let vol = 0;
+    if (forma === 'quadrado') {
+        const vc = parseFloat(c), vl = parseFloat(l), vh = parseFloat(h);
+        if (!vc || !vl || !vh) return '';
+        vol = vc * vl * vh;
+    } else if (forma === 'redondo_macico') {
+        const vc = parseFloat(c), vde = parseFloat(de);
+        if (!vc || !vde) return '';
+        vol = Math.PI * Math.pow(vde / 2, 2) * vc;
+    } else if (forma === 'redondo_oco') {
+        const vc = parseFloat(c), vde = parseFloat(de), vdi = parseFloat(di);
+        if (!vc || !vde || !vdi) return '';
+        vol = Math.PI * (Math.pow(vde / 2, 2) - Math.pow(vdi / 2, 2)) * vc;
+    }
+    if (!vol || vol <= 0) return '';
+    // mm³ → cm³ (÷1000) × peso_esp (g/cm³) → g → kg (÷1000)
+    return (vol / 1000 * p / 1000).toFixed(4);
+}
+
+/* Atualiza o campo Peso da Peça a partir dos valores actuais no DOM */
+function calcPecaPeso() {
+    const peso = _calcPeso(
+        document.querySelector('input[name="f-pc-forma"]:checked')?.value || '',
+        document.getElementById('f-pc-comprimento').value,
+        document.getElementById('f-pc-largura').value,
+        document.getElementById('f-pc-altura').value,
+        document.getElementById('f-pc-diametro_ext').value,
+        document.getElementById('f-pc-diametro_int').value,
+        document.getElementById('f-pc-peso_esp').value,
+    );
+    const el = document.getElementById('f-pc-peso');
+    if (el) el.value = peso !== '' ? peso + ' kg' : '';
+}
+
 function onPecaMaterialChange() {
     const sel = document.getElementById('f-pc-materiaPrimaId');
     const mp = DB.materia_prima.find((m) => m.id === parseInt(sel.value));
     document.getElementById('f-pc-peso_esp').value = mp ? mp.peso_esp : '';
+    calcPecaPeso();
+}
+
+/*
+ * Ativa/desativa os campos de dimensão consoante a forma selecionada.
+ */
+function onPecaFormaChange() {
+    const forma = document.querySelector('input[name="f-pc-forma"]:checked')?.value || '';
+    const mapa = {
+        'f-pc-comprimento':  ['quadrado', 'redondo_macico', 'redondo_oco'],
+        'f-pc-largura':      ['quadrado'],
+        'f-pc-altura':       ['quadrado'],
+        'f-pc-diametro_ext': ['redondo_macico', 'redondo_oco'],
+        'f-pc-diametro_int': ['redondo_oco'],
+    };
+    Object.entries(mapa).forEach(([id, formas]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const ativo = formas.includes(forma);
+        el.disabled = !ativo;
+        if (!ativo) el.value = '';
+    });
+    calcPecaPeso();
 }
 
 /*
@@ -139,6 +201,7 @@ function renderPecaDetalhe() {
               orgao: '',
               parte: '',
               materiaPrimaId: null,
+              forma: '',
               comprimento: '',
               largura: '',
               altura: '',
@@ -189,6 +252,17 @@ function renderPecaDetalhe() {
     const mpSelecionado = DB.materia_prima.find((m) => m.id === pc.materiaPrimaId);
     const pesoEspInicial = mpSelecionado ? mpSelecionado.peso_esp : '';
 
+    const formaAtiva = pc.forma || '';
+    const _formaMap = {
+        comprimento:  ['quadrado', 'redondo_macico', 'redondo_oco'],
+        largura:      ['quadrado'],
+        altura:       ['quadrado'],
+        diametro_ext: ['redondo_macico', 'redondo_oco'],
+        diametro_int: ['redondo_oco'],
+    };
+    const campoDisabled = campo =>
+        (!editavel || !(_formaMap[campo] || []).includes(formaAtiva)) ? 'disabled' : '';
+
     const formHtml = `
   <div class="form-grid">
     <div class="form-group"><label class="form-label">Referência da Peça</label>${refFieldHtml}</div>
@@ -215,12 +289,41 @@ function renderPecaDetalhe() {
       <input id="f-pc-peso_esp" value="${pesoEspInicial}" disabled style="background:var(--color-surface-alt);color:var(--color-text-muted);">
     </div>
 
-    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Dimensões</h4></div>
-    <div class="form-group"><label class="form-label">Comprimento (mm)</label><input id="f-pc-comprimento" type="number" step="0.01" value="${pc.comprimento || ''}" ${!editavel ? 'disabled' : ''}></div>
-    <div class="form-group"><label class="form-label">Largura (mm)</label><input id="f-pc-largura" type="number" step="0.01" value="${pc.largura || ''}" ${!editavel ? 'disabled' : ''}></div>
-    <div class="form-group"><label class="form-label">Altura (mm)</label><input id="f-pc-altura" type="number" step="0.01" value="${pc.altura || ''}" ${!editavel ? 'disabled' : ''}></div>
-    <div class="form-group"><label class="form-label">Diâmetro Ext. (mm)</label><input id="f-pc-diametro_ext" type="number" step="0.01" value="${pc.diametro_ext || ''}" ${!editavel ? 'disabled' : ''}></div>
-    <div class="form-group"><label class="form-label">Diâmetro Int. (mm)</label><input id="f-pc-diametro_int" type="number" step="0.01" value="${pc.diametro_int || ''}" ${!editavel ? 'disabled' : ''}></div>
+    <div class="form-group full">
+      <h4 style="margin: 1.5rem 0 0.75rem; color: var(--color-primary);">Dimensões</h4>
+      <div style="display:flex;gap:2rem;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:${editavel ? 'pointer' : 'default'};">
+          <input type="radio" name="f-pc-forma" value="quadrado"
+            ${formaAtiva === 'quadrado' ? 'checked' : ''}
+            ${!editavel ? 'disabled' : ''}
+            onchange="onPecaFormaChange()">
+          Quadrado
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:${editavel ? 'pointer' : 'default'};">
+          <input type="radio" name="f-pc-forma" value="redondo_macico"
+            ${formaAtiva === 'redondo_macico' ? 'checked' : ''}
+            ${!editavel ? 'disabled' : ''}
+            onchange="onPecaFormaChange()">
+          Redondo maciço
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:${editavel ? 'pointer' : 'default'};">
+          <input type="radio" name="f-pc-forma" value="redondo_oco"
+            ${formaAtiva === 'redondo_oco' ? 'checked' : ''}
+            ${!editavel ? 'disabled' : ''}
+            onchange="onPecaFormaChange()">
+          Redondo oco
+        </label>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Comprimento (mm)</label><input id="f-pc-comprimento" type="number" step="0.01" value="${pc.comprimento || ''}" ${campoDisabled('comprimento')} oninput="calcPecaPeso()"></div>
+    <div class="form-group"><label class="form-label">Largura (mm)</label><input id="f-pc-largura" type="number" step="0.01" value="${pc.largura || ''}" ${campoDisabled('largura')} oninput="calcPecaPeso()"></div>
+    <div class="form-group"><label class="form-label">Altura (mm)</label><input id="f-pc-altura" type="number" step="0.01" value="${pc.altura || ''}" ${campoDisabled('altura')} oninput="calcPecaPeso()"></div>
+    <div class="form-group"><label class="form-label">Diâmetro Ext. (mm)</label><input id="f-pc-diametro_ext" type="number" step="0.01" value="${pc.diametro_ext || ''}" ${campoDisabled('diametro_ext')} oninput="calcPecaPeso()"></div>
+    <div class="form-group"><label class="form-label">Diâmetro Int. (mm)</label><input id="f-pc-diametro_int" type="number" step="0.01" value="${pc.diametro_int || ''}" ${campoDisabled('diametro_int')} oninput="calcPecaPeso()"></div>
+    <div class="form-group full">
+      <label class="form-label">Peso da Peça (kg)</label>
+      <input id="f-pc-peso" value="${(() => { const p = _calcPeso(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial); return p !== '' ? p + ' kg' : ''; })()}" readonly style="background:#ddedda; cursor:not-allowed;">
+    </div>
 
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Notas e Imagem</h4></div>
     <div class="form-group full"><label class="form-label">Nota Descritiva</label><textarea id="f-pc-nota" rows="3" style="width:100%;resize:vertical;" ${!editavel ? 'disabled' : ''}>${pc.nota_descritiva || ''}</textarea></div>
@@ -330,6 +433,7 @@ function savePecaDetalhe(id) {
     } else {
         pc.ref = (document.getElementById('f-pc-ref') || {}).value || pc.ref;
     }
+    pc.forma = document.querySelector('input[name="f-pc-forma"]:checked')?.value || '';
     pc.plano = document.getElementById('f-pc-plano').value.trim();
     pc.denominacao = document.getElementById('f-pc-denominacao').value.trim();
     pc.orgao = document.getElementById('f-pc-orgao').value.trim();
