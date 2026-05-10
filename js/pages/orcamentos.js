@@ -76,6 +76,82 @@ function _orcamentosRows() {
 let _currentOrcamentoId = null;
 let _isOrcamentoEditMode = false;
 
+/* Devolve as peças associadas a um pedido via pecas_pedidos (mesma fonte que o formulário do pedido) */
+function _pecasDoPedido(pedidoId) {
+    if (!pedidoId) return [];
+    const ids = new Set(DB.pecas_pedidos.filter(j => j.pedidoId === pedidoId).map(j => j.pecaId));
+    return DB.pecas.filter(p => ids.has(p.id));
+}
+
+/* HTML da secção de peças — com colunas de preço, quantidade e sub-total */
+function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel) {
+    if (!pedidoId) {
+        return `<p style="color:var(--color-text-muted);text-align:center;padding:1.5rem 0;">Selecione um pedido para ver as peças associadas.</p>`;
+    }
+    const pecas = _pecasDoPedido(pedidoId);
+    if (pecas.length === 0) {
+        return `<p style="color:var(--color-text-muted);text-align:center;padding:1.5rem 0;">Sem peças associadas a este pedido.</p>`;
+    }
+    const rows = pecas.map(pc => {
+        const item = orcamentoId
+            ? DB.orcamento_itens.find(i => i.orcamentoId === orcamentoId && i.pecaId === pc.id)
+            : null;
+        const preco    = item ? item.precoUnitario : '';
+        const qtd      = item ? item.quantidade    : '';
+        const subtotal = item ? item.subtotal       : '';
+
+        const precoCell = editavel
+            ? `<input type="number" step="0.01" min="0" class="orc-item-preco" data-peca-id="${pc.id}" value="${preco}" oninput="calcOrcamentoItem(this)" style="width:90px;padding:4px 6px;">`
+            : (preco !== '' ? Number(preco).toFixed(2) + ' €' : '—');
+
+        const qtdCell = editavel
+            ? `<input type="number" min="1" step="1" class="orc-item-qtd" data-peca-id="${pc.id}" value="${qtd}" oninput="calcOrcamentoItem(this)" style="width:70px;padding:4px 6px;">`
+            : (qtd !== '' ? qtd : '—');
+
+        const subtotalDisplay = subtotal !== '' ? Number(subtotal).toFixed(2) + ' €' : '—';
+
+        return `<tr>
+            <td><strong>${pc.ref}</strong></td>
+            <td>${pc.denominacao || '-'}</td>
+            <td>${pc.orgao || '-'}</td>
+            <td>${pc.parte || '-'}</td>
+            <td>${_resolverMaterial(pc.materiaPrimaId)}</td>
+            <td>${precoCell}</td>
+            <td>${qtdCell}</td>
+            <td class="orc-item-subtotal" style="font-weight:600;">${subtotalDisplay}</td>
+        </tr>`;
+    }).join('');
+    return `<table class="table">
+        <thead><tr><th>Ref.</th><th>Denominação</th><th>Órgão</th><th>Parte</th><th>Material</th><th>Preço Unit. (€)</th><th>Qtd.</th><th>Sub-total (€)</th></tr></thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+}
+
+/* Recalcula o sub-total da linha e atualiza o campo Custo Líquido */
+function calcOrcamentoItem(input) {
+    const row = input.closest('tr');
+    const preco = parseFloat(row.querySelector('.orc-item-preco').value) || 0;
+    const qtd   = parseFloat(row.querySelector('.orc-item-qtd').value)   || 0;
+    const sub   = preco * qtd;
+    row.querySelector('.orc-item-subtotal').textContent = sub > 0 ? sub.toFixed(2) + ' €' : '—';
+
+    let total = 0;
+    document.querySelectorAll('#orcamento-pecas-section tbody tr').forEach(r => {
+        const p = parseFloat(r.querySelector('.orc-item-preco')?.value) || 0;
+        const q = parseFloat(r.querySelector('.orc-item-qtd')?.value)   || 0;
+        total += p * q;
+    });
+    const valorEl = document.getElementById('f-orcamento-valor');
+    if (valorEl) valorEl.value = total.toFixed(2);
+}
+
+/* Atualiza a secção de peças quando o utilizador muda o pedido no select */
+function onOrcamentoPedidoChange() {
+    const pedidoId = parseInt(document.getElementById('f-orcamento-pedido').value) || null;
+    const container = document.getElementById('orcamento-pecas-section');
+    if (container) container.innerHTML = _htmlPecasDoPedido(pedidoId, _currentOrcamentoId, true);
+}
+
 function showOrcamentoDetalhe(id) {
     _preSelectedPedidoId = null;
     _currentOrcamentoId = id;
@@ -143,15 +219,29 @@ function renderOrcamentoDetalhe() {
       <input id="f-orcamento-ref" value="${orc.ref || ''}" readonly style="background:#ddedda; cursor:not-allowed;">
     </div>
     <div class="form-group">
+      <label class="form-label">Custo Líquido (€)</label>
+      <input id="f-orcamento-valor" type="number" step="0.01" value="${orc.valor || ''}" readonly style="background:#ddedda; cursor:not-allowed;">
+    </div>
+    <div class="form-group">
       <label class="form-label">Pedido</label>
-      <select id="f-orcamento-pedido" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
+      <select id="f-orcamento-pedido" onchange="onOrcamentoPedidoChange()" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
         <option value="">Selecionar pedido</option>
         ${pedidoOpts}
       </select>
     </div>
-    <div class="form-group">
-      <label class="form-label">Custo Líquido (€)</label>
-      <input id="f-orcamento-valor" type="number" step="0.01" value="${orc.valor || ''}" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
+    <div class="form-group" style="display:flex;flex-direction:column;gap:0.75rem;">
+      <div>
+        <label class="form-label">Estado</label>
+        <select id="f-orcamento-estado" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
+          <option value="Pendente" ${orc.estado === 'Pendente' ? 'selected' : ''}>Pendente</option>
+          <option value="Aprovado" ${orc.estado === 'Aprovado' ? 'selected' : ''}>Aprovado</option>
+          <option value="Rejeitado" ${orc.estado === 'Rejeitado' ? 'selected' : ''}>Rejeitado</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:row;align-items:center;gap:8px;">
+        <input type="checkbox" id="f-orcamento-ativo" ${isNew || orc.ativo ? 'checked' : ''} ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''} style="width:auto;margin:0;padding:0;">
+        <label class="form-label" style="margin:0;cursor:pointer;" for="f-orcamento-ativo">Ativo</label>
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">Data Emissão</label>
@@ -164,18 +254,6 @@ function renderOrcamentoDetalhe() {
     <div class="form-group full">
       <label class="form-label">Descrição</label>
       <input id="f-orcamento-descricao" value="${orc.descricao || ''}" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Estado</label>
-      <select id="f-orcamento-estado" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
-        <option value="Pendente" ${orc.estado === 'Pendente' ? 'selected' : ''}>Pendente</option>
-        <option value="Aprovado" ${orc.estado === 'Aprovado' ? 'selected' : ''}>Aprovado</option>
-        <option value="Rejeitado" ${orc.estado === 'Rejeitado' ? 'selected' : ''}>Rejeitado</option>
-      </select>
-    </div>
-    <div class="form-group" style="display: flex; flex-direction: row; align-items: center; gap: 8px; margin-top: auto; padding-bottom: 8px;">
-      <input type="checkbox" id="f-orcamento-ativo" ${isNew || orc.ativo ? 'checked' : ''} ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''} style="width: auto; margin: 0; padding: 0;">
-      <label class="form-label" style="margin: 0; cursor: pointer;" for="f-orcamento-ativo">Ativo</label>
     </div>
     <div class="form-group full">
       <label class="form-label">Notas</label>
@@ -193,13 +271,21 @@ function renderOrcamentoDetalhe() {
     }
   </div>`;
 
+    const pedidoIdInicial  = orc.pedidoId ? parseInt(orc.pedidoId) : null;
+    const orcamentoIdInicial = isNew ? null : _currentOrcamentoId;
+    const editavel = isNew || _isOrcamentoEditMode;
+
     document.getElementById('page-orcamento_detalhe').innerHTML = `
     <div class="section-header">
       <button class="btn btn-ghost-back" onclick="showPage('orcamentos')">&#x21a9 Voltar aos Orçamentos</button>
       <span class="section-count">${isNew ? 'Novo Orçamento' : 'Detalhe do Orçamento'}</span>
     </div>
-    <div class="full-card" style="max-width: 600px; margin: 0 auto; padding: 2rem;">
+    <div class="full-card" style="max-width: 900px; margin: 0 auto; padding: 2rem;">
       ${formHtml}
+    </div>
+    <div class="full-card" style="margin: 1.5rem auto; max-width: 900px; padding: 2rem;">
+      <h3 style="margin: 0 0 1rem; color: var(--color-primary); font-size: 1rem;">Peças do Pedido</h3>
+      <div id="orcamento-pecas-section">${_htmlPecasDoPedido(pedidoIdInicial, orcamentoIdInicial, editavel)}</div>
     </div>
   `;
 }
@@ -262,6 +348,25 @@ function saveOrcamento(id) {
     if (isNew) {
         DB.orcamentos.push(orc);
     }
+
+    // Guardar itens de orçamento (preço/quantidade por peça)
+    DB.orcamento_itens = DB.orcamento_itens.filter(i => i.orcamentoId !== orc.id);
+    document.querySelectorAll('#orcamento-pecas-section .orc-item-preco').forEach(el => {
+        const pecaId = parseInt(el.dataset.pecaId);
+        const row    = el.closest('tr');
+        const preco  = parseFloat(el.value) || 0;
+        const qtd    = parseFloat(row.querySelector('.orc-item-qtd').value) || 0;
+        if (preco > 0 || qtd > 0) {
+            DB.orcamento_itens.push({
+                id: nextId(),
+                orcamentoId: orc.id,
+                pecaId,
+                precoUnitario: preco,
+                quantidade: qtd,
+                subtotal: preco * qtd,
+            });
+        }
+    });
 
     // Se ativo e aprovado, atualizar custo_liquido no pedido
     if (orc.ativo && orc.estado === 'Aprovado') {

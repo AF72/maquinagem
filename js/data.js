@@ -285,6 +285,12 @@ const DB = {
     pecas_pedidos: [],
 
     /**
+     * Itens de orçamento — histórico de preços por peça por orçamento.
+     * { id, orcamentoId, pecaId, precoUnitario, quantidade, subtotal }
+     */
+    orcamento_itens: [],
+
+    /**
      * Catálogo de Matéria-Prima
      * Referências cruzadas pelas normas internacionais mais comuns.
      */

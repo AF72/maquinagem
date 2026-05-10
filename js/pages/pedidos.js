@@ -513,6 +513,24 @@ function removerPecaDoPedido(pedidoId, pecaId) {
         (pp) => pp.pecaId === pecaId && pp.pedidoId === pedidoId,
     );
     if (idx !== -1) DB.pecas_pedidos.splice(idx, 1);
+
+    // Remover itens de orçamento desta peça nos orçamentos do pedido e recalcular totais
+    const orcDosPedido = DB.orcamentos.filter(o => o.pedidoId === pedidoId);
+    const orcIds = orcDosPedido.map(o => o.id);
+    DB.orcamento_itens = DB.orcamento_itens.filter(
+        i => !(orcIds.includes(i.orcamentoId) && i.pecaId === pecaId),
+    );
+    orcDosPedido.forEach(orc => {
+        const total = DB.orcamento_itens
+            .filter(i => i.orcamentoId === orc.id)
+            .reduce((acc, i) => acc + i.subtotal, 0);
+        orc.valor = total;
+        if (orc.ativo && orc.estado === 'Aprovado') {
+            const pedido = DB.pedidos.find(p => p.id === pedidoId);
+            if (pedido) pedido.custo_liquido = total;
+        }
+    });
+
     _currentPedidoId = pedidoId;
     renderPedidoDetalhe();
 }
