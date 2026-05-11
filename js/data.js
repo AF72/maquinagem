@@ -291,6 +291,19 @@ const DB = {
     orcamento_itens: [],
 
     /**
+     * Notas de pedido
+     * { id, pedidoId, data, criadoPorId, nota }
+     * criadoPorId referencia colaboradores_dm
+     */
+    notas_pedido: [],
+
+    /**
+     * Colaboradores internos da DrawMech
+     * { id, nome, funcao, contacto, estado }
+     */
+    colaboradores_dm: [],
+
+    /**
      * Catálogo de Matéria-Prima
      * Referências cruzadas pelas normas internacionais mais comuns.
      */

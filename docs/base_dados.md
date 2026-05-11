@@ -245,17 +245,51 @@ CREATE TABLE orcamento_itens (
 
 ---
 
+### `colaboradores_dm`
+
+```sql
+CREATE TABLE colaboradores_dm (
+  id        SERIAL PRIMARY KEY,
+  nome      VARCHAR(150) NOT NULL,
+  funcao    VARCHAR(100),
+  contacto  VARCHAR(150),
+  estado    VARCHAR(10)  NOT NULL DEFAULT 'ativo' CHECK (estado IN ('ativo', 'inativo')),
+  criado_em TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+### `notas_pedido`
+
+```sql
+CREATE TABLE notas_pedido (
+  id                  SERIAL PRIMARY KEY,
+  pedido_id           INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+  colaborador_dm_id   INTEGER NOT NULL REFERENCES colaboradores_dm(id),
+  data                DATE NOT NULL DEFAULT CURRENT_DATE,
+  nota                TEXT NOT NULL,
+  criado_em           TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
 ## Diagrama de relações (simplificado)
 
 ```
 empresas ──< colaboradores >──┐
                                ├──> pedidos >──> ordens_trabalho
 particulares >─────────────────┘         │
-                                         └──< orcamentos ──< orcamento_itens
-                                                                  │
-                                         ┌────────────────────────┤
-                                         ▼                        ▼
-                                       pecas                   servicos
+                                         ├──< orcamentos ──< orcamento_itens
+                                         │                        │
+                                         │   ┌────────────────────┤
+                                         │   ▼                    ▼
+                                         │ pecas               servicos
+                                         │
+                                         └──< notas_pedido
+                                                    │
+                                                    └── colaboradores_dm
 
 materia_prima  (tabela de referência independente — pode ser referenciada por pecas.material)
 ```
@@ -275,6 +309,8 @@ CREATE INDEX idx_orc_itens_orc         ON orcamento_itens(orcamento_id);
 CREATE INDEX idx_pecas_pedidos_peca    ON pecas_pedidos(peca_id);
 CREATE INDEX idx_pecas_pedidos_pedido  ON pecas_pedidos(pedido_id);
 CREATE INDEX idx_pecas_material        ON pecas(materia_prima_id);
+CREATE INDEX idx_notas_pedido          ON notas_pedido(pedido_id);
+CREATE INDEX idx_notas_colaborador_dm  ON notas_pedido(colaborador_dm_id);
 ```
 
 ---

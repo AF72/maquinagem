@@ -17,6 +17,8 @@ const ICON_CREATE_OT = `<svg id='Hammer_24' width='20' height='20' viewBox='0 0 
 </g>
 </svg>`;
 
+const ICON_EDIT = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="matrix(1.05 0 0 1.05 12 12)"><path style="fill: currentColor;" transform="translate(-12.5, -11.5)" d="M 19.171875 2 C 18.448125 2 17.724375 2.275625 17.171875 2.828125 L 16 4 L 20 8 L 21.171875 6.828125 C 22.275875 5.724125 22.275875 3.933125 21.171875 2.828125 C 20.619375 2.275625 19.895625 2 19.171875 2 z M 14.5 5.5 L 5 15 C 5 15 6.005 15.005 6.5 15.5 C 6.995 15.995 6.984375 16.984375 6.984375 16.984375 C 6.984375 16.984375 8.004 17.004 8.5 17.5 C 8.996 17.996 9 19 9 19 L 18.5 9.5 L 14.5 5.5 z M 3.6699219 17 L 3.0136719 20.503906 C 2.9606719 20.789906 3.2100938 21.039328 3.4960938 20.986328 L 7 20.330078 L 3.6699219 17 z" /></g></svg>`;
+
 const ICON_CREATE_PRJ = `<svg id="Calculator_24" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><rect width="24" height="24" stroke="none" fill="#000000" opacity="0"/>
 <g transform="matrix(0.77 0 0 0.77 12 12)" >
 <path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" translate(-13, -13)" d="M 6 0 C 4.34375 0 3 1.34375 3 3 L 3 23 C 3 24.65625 4.34375 26 6 26 L 20 26 C 21.65625 26 23 24.65625 23 23 L 23 3 C 23 1.34375 21.65625 0 20 0 Z M 6 2 L 20 2 C 20.550781 2 21 2.449219 21 3 L 21 8 C 21 8.550781 20.550781 9 20 9 L 6 9 C 5.449219 9 5 8.550781 5 8 L 5 3 C 5 2.449219 5.449219 2 6 2 Z M 17 3 C 16.449219 3 16 3.449219 16 4 L 16 7 C 16 7.550781 16.449219 8 17 8 L 19 8 C 19.550781 8 20 7.550781 20 7 L 20 4 C 20 3.449219 19.550781 3 19 3 Z M 17 4 L 19 4 L 19 7 L 17 7 Z M 6 11 L 8 11 C 8.550781 11 9 11.449219 9 12 L 9 13 C 9 13.550781 8.550781 14 8 14 L 6 14 C 5.449219 14 5 13.550781 5 13 L 5 12 C 5 11.449219 5.449219 11 6 11 Z M 12 11 L 14 11 C 14.550781 11 15 11.449219 15 12 L 15 13 C 15 13.550781 14.550781 14 14 14 L 12 14 C 11.449219 14 11 13.550781 11 13 L 11 12 C 11 11.449219 11.449219 11 12 11 Z M 18 11 L 20 11 C 20.550781 11 21 11.449219 21 12 L 21 13 C 21 13.550781 20.550781 14 20 14 L 18 14 C 17.449219 14 17 13.550781 17 13 L 17 12 C 17 11.449219 17.449219 11 18 11 Z M 6 16 L 8 16 C 8.550781 16 9 16.449219 9 17 L 9 18 C 9 18.550781 8.550781 19 8 19 L 6 19 C 5.449219 19 5 18.550781 5 18 L 5 17 C 5 16.449219 5.449219 16 6 16 Z M 12 16 L 14 16 C 14.550781 16 15 16.449219 15 17 L 15 18 C 15 18.550781 14.550781 19 14 19 L 12 19 C 11.449219 19 11 18.550781 11 18 L 11 17 C 11 16.449219 11.449219 16 12 16 Z M 18 16 L 20 16 C 20.550781 16 21 16.449219 21 17 L 21 18 C 21 18.550781 20.550781 19 20 19 L 18 19 C 17.449219 19 17 18.550781 17 18 L 17 17 C 17 16.449219 17.449219 16 18 16 Z M 6 21 L 8 21 C 8.550781 21 9 21.449219 9 22 L 9 23 C 9 23.550781 8.550781 24 8 24 L 6 24 C 5.449219 24 5 23.550781 5 23 L 5 22 C 5 21.449219 5.449219 21 6 21 Z M 12 21 L 14 21 C 14.550781 21 15 21.449219 15 22 L 15 23 C 15 23.550781 14.550781 24 14 24 L 12 24 C 11.449219 24 11 23.550781 11 23 L 11 22 C 11 21.449219 11.449219 21 12 21 Z M 18 21 L 20 21 C 20.550781 21 21 21.449219 21 22 L 21 23 C 21 23.550781 20.550781 24 20 24 L 18 24 C 17.449219 24 17 23.550781 17 23 L 17 22 C 17 21.449219 17.449219 21 18 21 Z" stroke-linecap="round" />
@@ -245,6 +247,8 @@ function renderPedidoDetalhe() {
           )
         : [];
 
+    const isCancelado = !isNew && ['Cancelado', 'Concluido', 'Faturar'].includes(p.estado_pedido) && !_isEditMode;
+
     const colabOpts = DB.colaboradores
         .map((c) => {
             const emp = getEmpresa(c.empresaId);
@@ -329,16 +333,14 @@ function renderPedidoDetalhe() {
         ${dp.imagem ? `<img src="${dp.imagem}" style="width: 100%; height: 100%; object-fit: contain;">` : '<span style="font-size: 10px; color: var(--color-text-muted);">Sem imagem</span>'}
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Custo Líquido</label><input id="f-p-custo_liquido" value="${p.custo_liquido ? parseFloat(p.custo_liquido).toFixed(2) + ' €' : ''}" readonly style="background:#ddedda; cursor:not-allowed;"></div>
-
     <!-- Seccao de peças -->
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Peças</h4></div>
     ${
         !isNew
             ? `
       <div style="grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
-        <button class="btn btn-primary" onclick="criarPecaParaPedido(${p.id})">+ Nova Peça</button>
-        <button class="btn" onclick="abrirPesquisaPecas(${p.id})">Pesquisar peças</button>
+        <button class="btn btn-primary" onclick="criarPecaParaPedido(${p.id})" ${isCancelado ? 'disabled' : ''}>+ Nova Peça</button>
+        <button class="btn" onclick="abrirPesquisaPecas(${p.id})" ${isCancelado ? 'disabled' : ''}>Pesquisar peças</button>
       </div>
       ${
           pecasList.length > 0
@@ -374,7 +376,7 @@ function renderPedidoDetalhe() {
         !isNew
             ? `
       <div style="grid-column: 1 / -1;">
-        <button class="btn btn-primary" onclick="criarOrcamentoParaPedido(${p.id})">+ Novo Orçamento</button>
+        <button class="btn btn-primary" onclick="criarOrcamentoParaPedido(${p.id})" ${isCancelado ? 'disabled' : ''}>+ Novo Orçamento</button>
       </div>
       ${
           orcList.length > 0
@@ -392,7 +394,7 @@ function renderPedidoDetalhe() {
             <td>${o.dataEmissao}</td>
             <td><span class="badge ${o.estado === 'Aprovado' ? 'badge-green' : o.estado === 'Rejeitado' ? 'badge-red' : 'badge-orange'}">${o.estado}</span></td>
             <td>${o.ativo ? '<span class="badge badge-blue">Ativo</span>' : '<span class="badge badge-gray">—</span>'}</td>
-            <td><button class="btn btn-ghost btn-sm" onclick="editarOrcamento(${o.id})">Editar</button></td>
+            <td><button class="btn btn-ghost btn-sm" title="Editar orçamento" onclick="editarOrcamento(${o.id})">${ICON_EDIT}</button></td>
           </tr>`,
               )
               .join('')}</tbody>
@@ -400,9 +402,60 @@ function renderPedidoDetalhe() {
       </div>`
               : ''
       }
+      <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; margin-top:8px;">
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+          <span style="font-size:11px; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.05em;">Custo Líquido</span>
+          <span style="font-size:16px; font-weight:700; color:var(--color-primary);">${p.custo_liquido ? parseFloat(p.custo_liquido).toFixed(2) + ' €' : '—'}</span>
+        </div>
+      </div>
     `
             : ''
     }
+
+    <!-- Seccao de notas -->
+    ${!isNew ? `
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Notas</h4></div>
+    <div class="form-group full" style="display:flex; flex-direction:column; gap:12px;">
+      ${(() => {
+          const notas = DB.notas_pedido.filter(n => n.pedidoId === p.id);
+          const colabOpts = DB.colaboradores_dm
+              .filter(c => c.estado === 'ativo')
+              .map(c => `<option value="${c.id}">${c.nome}${c.funcao ? ' — ' + c.funcao : ''}</option>`)
+              .join('');
+          return `
+          ${notas.length > 0 ? `
+          <table class="table" style="font-size:12px;">
+            <thead><tr><th>Data</th><th>Criado por</th><th>Nota</th><th></th></tr></thead>
+            <tbody>${notas.map(n => {
+                const colab = DB.colaboradores_dm.find(c => c.id === n.criadoPorId);
+                return `<tr>
+                  <td style="white-space:nowrap;">${n.data}</td>
+                  <td style="white-space:nowrap;">${colab ? colab.nome : '—'}</td>
+                  <td style="white-space:pre-wrap;">${n.nota}</td>
+                  <td><button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" onclick="apagarNota(${n.id})" title="Apagar nota">✕</button></td>
+                </tr>`;
+            }).join('')}</tbody>
+          </table>` : '<p style="font-size:12px;color:var(--color-text-muted);margin:0;">Sem notas registadas.</p>'}
+          <div style="display:flex; flex-direction:column; gap:8px; padding:12px; background:var(--color-surface-alt); border-radius:var(--radius-md); border:1px solid var(--color-border);">
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <div style="flex:1; min-width:180px;">
+                <label class="form-label" style="font-size:11px;">Criado por</label>
+                <select id="nota-criado-por" style="width:100%;">
+                  <option value="">Selecione...</option>
+                  ${colabOpts}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="form-label" style="font-size:11px;">Nota</label>
+              <textarea id="nota-texto" rows="3" style="width:100%; box-sizing:border-box; resize:vertical;" placeholder="Escreva a nota aqui..."></textarea>
+            </div>
+            <div style="display:flex; justify-content:flex-end;">
+              <button class="btn btn-primary" onclick="adicionarNota(${p.id})">+ Adicionar Nota</button>
+            </div>
+          </div>`;
+      })()}
+    </div>` : ''}
   </div>
 
 
@@ -576,6 +629,7 @@ function verPecaOverlay(pecaId) {
                     ${campo('Altura (mm)', pc.altura)}
                     ${campo('Diâmetro Ext. (mm)', pc.diametro_ext)}
                     ${campo('Diâmetro Int. (mm)', pc.diametro_int)}
+                    ${campo('Peso (kg)', pc.peso)}
                 </div>
                 ${pc.nota_descritiva ? `
                 <div class="vpc-section-title">Nota Descritiva</div>
@@ -675,4 +729,21 @@ function fecharPesquisaPecas() {
     const overlay = document.getElementById('peca-search-overlay');
     if (overlay) overlay.remove();
     _pedidoIdParaAssoc = null;
+}
+
+/* -------- Notas de pedido -------- */
+
+function adicionarNota(pedidoId) {
+    const criadoPorId = parseInt(document.getElementById('nota-criado-por').value);
+    const nota = document.getElementById('nota-texto').value.trim();
+    if (!criadoPorId) { alert('Selecione quem cria a nota.'); return; }
+    if (!nota) { alert('Escreva o texto da nota.'); return; }
+    DB.notas_pedido.push({ id: nextId(), pedidoId, data: today(), criadoPorId, nota });
+    renderPedidoDetalhe();
+}
+
+function apagarNota(notaId) {
+    if (!confirm('Apagar esta nota?')) return;
+    DB.notas_pedido = DB.notas_pedido.filter(n => n.id !== notaId);
+    renderPedidoDetalhe();
 }

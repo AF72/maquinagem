@@ -21,6 +21,7 @@ const PAGE_TITLES = {
     peca_detalhe: 'Detalhe da Peça',
     materia_prima: 'Matéria Prima',
     materia_prima_detalhe: 'Detalhe de Matéria Prima',
+    colaboradores_dm: 'Colaboradores DM',
 };
 
 /*As seguintes constantes definem os icons*/
@@ -35,6 +36,7 @@ const PAGE_LOGOS = {
     pecas: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><circle cx="8" cy="8" r="2" /><path d="M8 2v2M8 12v2M2 8h2M12 8h2M3.8 3.8l1.4 1.4M10.8 10.8l1.4 1.4M3.8 12.2l1.4-1.4M10.8 5.2l1.4-1.4" /></svg>`,
     materia_prima: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="8" cy="4" rx="6" ry="2"/><path d="M2 4v3c0 1.1 2.7 2 6 2s6-.9 6-2V4"/><path d="M2 7v3c0 1.1 2.7 2 6 2s6-.9 6-2V7"/></svg>`,
     materia_prima_detalhe: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="8" cy="4" rx="6" ry="2"/><path d="M2 4v3c0 1.1 2.7 2 6 2s6-.9 6-2V4"/><path d="M2 7v3c0 1.1 2.7 2 6 2s6-.9 6-2V7"/></svg>`,
+    colaboradores_dm: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="5" r="2.5"/><path d="M1 13c0-2.2 1.8-4 4-4s4 1.8 4 4"/><circle cx="12" cy="5" r="2.5"/><path d="M10 13c0-2.2 1.8-4 4-4"/></svg>`,
 };
 
 const PAGE_RENDERERS = {
@@ -50,6 +52,7 @@ const PAGE_RENDERERS = {
     peca_detalhe: renderPecaDetalhe,
     materia_prima: renderMateriaPrima,
     materia_prima_detalhe: renderMateriaPrimaDetalhe,
+    colaboradores_dm: renderColaboradoresDM,
 };
 
 let _currentPage = 'dashboard';

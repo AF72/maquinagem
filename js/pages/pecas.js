@@ -451,6 +451,8 @@ function savePecaDetalhe(id) {
         parseFloat(document.getElementById('f-pc-diametro_int').value) || '';
     pc.nota_descritiva = document.getElementById('f-pc-nota').value.trim();
     pc.imagem = document.getElementById('f-pc-imagem').value;
+    const pesoEl = document.getElementById('f-pc-peso');
+    pc.peso = pesoEl ? pesoEl.value.replace(' kg', '').trim() : '';
 
     const pedidoVal = document.getElementById('f-pc-pedidoId').value;
     pc.pedidoId = pedidoVal ? parseInt(pedidoVal) : null;
