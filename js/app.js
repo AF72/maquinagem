@@ -113,4 +113,4 @@ document.querySelectorAll('.nav-item[data-page]').forEach((el) => {
 
 /* ---------- Init ---------- */
 
-showPage('dashboard');
+carregarDados().then(() => showPage('dashboard'));

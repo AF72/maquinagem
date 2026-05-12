@@ -1,0 +1,65 @@
+ARRANCAR A APP — PASSOS
+=======================
+
+PRÉ-REQUISITO (só na primeira vez)
+-----------------------------------
+1. Copiar o ficheiro de ambiente:
+      cd backend
+      cp .env.example .env
+
+2. Editar o ficheiro backend/.env com os dados da tua base de dados:
+      DATABASE_URL="postgresql://UTILIZADOR:PASSWORD@localhost:5432/maquinagem_dev"
+
+3. Instalar dependências:
+      cd backend
+      npm install
+
+4. Gerar o Prisma Client:
+      cd backend
+      npx prisma generate
+
+5. Popular a base de dados com dados de teste (opcional):
+      cd backend
+      npm run db:seed
+
+
+ARRANQUE NORMAL (cada vez que queres usar a app)
+-------------------------------------------------
+PASSO 1 — Iniciar o servidor backend (Terminal 1):
+      cd backend
+      npm run dev
+
+   Deves ver:  "Servidor a correr na porta 3000"
+
+PASSO 2 — Servir o frontend (Terminal 2):
+      npx serve .
+
+   Ou em alternativa:
+      python3 -m http.server. <-- usei este e funcionou
+
+PASSO 3 — Abrir no browser:
+   http://localhost:3000   (se usares o serve)
+   http://localhost:8080   (se usares o python). <--- usei este
+
+   Nota: confirma a porta que o "serve" indica no terminal.
+
+
+VERIFICAR SE ESTÁ TUDO OK
+--------------------------
+- A app carrega e mostra dados (empresas, pedidos, peças...)   → Backend ligado ✓
+- A app abre mas não mostra dados (listas vazias)              → Backend não está a correr
+- Barra vermelha ao guardar                                    → Ver mensagem de erro
+- Erro "Cannot connect" no terminal do backend                 → Verificar DATABASE_URL no .env
+
+
+COMANDOS ÚTEIS
+--------------
+Ver a base de dados visualmente:
+      cd backend
+      npx prisma studio
+   Abre em: http://localhost:5555
+
+Repopular a base de dados do zero:
+      cd backend
+      npm run db:seed
+   ATENÇÃO: apaga todos os dados existentes e reinsere os dados de teste.

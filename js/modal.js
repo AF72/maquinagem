@@ -356,154 +356,201 @@ function formDadosPedido() {
 }
 
 /* ============================================================
+   Helpers de feedback
+   ============================================================ */
+
+function _erroToast(msg) {
+    let t = document.getElementById('_api-toast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = '_api-toast';
+        t.style.cssText =
+            'position:fixed;bottom:24px;right:24px;background:#e53e3e;color:#fff;' +
+            'padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;' +
+            'box-shadow:0 4px 12px rgba(0,0,0,.25);max-width:340px;';
+        document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => (t.style.display = 'none'), 5000);
+}
+
+async function _apiSave(fn) {
+    try {
+        await fn();
+    } catch (err) {
+        console.error(err);
+        _erroToast('Erro ao guardar: ' + (err.message || 'verifique o servidor'));
+    }
+}
+
+/* ============================================================
    Save handlers
    ============================================================ */
 
 function saveEmpresa() {
     const nome = (document.getElementById('f-nome') || {}).value?.trim();
     if (!nome) return;
-    DB.empresas.push({
-        id: nextId(),
-        nome,
-        nif: document.getElementById('f-nif').value,
-        tel: document.getElementById('f-tel').value,
-        email: document.getElementById('f-email').value,
-        morada: document.getElementById('f-morada').value,
-        codigo_postal: document.getElementById('f-cp').value,
-        localidade: document.getElementById('f-localidade').value,
+    _apiSave(async () => {
+        await apiPost('/empresas', {
+            nome,
+            nif:           document.getElementById('f-nif').value,
+            tel:           document.getElementById('f-tel').value,
+            email:         document.getElementById('f-email').value,
+            morada:        document.getElementById('f-morada').value,
+            codigo_postal: document.getElementById('f-cp').value,
+            localidade:    document.getElementById('f-localidade').value,
+        });
+        closeModal();
+        await carregarDados();
+        renderAll();
     });
-    closeModal();
-    renderAll();
 }
 
 function saveParticular() {
     const nome = (document.getElementById('f-nome-p') || {}).value?.trim();
     if (!nome) return;
-    DB.particulares.push({
-        id: nextId(),
-        nome,
-        cc: document.getElementById('f-cc').value,
-        tel: document.getElementById('f-tel-p').value,
-        email: document.getElementById('f-email-p').value,
-        morada: document.getElementById('f-morada-p').value,
-        codigo_postal: document.getElementById('f-cp-p').value,
-        localidade: document.getElementById('f-localidade-p').value,
+    _apiSave(async () => {
+        await apiPost('/particulares', {
+            nome,
+            cc:            document.getElementById('f-cc').value,
+            tel:           document.getElementById('f-tel-p').value,
+            email:         document.getElementById('f-email-p').value,
+            morada:        document.getElementById('f-morada-p').value,
+            codigo_postal: document.getElementById('f-cp-p').value,
+            localidade:    document.getElementById('f-localidade-p').value,
+        });
+        closeModal();
+        await carregarDados();
+        renderAll();
     });
-    closeModal();
-    renderAll();
 }
 
 function saveColaborador(empresaId) {
     const nome = document.getElementById('f-nome').value.trim();
     if (!nome) return;
-    DB.colaboradores.push({
-        id: nextId(),
-        empresaId,
-        nome,
-        cargo: document.getElementById('f-cargo').value,
-        email: document.getElementById('f-email').value,
-        tel: document.getElementById('f-tel').value,
-        ativo: document.getElementById('f-ativo').checked,
+    _apiSave(async () => {
+        await apiPost('/colaboradores', {
+            empresa_id: empresaId,
+            nome,
+            cargo: document.getElementById('f-cargo').value,
+            email: document.getElementById('f-email').value,
+            tel:   document.getElementById('f-tel').value,
+            ativo: document.getElementById('f-ativo').checked,
+        });
+        DB.expanded['e' + empresaId] = true;
+        closeModal();
+        await carregarDados();
+        renderAll();
     });
-    DB.expanded['e' + empresaId] = true;
-    closeModal();
-    renderAll();
 }
 
 function saveEditEmpresa(id) {
-    const emp = DB.empresas.find((e) => e.id === id);
-    if (!emp) return;
-    emp.nome = document.getElementById('f-nome').value.trim();
-    emp.nif = document.getElementById('f-nif').value;
-    emp.tel = document.getElementById('f-tel').value;
-    emp.email = document.getElementById('f-email').value;
-    emp.morada = document.getElementById('f-morada').value;
-    emp.codigo_postal = document.getElementById('f-cp').value;
-    emp.localidade = document.getElementById('f-localidade').value;
-    closeModal();
-    renderAll();
+    _apiSave(async () => {
+        await apiPut(`/empresas/${id}`, {
+            nome:          document.getElementById('f-nome').value.trim(),
+            nif:           document.getElementById('f-nif').value,
+            tel:           document.getElementById('f-tel').value,
+            email:         document.getElementById('f-email').value,
+            morada:        document.getElementById('f-morada').value,
+            codigo_postal: document.getElementById('f-cp').value,
+            localidade:    document.getElementById('f-localidade').value,
+        });
+        closeModal();
+        await carregarDados();
+        renderAll();
+    });
 }
 
 function saveEditParticular(id) {
-    const p = DB.particulares.find((e) => e.id === id);
-    if (!p) return;
-    p.nome = document.getElementById('f-nome-p').value.trim();
-    p.cc = document.getElementById('f-cc').value;
-    p.tel = document.getElementById('f-tel-p').value;
-    p.email = document.getElementById('f-email-p').value;
-    p.morada = document.getElementById('f-morada-p').value;
-    p.codigo_postal = document.getElementById('f-cp-p').value;
-    p.localidade = document.getElementById('f-localidade-p').value;
-    closeModal();
-    renderAll();
+    _apiSave(async () => {
+        await apiPut(`/particulares/${id}`, {
+            nome:          document.getElementById('f-nome-p').value.trim(),
+            cc:            document.getElementById('f-cc').value,
+            tel:           document.getElementById('f-tel-p').value,
+            email:         document.getElementById('f-email-p').value,
+            morada:        document.getElementById('f-morada-p').value,
+            codigo_postal: document.getElementById('f-cp-p').value,
+            localidade:    document.getElementById('f-localidade-p').value,
+        });
+        closeModal();
+        await carregarDados();
+        renderAll();
+    });
 }
 
 function saveEditColaborador(id) {
-    const c = DB.colaboradores.find((e) => e.id === id);
-    if (!c) return;
-    c.nome = document.getElementById('f-nome').value.trim();
-    c.cargo = document.getElementById('f-cargo').value;
-    c.email = document.getElementById('f-email').value;
-    c.tel = document.getElementById('f-tel').value;
-    c.ativo = document.getElementById('f-ativo').checked;
-    closeModal();
-    renderAll();
+    _apiSave(async () => {
+        await apiPut(`/colaboradores/${id}`, {
+            nome:  document.getElementById('f-nome').value.trim(),
+            cargo: document.getElementById('f-cargo').value,
+            email: document.getElementById('f-email').value,
+            tel:   document.getElementById('f-tel').value,
+            ativo: document.getElementById('f-ativo').checked,
+        });
+        closeModal();
+        await carregarDados();
+        renderAll();
+    });
 }
 
 function savePedido() {
     const key = document.getElementById('f-clienteKey').value;
     const [tipo, idStr] = key.split(':');
+    const clienteTipo = tipo === 'colab' ? 'colaborador' : 'particular';
+    const clienteId = parseInt(idStr);
     const n = DB.pedidos.length + 1;
-    DB.pedidos.push({
-        id: nextId(),
-        ref:
-            'PT' +
-            new Date().getFullYear().toString().slice(-2) +
-            '-' +
-            padNum(n, 4),
-        clienteTipo: tipo === 'colab' ? 'colaborador' : 'particular',
-        clienteId: parseInt(idStr),
-        dadosPedidoId: parseInt(
-            document.getElementById('f-dadosPedidoId').value,
-        ),
-        estado: 'Pendente',
-        data: document.getElementById('f-data').value || today(),
+    _apiSave(async () => {
+        await apiPost('/pedidos', {
+            ref:             'PT' + new Date().getFullYear().toString().slice(-2) + '-' + padNum(n, 4),
+            cliente_tipo:    clienteTipo,
+            colaborador_id:  clienteTipo === 'colaborador' ? clienteId : undefined,
+            particular_id:   clienteTipo === 'particular'  ? clienteId : undefined,
+            dados_pedido_id: parseInt(document.getElementById('f-dadosPedidoId').value),
+            estado_pedido:   'Pendente',
+            data_pedido:     document.getElementById('f-data').value || today(),
+        });
+        closeModal();
+        await carregarDados();
+        renderAll();
     });
-    closeModal();
-    renderAll();
 }
 
 function saveEditPedido(pedidoId) {
-    const p = DB.pedidos.find((x) => x.id === pedidoId);
-    if (!p) return;
-
     const key = document.getElementById('f-clienteKey').value;
     const [tipo, idStr] = key.split(':');
-
-    p.clienteTipo = tipo === 'colab' ? 'colaborador' : 'particular';
-    p.clienteId = parseInt(idStr);
-    p.dadosPedidoId = parseInt(
-        document.getElementById('f-dadosPedidoId').value,
-    );
-    p.data = document.getElementById('f-data').value || today();
-
-    closeModal();
-    renderAll();
+    const clienteTipo = tipo === 'colab' ? 'colaborador' : 'particular';
+    const clienteId = parseInt(idStr);
+    _apiSave(async () => {
+        await apiPut(`/pedidos/${pedidoId}`, {
+            cliente_tipo:    clienteTipo,
+            colaborador_id:  clienteTipo === 'colaborador' ? clienteId : null,
+            particular_id:   clienteTipo === 'particular'  ? clienteId : null,
+            dados_pedido_id: parseInt(document.getElementById('f-dadosPedidoId').value),
+            data_pedido:     document.getElementById('f-data').value || today(),
+        });
+        closeModal();
+        await carregarDados();
+        renderAll();
+    });
 }
 
 function saveDadosPedido() {
     const n = DB.dados_pedido.length + 1;
-    DB.dados_pedido.push({
-        id: nextId(),
-        ref: document.getElementById('f-refdp').value || 'DP-' + padNum(n, 3),
-        equipamento: document.getElementById('f-equipamento').value,
-        orgao: document.getElementById('f-orgao').value,
-        parte: document.getElementById('f-parte').value,
-        breveDescricao: document.getElementById('f-brevedesc').value,
-        imagem: document.getElementById('f-imagem').value,
+    _apiSave(async () => {
+        await apiPost('/dados-pedido', {
+            ref:             document.getElementById('f-refdp').value || 'DP-' + padNum(n, 3),
+            equipamento:     document.getElementById('f-equipamento').value,
+            orgao:           document.getElementById('f-orgao').value,
+            parte:           document.getElementById('f-parte').value,
+            breve_descricao: document.getElementById('f-brevedesc').value,
+            imagem:          document.getElementById('f-imagem').value,
+        });
+        closeModal();
+        await carregarDados();
+        renderAll();
     });
-    closeModal();
-    renderAll();
 }
 /* ---------- Ver Empresa (Consulta) ---------- */
 function formViewEmpresa(id) {
