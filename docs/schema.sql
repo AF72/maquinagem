@@ -4,6 +4,11 @@
 -- Ordem correta de criação (respeita dependências FK)
 -- =============================================================
 
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+SET search_path TO public;
+
 -- -------------------------------------------------------------
 -- 1. Tabelas sem dependências
 -- -------------------------------------------------------------

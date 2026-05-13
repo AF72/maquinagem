@@ -95,27 +95,29 @@ function fecharFormColabDM() {
     _currentColabDMId = null;
 }
 
-function saveColabDM() {
+async function saveColabDM() {
     const nome = document.getElementById('cdm-nome').value.trim();
     if (!nome) { alert('O nome é obrigatório.'); return; }
 
-    if (_currentColabDMId) {
-        const c = DB.colaboradores_dm.find(x => x.id === _currentColabDMId);
-        if (c) {
-            c.nome = nome;
-            c.funcao = document.getElementById('cdm-funcao').value.trim();
-            c.contacto = document.getElementById('cdm-contacto').value.trim();
-            c.estado = document.getElementById('cdm-estado').value;
+    const dados = {
+        nome,
+        funcao:   document.getElementById('cdm-funcao').value.trim() || undefined,
+        contacto: document.getElementById('cdm-contacto').value.trim() || undefined,
+        estado:   document.getElementById('cdm-estado').value,
+    };
+
+    try {
+        if (_currentColabDMId) {
+            const atualizado = await apiPut(`/colaboradores-dm/${_currentColabDMId}`, dados);
+            const idx = DB.colaboradores_dm.findIndex(x => x.id === _currentColabDMId);
+            if (idx !== -1) DB.colaboradores_dm[idx] = atualizado;
+        } else {
+            const novo = await apiPost('/colaboradores-dm', dados);
+            DB.colaboradores_dm.push(novo);
         }
-    } else {
-        DB.colaboradores_dm.push({
-            id: nextId(),
-            nome,
-            funcao: document.getElementById('cdm-funcao').value.trim(),
-            contacto: document.getElementById('cdm-contacto').value.trim(),
-            estado: document.getElementById('cdm-estado').value,
-        });
+        fecharFormColabDM();
+        renderColaboradoresDM();
+    } catch (err) {
+        alert('Erro ao guardar: ' + err.message);
     }
-    fecharFormColabDM();
-    renderColaboradoresDM();
 }

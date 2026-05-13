@@ -64,9 +64,9 @@ function _clientesRows() {
         <td><button class="expand-btn" onclick="toggleEmpresa(${emp.id})" style="font-size: 1.25rem;">${exp ? '▼' : '▶'}</button></td>
         <td>${inlineFlex(avatarHtml(emp.nome, 'av-empresa'), emp.nome)}</td>
         <td><span class="badge badge-teal">Empresa</span></td>
-        <td>${emp.tel}</td>
-        <td>${emp.email}</td>
-        <td>${emp.nif}</td>
+        <td>${emp.tel || '—'}</td>
+        <td>${emp.email || '—'}</td>
+        <td>${emp.nif || '—'}</td>
         <td>${pedEmp}</td>
         <td>
           <div style="display:flex;gap:4px">
@@ -117,8 +117,8 @@ function _clientesRows() {
               ${inlineFlex(avatarHtml(c.nome, 'av-colab'), c.nome)}
             </td>
             <td></td>
-            <td style="color:var(--color-text-muted);font-size:12px">${c.tel}</td>
-            <td style="color:var(--color-text-muted);font-size:12px">${c.email}</td>
+            <td style="color:var(--color-text-muted);font-size:12px">${c.tel || '—'}</td>
+            <td style="color:var(--color-text-muted);font-size:12px">${c.email || '—'}</td>
             <td>—</td>
             <td>${pedC}</td>
             <td>
@@ -146,9 +146,9 @@ function _clientesRows() {
         <td></td>
         <td>${inlineFlex(avatarHtml(p.nome, 'av-particular'), p.nome)}</td>
         <td><span class="badge badge-coral">Particular</span></td>
-        <td>${p.tel}</td>
-        <td>${p.email}</td>
-        <td>${p.cc}</td>
+        <td>${p.tel || '—'}</td>
+        <td>${p.email || '—'}</td>
+        <td>${p.cc || '—'}</td>
         <td>${pedP}</td>
         <td>
           <button class="btn btn-ghost btn-sm" style="display:flex;align-items:center;gap:4px;" onclick="openModal('editParticular', ${p.id})">

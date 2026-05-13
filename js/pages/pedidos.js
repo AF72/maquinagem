@@ -92,24 +92,24 @@ function _pedidosRows() {
 /*
  * Cria uma Ordem de Trabalho a partir de um pedido
  */
-function criarOT(pedidoId) {
+async function criarOT(pedidoId) {
     const n = DB.ordens.length + 1;
-    const newId = nextId();
-    DB.ordens.push({
-        id: newId,
-        num: 'OT26-' + padNum(n, 4),
-        pedidoId,
-        operador: 'Operador',
-        estado: 'Em curso',
-        prazo: addDays(14),
-        moObra: 100,
-    });
-    const p = DB.pedidos.find((p) => p.id === pedidoId);
-    if (p) {
-        p.estado_pedido = 'Produção';
-        p.ordemTrabalhoId = newId;
+    const ano = new Date().getFullYear().toString().slice(-2);
+    try {
+        await apiPost('/ordens', {
+            num:       'OT' + ano + '-' + padNum(n, 4),
+            pedido_id: pedidoId,
+            operador:  'Operador',
+            estado:    'Em curso',
+            prazo:     addDays(14),
+            mo_obra:   100,
+        });
+        await apiPut(`/pedidos/${pedidoId}`, { estado_pedido: 'Produção' });
+        await carregarDados();
+        renderAll();
+    } catch (err) {
+        alert('Erro ao criar OT: ' + err.message);
     }
-    renderAll();
 }
 
 let _currentPedidoId = null;

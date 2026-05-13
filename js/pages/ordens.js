@@ -46,8 +46,8 @@ function _ordensRows() {
      
       <td>${dp.equipamento}</td>
       <td>${estadoBadge(o.estado)}</td>
-      <td>${o.operador}</td>
-      <td>${o.prazo}</td>
+      <td>${o.operador || '—'}</td>
+      <td>${o.prazo || '—'}</td>
       <td>${
           canConc
               ? `<button class="btn btn-sm" onclick="concluirOT(${o.id})">Concluir</button>`
@@ -58,12 +58,12 @@ function _ordensRows() {
         .join('');
 }
 
-function concluirOT(otId) {
-    const o = DB.ordens.find((o) => o.id === otId);
-    if (o) {
-        o.estado = 'Concluída';
-        const pd = DB.pedidos.find((p) => p.id === o.pedidoId);
-        if (pd) pd.estado_pedido = 'Concluido';
+async function concluirOT(otId) {
+    try {
+        await apiPatch(`/ordens/${otId}/concluir`);
+        await carregarDados();
+        renderAll();
+    } catch (err) {
+        alert('Erro ao concluir OT: ' + err.message);
     }
-    renderAll();
 }

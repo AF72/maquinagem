@@ -395,12 +395,12 @@ function saveEmpresa() {
     _apiSave(async () => {
         await apiPost('/empresas', {
             nome,
-            nif:           document.getElementById('f-nif').value,
-            tel:           document.getElementById('f-tel').value,
-            email:         document.getElementById('f-email').value,
-            morada:        document.getElementById('f-morada').value,
-            codigo_postal: document.getElementById('f-cp').value,
-            localidade:    document.getElementById('f-localidade').value,
+            nif:           document.getElementById('f-nif').value || undefined,
+            tel:           document.getElementById('f-tel').value || undefined,
+            email:         document.getElementById('f-email').value || undefined,
+            morada:        document.getElementById('f-morada').value || undefined,
+            codigo_postal: document.getElementById('f-cp').value || undefined,
+            localidade:    document.getElementById('f-localidade').value || undefined,
         });
         closeModal();
         await carregarDados();
@@ -414,12 +414,12 @@ function saveParticular() {
     _apiSave(async () => {
         await apiPost('/particulares', {
             nome,
-            cc:            document.getElementById('f-cc').value,
-            tel:           document.getElementById('f-tel-p').value,
-            email:         document.getElementById('f-email-p').value,
-            morada:        document.getElementById('f-morada-p').value,
-            codigo_postal: document.getElementById('f-cp-p').value,
-            localidade:    document.getElementById('f-localidade-p').value,
+            cc:            document.getElementById('f-cc').value || undefined,
+            tel:           document.getElementById('f-tel-p').value || undefined,
+            email:         document.getElementById('f-email-p').value || undefined,
+            morada:        document.getElementById('f-morada-p').value || undefined,
+            codigo_postal: document.getElementById('f-cp-p').value || undefined,
+            localidade:    document.getElementById('f-localidade-p').value || undefined,
         });
         closeModal();
         await carregarDados();

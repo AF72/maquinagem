@@ -408,59 +408,46 @@ function handlePecaImageUpload(input) {
 /*
  * Guarda os detalhes de uma peça (nova ou existente)
  */
-function savePecaDetalhe(id) {
+async function savePecaDetalhe(id) {
     const isNew = !id;
-    let pc;
-
-    if (isNew) {
-        pc = {
-            id: nextId(),
-        };
-    } else {
-        pc = DB.pecas.find((x) => x.id === id);
-        if (!pc) return;
-    }
 
     const prefEl = document.getElementById('f-pc-ref-prefix');
-    const xxxEl = document.getElementById('f-pc-ref-xxx');
-    const nnEl = document.getElementById('f-pc-ref-nn');
-    if (prefEl && xxxEl && nnEl) {
-        pc.ref =
-            prefEl.textContent +
-            xxxEl.value.padStart(3, '0') +
-            '-' +
-            nnEl.value.padStart(2, '0');
-    } else {
-        pc.ref = (document.getElementById('f-pc-ref') || {}).value || pc.ref;
-    }
-    pc.forma = document.querySelector('input[name="f-pc-forma"]:checked')?.value || '';
-    pc.plano = document.getElementById('f-pc-plano').value.trim();
-    pc.denominacao = document.getElementById('f-pc-denominacao').value.trim();
-    pc.orgao = document.getElementById('f-pc-orgao').value.trim();
-    pc.parte = document.getElementById('f-pc-parte').value.trim();
-    const mpVal = document.getElementById('f-pc-materiaPrimaId').value;
-    pc.materiaPrimaId = mpVal ? parseInt(mpVal) : null;
-    pc.comprimento =
-        parseFloat(document.getElementById('f-pc-comprimento').value) || '';
-    pc.largura =
-        parseFloat(document.getElementById('f-pc-largura').value) || '';
-    pc.altura = parseFloat(document.getElementById('f-pc-altura').value) || '';
-    pc.diametro_ext =
-        parseFloat(document.getElementById('f-pc-diametro_ext').value) || '';
-    pc.diametro_int =
-        parseFloat(document.getElementById('f-pc-diametro_int').value) || '';
-    pc.nota_descritiva = document.getElementById('f-pc-nota').value.trim();
-    pc.imagem = document.getElementById('f-pc-imagem').value;
-    const pesoEl = document.getElementById('f-pc-peso');
-    pc.peso = pesoEl ? pesoEl.value.replace(' kg', '').trim() : '';
+    const xxxEl  = document.getElementById('f-pc-ref-xxx');
+    const nnEl   = document.getElementById('f-pc-ref-nn');
+    const ref = prefEl && xxxEl && nnEl
+        ? prefEl.textContent + xxxEl.value.padStart(3, '0') + '-' + nnEl.value.padStart(2, '0')
+        : (document.getElementById('f-pc-ref') || {}).value || '';
 
+    const mpVal     = document.getElementById('f-pc-materiaPrimaId').value;
     const pedidoVal = document.getElementById('f-pc-pedidoId').value;
-    pc.pedidoId = pedidoVal ? parseInt(pedidoVal) : null;
 
-    if (isNew) {
-        DB.pecas.push(pc);
+    const dados = {
+        ref,
+        denominacao:      document.getElementById('f-pc-denominacao').value.trim(),
+        plano:            document.getElementById('f-pc-plano').value.trim()   || undefined,
+        orgao:            document.getElementById('f-pc-orgao').value.trim()   || undefined,
+        parte:            document.getElementById('f-pc-parte').value.trim()   || undefined,
+        materia_prima_id: mpVal ? parseInt(mpVal) : undefined,
+        forma:            document.querySelector('input[name="f-pc-forma"]:checked')?.value || undefined,
+        comprimento:      parseFloat(document.getElementById('f-pc-comprimento').value) || undefined,
+        largura:          parseFloat(document.getElementById('f-pc-largura').value)     || undefined,
+        altura:           parseFloat(document.getElementById('f-pc-altura').value)      || undefined,
+        diametro_ext:     parseFloat(document.getElementById('f-pc-diametro_ext').value) || undefined,
+        diametro_int:     parseFloat(document.getElementById('f-pc-diametro_int').value) || undefined,
+        nota_descritiva:  document.getElementById('f-pc-nota').value.trim()   || undefined,
+        imagem:           document.getElementById('f-pc-imagem').value        || undefined,
+        pedido_id:        pedidoVal ? parseInt(pedidoVal) : undefined,
+    };
+
+    try {
+        if (isNew) {
+            await apiPost('/pecas', dados);
+        } else {
+            await apiPut(`/pecas/${id}`, dados);
+        }
+        await carregarDados();
+        _voltarDePeca();
+    } catch (err) {
+        alert('Erro ao guardar peça: ' + err.message);
     }
-
-    // Voltar para o contexto anterior
-    _voltarDePeca();
 }

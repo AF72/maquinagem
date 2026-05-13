@@ -59,8 +59,8 @@ function _orcamentosRows() {
       <td><a href="#" onclick="showPedidoDetalhe(${pedido.id}); return false;" style="color:var(--color-primary); text-decoration:none; cursor:pointer;">${pedido.ref}</a></td>
       <td>${inlineFlex(avatarHtml(cliente.nome, cliente.avClass, true), label)}</td>
       <td><strong>${(orc.valor || 0).toFixed(2)}</strong></td>
-      <td>${orc.dataEmissao}</td>
-      <td>${orc.dataValidade}</td>
+      <td>${orc.dataEmissao || '—'}</td>
+      <td>${orc.dataValidade || '—'}</td>
       <td><span class="badge ${estadoBg}">${orc.estado}</span></td>
       <td>${orc.ativo ? '<span class="badge badge-blue">Ativo</span>' : '<span class="badge badge-gray">Inativo</span>'}</td>
       <td style="vertical-align: middle;">
@@ -290,91 +290,49 @@ function renderOrcamentoDetalhe() {
   `;
 }
 
-function saveOrcamento(id) {
+async function saveOrcamento(id) {
     const isNew = !id;
-    let orc;
+    const pedidoId = parseInt(document.getElementById('f-orcamento-pedido').value);
+    if (!pedidoId) { alert('Selecione um pedido'); return; }
 
-    if (isNew) {
-        orc = {
-            id: nextId(),
-        };
-    } else {
-        orc = DB.orcamentos.find((x) => x.id === id);
-        if (!orc) return;
-    }
+    const isAtivo  = document.getElementById('f-orcamento-ativo').checked;
+    const estado   = document.getElementById('f-orcamento-estado').value;
+    const valor    = parseFloat(document.getElementById('f-orcamento-valor').value) || 0;
 
-    const pedidoId = parseInt(
-        document.getElementById('f-orcamento-pedido').value,
-    );
-    if (!pedidoId) {
-        alert('Selecione um pedido');
-        return;
-    }
+    const dados = {
+        pedido_id:     pedidoId,
+        ref:           document.getElementById('f-orcamento-ref').value,
+        data_emissao:  document.getElementById('f-orcamento-emissao').value  || undefined,
+        data_validade: document.getElementById('f-orcamento-validade').value || undefined,
+        estado,
+        observacoes:   document.getElementById('f-orcamento-descricao').value || undefined,
+        ativo:         isAtivo,
+        total_liquido: valor,
+    };
 
-    const isAtivo = document.getElementById('f-orcamento-ativo').checked;
-    const novoEstado = document.getElementById('f-orcamento-estado').value;
+    try {
+        let orc;
+        if (isNew) {
+            orc = await apiPost('/orcamentos', dados);
+        } else {
+            orc = await apiPut(`/orcamentos/${id}`, dados);
+        }
 
-    // Se for aprovado, garante que é o único aprovado e ativo para este pedido
-    if (novoEstado === 'Aprovado') {
-        DB.orcamentos.forEach((o) => {
-            if (o.pedidoId === pedidoId && o.id !== orc.id) {
-                if (o.estado === 'Aprovado') o.estado = 'Rejeitado';
-                o.ativo = false;
+        // Guardar itens
+        const itens = [];
+        document.querySelectorAll('#orcamento-pecas-section .orc-item-preco').forEach(el => {
+            const row  = el.closest('tr');
+            const preco = parseFloat(el.value) || 0;
+            const qtd   = parseFloat(row.querySelector('.orc-item-qtd').value) || 0;
+            if (preco > 0 || qtd > 0) {
+                itens.push({ peca_id: parseInt(el.dataset.pecaId), quantidade: qtd || 1, valor_unitario: preco });
             }
         });
-        orc.ativo = true;
-    } else if (isAtivo) {
-        // Se apenas for marcado como ativo (sem ser aprovado), desativa os outros
-        DB.orcamentos.forEach((o) => {
-            if (o.pedidoId === pedidoId && o.id !== orc.id) {
-                o.ativo = false;
-            }
-        });
-        orc.ativo = isAtivo;
-    } else {
-        orc.ativo = isAtivo;
+        await apiPost(`/orcamentos/${orc.id}/itens`, itens);
+
+        await carregarDados();
+        showPage('orcamentos');
+    } catch (err) {
+        alert('Erro ao guardar orçamento: ' + err.message);
     }
-
-    orc.pedidoId = pedidoId;
-    orc.ref = document.getElementById('f-orcamento-ref').value;
-    orc.valor =
-        parseFloat(document.getElementById('f-orcamento-valor').value) || 0;
-    orc.dataEmissao = document.getElementById('f-orcamento-emissao').value;
-    orc.dataValidade = document.getElementById('f-orcamento-validade').value;
-    orc.descricao = document.getElementById('f-orcamento-descricao').value;
-    orc.estado = document.getElementById('f-orcamento-estado').value;
-    orc.notas = document.getElementById('f-orcamento-notas').value;
-
-    if (isNew) {
-        DB.orcamentos.push(orc);
-    }
-
-    // Guardar itens de orçamento (preço/quantidade por peça)
-    DB.orcamento_itens = DB.orcamento_itens.filter(i => i.orcamentoId !== orc.id);
-    document.querySelectorAll('#orcamento-pecas-section .orc-item-preco').forEach(el => {
-        const pecaId = parseInt(el.dataset.pecaId);
-        const row    = el.closest('tr');
-        const preco  = parseFloat(el.value) || 0;
-        const qtd    = parseFloat(row.querySelector('.orc-item-qtd').value) || 0;
-        if (preco > 0 || qtd > 0) {
-            DB.orcamento_itens.push({
-                id: nextId(),
-                orcamentoId: orc.id,
-                pecaId,
-                precoUnitario: preco,
-                quantidade: qtd,
-                subtotal: preco * qtd,
-            });
-        }
-    });
-
-    // Se ativo e aprovado, atualizar custo_liquido no pedido
-    if (orc.ativo && orc.estado === 'Aprovado') {
-        const pedido = getPedido(orc.pedidoId);
-        if (pedido) {
-            pedido.custo_liquido = orc.valor;
-        }
-    }
-
-    showPage('orcamentos');
 }

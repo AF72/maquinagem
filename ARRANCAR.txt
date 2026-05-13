@@ -35,11 +35,11 @@ PASSO 2 — Servir o frontend (Terminal 2):
       npx serve .
 
    Ou em alternativa:
-      python3 -m http.server. <-- usei este e funcionou
+      python3 -m http.server <-- usei este e funcionou
 
 PASSO 3 — Abrir no browser:
    http://localhost:3000   (se usares o serve)
-   http://localhost:8080   (se usares o python). <--- usei este
+   http://localhost:8000   (se usares o python). <--- usei este
 
    Nota: confirma a porta que o "serve" indica no terminal.
 
@@ -63,3 +63,9 @@ Repopular a base de dados do zero:
       cd backend
       npm run db:seed
    ATENÇÃO: apaga todos os dados existentes e reinsere os dados de teste.
+
+
+rm -rf /Applications/TablePlus.app
+rm -rf ~/Library/Application\ Support/com.tinyapp.TablePlus
+rm -rf ~/Library/Caches/com.tinyapp.TablePlus
+rm -rf ~/Library/Preferences/com.tinyapp.TablePlus.plist

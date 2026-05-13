@@ -42,19 +42,35 @@ async function obter(req, res, next) {
 
 async function criar(req, res, next) {
   try {
-    const dados = schema.parse(req.body);
+    const { pedido_id, ...body } = req.body;
+    const dados = schema.parse(body);
     const peca = await prisma.peca.create({ data: dados });
+    if (pedido_id) {
+      await prisma.pecaPedido.upsert({
+        where: { peca_id_pedido_id: { peca_id: peca.id, pedido_id: Number(pedido_id) } },
+        create: { peca_id: peca.id, pedido_id: Number(pedido_id) },
+        update: {},
+      });
+    }
     res.status(201).json(peca);
   } catch (err) { next(err); }
 }
 
 async function atualizar(req, res, next) {
   try {
-    const dados = schema.partial().parse(req.body);
+    const { pedido_id, ...body } = req.body;
+    const dados = schema.partial().parse(body);
     const peca = await prisma.peca.update({
       where: { id: Number(req.params.id) },
       data: dados,
     });
+    if (pedido_id) {
+      await prisma.pecaPedido.upsert({
+        where: { peca_id_pedido_id: { peca_id: peca.id, pedido_id: Number(pedido_id) } },
+        create: { peca_id: peca.id, pedido_id: Number(pedido_id) },
+        update: {},
+      });
+    }
     res.json(peca);
   } catch (err) { next(err); }
 }

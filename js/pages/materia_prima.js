@@ -146,27 +146,28 @@ function toggleMpEditMode() {
     renderMateriaPrimaDetalhe();
 }
 
-function saveMp(id) {
+async function saveMp(id) {
     const isNew = !id;
-    let m;
-    if (isNew) {
-        m = { id: nextId() };
-    } else {
-        m = DB.materia_prima.find((x) => x.id === id);
-        if (!m) return;
+    const dados = {
+        ref_wnr:   document.getElementById('f-mp-ref_wnr').value.trim()   || undefined,
+        peso_esp:  parseFloat(document.getElementById('f-mp-peso_esp').value) || undefined,
+        ref_din:   document.getElementById('f-mp-ref_din').value.trim()   || undefined,
+        ref_bs:    document.getElementById('f-mp-ref_bs').value.trim()    || undefined,
+        ref_afnor: document.getElementById('f-mp-ref_afnor').value.trim() || undefined,
+        ref_une:   document.getElementById('f-mp-ref_une').value.trim()   || undefined,
+        ref_aisi:  document.getElementById('f-mp-ref_aisi').value.trim()  || undefined,
+        ref_jis:   document.getElementById('f-mp-ref_jis').value.trim()   || undefined,
+        tipo_tt:   document.getElementById('f-mp-tipo_tt').value.trim()   || undefined,
+    };
+    try {
+        if (isNew) {
+            await apiPost('/materia-prima', dados);
+        } else {
+            await apiPut(`/materia-prima/${id}`, dados);
+        }
+        await carregarDados();
+        showPage('materia_prima');
+    } catch (err) {
+        alert('Erro ao guardar: ' + err.message);
     }
-
-    m.ref_wnr   = document.getElementById('f-mp-ref_wnr').value.trim();
-    m.peso_esp  = parseFloat(document.getElementById('f-mp-peso_esp').value) || null;
-    m.ref_din   = document.getElementById('f-mp-ref_din').value.trim();
-    m.ref_bs    = document.getElementById('f-mp-ref_bs').value.trim();
-    m.ref_afnor = document.getElementById('f-mp-ref_afnor').value.trim();
-    m.ref_une   = document.getElementById('f-mp-ref_une').value.trim();
-    m.ref_aisi  = document.getElementById('f-mp-ref_aisi').value.trim();
-    m.ref_jis   = document.getElementById('f-mp-ref_jis').value.trim();
-    m.tipo_tt   = document.getElementById('f-mp-tipo_tt').value.trim();
-
-    if (isNew) DB.materia_prima.push(m);
-
-    showPage('materia_prima');
 }
