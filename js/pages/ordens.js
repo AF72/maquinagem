@@ -15,7 +15,7 @@ function renderOrdens() {
         <thead>
           <tr>
             <th>OT Nº</th><th>Pedido</th><th>Cliente</th>
-            <th>Equipamento</th><th>Estado</th><th>Operador</th><th>Prazo</th><th>Ação</th>
+            <th>Ordem de Compra</th><th>Equipamento</th><th>Estado</th><th>Operador</th><th>Prazo</th><th>Ação</th>
           </tr>
         </thead>
         <tbody>${_ordensRows()}</tbody>
@@ -41,10 +41,11 @@ function _ordensRows() {
 
             return `<tr>
       <td><strong>${o.num}</strong></td>
-      <td>${pd.ref}</td>
+      <td><a href="#" onclick="showPedidoDetalhe(${pd.id}); return false;" style="color:var(--color-primary);text-decoration:none;cursor:pointer;">${pd.ref}</a></td>
       <td>${inlineFlex(avatarHtml(cl.nome, cl.avClass, true), label)}</td>
      
-      <td>${dp.equipamento}</td>
+      <td>${dp.ordem_compra || '—'}</td>
+      <td>${dp.equipamento || '—'}</td>
       <td>${estadoBadge(o.estado)}</td>
       <td>${o.operador || '—'}</td>
       <td>${o.prazo || '—'}</td>

@@ -136,28 +136,20 @@ function editarPedido(id) {
 /*
  * Encerra um pedido existente
  */
-function encerrarPedido(id) {
-    const p = DB.pedidos.find((x) => x.id === id);
-    if (!p) return;
-
-    // Encontrar OT associada
-    const ot = DB.ordens.find((o) => o.pedidoId === id);
-    if (ot) {
-        ot.estado = 'Concluída';
-        ot.dataFim = today();
+async function encerrarPedido(id) {
+    try {
+        const ot = DB.ordens.find((o) => o.pedidoId === id);
+        if (ot) {
+            await apiPatch(`/ordens/${ot.id}/concluir`);
+        } else {
+            await apiPatch(`/pedidos/${id}/estado`, { estado_pedido: 'Concluido' });
+        }
+        await carregarDados();
+        showPage('pedidos');
+    } catch (err) {
+        console.error(err);
+        _erroToast('Erro ao encerrar pedido: ' + (err.message || 'verifique o servidor'));
     }
-
-    p.estado_pedido = 'Concluido';
-
-    // Calcular custos finais
-    const dp = getDadosPedido(p.dadosPedidoId);
-    const orc = DB.orcamentos.find((o) => o.pedidoId === id);
-    if (orc) {
-        orc.custoReal = orc.custoUnitario * orc.quantidade;
-    }
-
-    renderAll();
-    showPage('pedidos');
 }
 
 /*
@@ -282,7 +274,7 @@ function renderPedidoDetalhe() {
     <div class="form-group"><label class="form-label">Ordem de Compra</label><input id="f-dp-ordem_compra" value="${dp.ordem_compra || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''} style="height:30px; box-sizing:border-box;"></div>
     <div class="form-group"><label class="form-label">Data de Receção OC</label><input id="f-dp-data_rececao_oc" type="date" value="${dp.data_rececao_oc || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''} style="height:30px; box-sizing:border-box;"></div>
 
-    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Dados do Cliente</h4></div>
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Dados do Cliente</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
     <div class="form-group full">
       <label class="form-label">Solicitado por</label>
       <div style="display: flex; gap: 8px; align-items: center;">
@@ -315,7 +307,7 @@ function renderPedidoDetalhe() {
     </div>
     
     <!-- Seccao dados do equipamento -->
-    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Dados do Equipamento / Peça</h4></div>
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Dados do Equipamento / Peça</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
     
     <div class="form-group"><label class="form-label">Ref. Equipamento</label><input id="f-dp-ref" value="${dp.ref}" placeholder="Ex: DP-005" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
     <div class="form-group"><label class="form-label">Equipamento</label><input id="f-dp-equipamento" value="${dp.equipamento || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
@@ -334,7 +326,7 @@ function renderPedidoDetalhe() {
       </div>
     </div>
     <!-- Seccao de peças -->
-    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Peças</h4></div>
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Peças</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
     ${
         !isNew
             ? `
@@ -371,7 +363,7 @@ function renderPedidoDetalhe() {
     }
 
     <!-- Seccao de orçamentos  -->
-    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Orçamentos</h4></div>
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Orçamentos</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
     ${
         !isNew
             ? `
@@ -390,7 +382,7 @@ function renderPedidoDetalhe() {
                       o,
                   ) => `<tr style="${o.ativo ? 'font-weight:600;' : 'opacity:0.7;'}">
             <td>${o.ref}</td>
-            <td>${(o.valor || 0).toFixed(2)} €</td>
+            <td>${o.valor > 0 ? Number(o.valor).toFixed(2) + ' €' : '—'}</td>
             <td>${o.dataEmissao}</td>
             <td><span class="badge ${o.estado === 'Aprovado' ? 'badge-green' : o.estado === 'Rejeitado' ? 'badge-red' : 'badge-orange'}">${o.estado}</span></td>
             <td>${o.ativo ? '<span class="badge badge-blue">Ativo</span>' : '<span class="badge badge-gray">—</span>'}</td>
@@ -402,19 +394,23 @@ function renderPedidoDetalhe() {
       </div>`
               : ''
       }
-      <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; margin-top:8px;">
+      ${(() => {
+          const orcAprovado = orcList.find(o => o.estado === 'Aprovado' && o.ativo);
+          if (!orcAprovado) return '';
+          return `<div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; margin-top:8px;">
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
           <span style="font-size:11px; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.05em;">Custo Líquido</span>
-          <span style="font-size:16px; font-weight:700; color:var(--color-primary);">${p.custo_liquido ? parseFloat(p.custo_liquido).toFixed(2) + ' €' : '—'}</span>
+          <span style="font-size:16px; font-weight:700; color:var(--color-primary);">${Number(orcAprovado.valor).toFixed(2)} €</span>
         </div>
-      </div>
+      </div>`;
+      })()}
     `
             : ''
     }
 
     <!-- Seccao de notas -->
     ${!isNew ? `
-    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Notas</h4></div>
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Notas</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
     <div class="form-group full" style="display:flex; flex-direction:column; gap:12px;">
       ${(() => {
           const notas = DB.notas_pedido.filter(n => n.pedidoId === p.id);
@@ -429,7 +425,7 @@ function renderPedidoDetalhe() {
             <tbody>${notas.map(n => {
                 const colab = DB.colaboradores_dm.find(c => c.id === n.criadoPorId);
                 return `<tr>
-                  <td style="white-space:nowrap;">${n.data}</td>
+                  <td style="white-space:nowrap;">${n.dataHora}</td>
                   <td style="white-space:nowrap;">${colab ? colab.nome : '—'}</td>
                   <td style="white-space:pre-wrap;">${n.nota}</td>
                   <td><button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" onclick="apagarNota(${n.id})" title="Apagar nota">✕</button></td>
@@ -474,12 +470,137 @@ function renderPedidoDetalhe() {
     <div class="section-header">
       <button class="btn btn-ghost-back" onclick="showPage('pedidos')">&#x21a9 Voltar aos Pedidos</button>
       <span class="section-count">${isNew ? 'Novo Pedido' : 'Detalhe do Pedido: ' + p.ref}</span>
+      ${!isNew ? `<button class="btn" onclick="exportarPedidoPDF(${p.id})">⬇ Exportar PDF</button>` : ''}
     </div>
     <div class="full-card" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
       ${formHtml}
     </div>
   `;
 }
+/*
+ * Gera PDF do pedido
+ */
+function exportarPedidoPDF(pedidoId) {
+    const p   = DB.pedidos.find(x => x.id === pedidoId);
+    if (!p) return;
+    const dp  = getDadosPedido(p.dadosPedidoId);
+    const cl  = resolveCliente(p.clienteTipo, p.clienteId);
+    const ot  = DB.ordens.find(o => o.pedidoId === p.id);
+    const orcList  = DB.orcamentos.filter(o => o.pedidoId === p.id);
+    const pecasList = DB.pecas.filter(pc =>
+        DB.pecas_pedidos.some(pp => pp.pecaId === pc.id && pp.pedidoId === p.id));
+    const notas = DB.notas_pedido.filter(n => n.pedidoId === p.id);
+
+    const linha = (label, valor) =>
+        `<tr><td style="padding:4px 8px;font-weight:600;color:#555;width:40%">${label}</td>
+             <td style="padding:4px 8px;">${valor || '—'}</td></tr>`;
+
+    const secTitle = t =>
+        `<h3 style="margin:18px 0 4px;padding-bottom:4px;border-bottom:2px solid #2e6b3e;color:#2e6b3e;font-size:13px;">${t}</h3>`;
+
+    const orcRows = orcList.map(o =>
+        `<tr>
+          <td style="padding:3px 6px;">${o.ref}</td>
+          <td style="padding:3px 6px;">${o.valor > 0 ? Number(o.valor).toFixed(2) + ' €' : '—'}</td>
+          <td style="padding:3px 6px;">${o.dataEmissao || '—'}</td>
+          <td style="padding:3px 6px;">${o.estado}</td>
+         </tr>`).join('');
+
+    const pecasRows = pecasList.map(pc =>
+        `<tr>
+          <td style="padding:3px 6px;">${pc.ref}</td>
+          <td style="padding:3px 6px;">${pc.denominacao || '—'}</td>
+          <td style="padding:3px 6px;">${_resolverMaterial(pc.materiaPrimaId)}</td>
+         </tr>`).join('');
+
+    const notasRows = notas.map(n => {
+        const colab = DB.colaboradores_dm.find(c => c.id === n.criadoPorId);
+        return `<tr>
+          <td style="padding:3px 6px;white-space:nowrap;">${n.dataHora || '—'}</td>
+          <td style="padding:3px 6px;">${colab ? colab.nome : '—'}</td>
+          <td style="padding:3px 6px;">${n.nota}</td>
+         </tr>`;
+    }).join('');
+
+    const html = `
+    <div style="font-family:Arial,sans-serif;font-size:12px;color:#222;padding:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+        <div>
+          <h1 style="margin:0;font-size:20px;color:#2e6b3e;">Pedido ${p.ref}</h1>
+          <p style="margin:4px 0 0;color:#777;font-size:11px;">Data: ${p.data || '—'} &nbsp;|&nbsp; Estado: ${p.estado_pedido}</p>
+        </div>
+        <div style="text-align:right;font-size:10px;color:#aaa;">
+          Gerado em ${new Date().toLocaleDateString('pt-PT')} ${new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}
+        </div>
+      </div>
+
+      ${secTitle('Dados do Cliente')}
+      <table style="width:100%;border-collapse:collapse;">
+        ${linha('Cliente', cl.nome)}
+        ${linha('Empresa / Tipo', cl.subtexto || (p.clienteTipo === 'particular' ? 'Particular' : '—'))}
+        ${linha('Tipo de Contacto', dp.tipo_contacto)}
+        ${linha('Ordem de Compra', dp.ordem_compra)}
+        ${linha('Data Receção OC', dp.data_rececao_oc)}
+        ${ot ? linha('Ordem de Trabalho', ot.num) : ''}
+      </table>
+
+      ${secTitle('Dados do Equipamento / Peça')}
+      <table style="width:100%;border-collapse:collapse;">
+        ${linha('Ref. Equipamento', dp.ref)}
+        ${linha('Equipamento', dp.equipamento)}
+        ${linha('Órgão', dp.orgao)}
+        ${linha('Parte', dp.parte)}
+        ${linha('Breve Descrição', dp.breveDescricao)}
+      </table>
+
+      ${secTitle('Peças')}
+      ${pecasList.length > 0 ? `
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <thead><tr style="background:#f0f4f0;">
+          <th style="padding:4px 6px;text-align:left;">Ref.</th>
+          <th style="padding:4px 6px;text-align:left;">Denominação</th>
+          <th style="padding:4px 6px;text-align:left;">Material</th>
+        </tr></thead>
+        <tbody>${pecasRows}</tbody>
+      </table>` : '<p style="font-size:11px;color:#999;margin:4px 0;">Sem peças associadas.</p>'}
+
+      ${secTitle('Orçamentos')}
+      ${orcList.length > 0 ? `
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <thead><tr style="background:#f0f4f0;">
+          <th style="padding:4px 6px;text-align:left;">Ref.</th>
+          <th style="padding:4px 6px;text-align:left;">Valor</th>
+          <th style="padding:4px 6px;text-align:left;">Emissão</th>
+          <th style="padding:4px 6px;text-align:left;">Estado</th>
+        </tr></thead>
+        <tbody>${orcRows}</tbody>
+      </table>` : '<p style="font-size:11px;color:#999;margin:4px 0;">Sem orçamentos associados.</p>'}
+
+      ${secTitle('Notas')}
+      ${notas.length > 0 ? `
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <thead><tr style="background:#f0f4f0;">
+          <th style="padding:4px 6px;text-align:left;">Data/Hora</th>
+          <th style="padding:4px 6px;text-align:left;">Criado por</th>
+          <th style="padding:4px 6px;text-align:left;">Nota</th>
+        </tr></thead>
+        <tbody>${notasRows}</tbody>
+      </table>` : '<p style="font-size:11px;color:#999;margin:4px 0;">Sem notas registadas.</p>'}
+    </div>`;
+
+    const el = document.createElement('div');
+    el.innerHTML = html;
+    document.body.appendChild(el);
+
+    html2pdf().set({
+        margin:      10,
+        filename:    `Pedido_${p.ref}.pdf`,
+        image:       { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }).from(el).save().then(() => document.body.removeChild(el));
+}
+
 /*
  * Alterna o modo de edição
  */
@@ -500,92 +621,90 @@ function criarOrcamentoParaPedido(pedidoId) {
     showPage('orcamento_detalhe');
 }
 
-function savePedidoDetalhe(id) {
+async function savePedidoDetalhe(id) {
     const isNew = !id;
-    let p;
+    try {
+        const key = document.getElementById('f-clienteKey').value;
+        if (!key) throw new Error('Selecione um cliente antes de guardar.');
+        const [tipo, idStr] = key.split(':');
+        const clienteTipo = tipo === 'colab' ? 'colaborador' : 'particular';
+        const clienteId = parseInt(idStr);
+        if (!clienteId) throw new Error('Cliente inválido — recarregue a página.');
 
-    if (isNew) {
-        p = {
-            id: nextId(),
-            ref:
-                'PT' +
-                new Date().getFullYear().toString().slice(-2) +
-                '-' +
-                padNum(DB.pedidos.length + 1, 4),
-            estado_pedido: 'Orçamentar',
+        const dpRefInput = document.getElementById('f-dp-ref').value.trim();
+        const dpPayload = {
+            ref:             dpRefInput || 'DP-' + Date.now().toString().slice(-4),
+            equipamento:     document.getElementById('f-dp-equipamento').value || undefined,
+            orgao:           document.getElementById('f-dp-orgao').value || undefined,
+            parte:           document.getElementById('f-dp-parte').value || undefined,
+            breve_descricao: document.getElementById('f-dp-breve').value || undefined,
+            tipo_contacto:   document.getElementById('f-dp-tipo_contacto').value || undefined,
+            ordem_compra:    document.getElementById('f-dp-ordem_compra').value || undefined,
+            data_rececao_oc: document.getElementById('f-dp-data_rececao_oc').value || undefined,
         };
-    } else {
-        p = DB.pedidos.find((x) => x.id === id);
-        if (!p) return;
+
+        let dadosPedidoId;
+
+        if (!isNew) {
+            const p = DB.pedidos.find((x) => x.id === id);
+            dadosPedidoId = p.dadosPedidoId;
+            await apiPut(`/dados-pedido/${dadosPedidoId}`, dpPayload);
+        } else {
+            const existingDp = DB.dados_pedido.find((d) => d.ref === dpPayload.ref);
+            if (existingDp) {
+                dadosPedidoId = existingDp.id;
+                await apiPut(`/dados-pedido/${dadosPedidoId}`, dpPayload);
+            } else {
+                const newDp = await apiPost('/dados-pedido', dpPayload);
+                dadosPedidoId = newDp.id;
+            }
+        }
+
+        if (isNew) {
+            const n = DB.pedidos.length + 1;
+            await apiPost('/pedidos', {
+                ref:             'PT' + new Date().getFullYear().toString().slice(-2) + '-' + padNum(n, 4),
+                cliente_tipo:    clienteTipo,
+                colaborador_id:  clienteTipo === 'colaborador' ? clienteId : undefined,
+                particular_id:   clienteTipo === 'particular'  ? clienteId : undefined,
+                dados_pedido_id: dadosPedidoId,
+                estado_pedido:   document.getElementById('f-pt-estado').value,
+                data_pedido:     document.getElementById('f-pt-data').value || today(),
+            });
+        } else {
+            await apiPut(`/pedidos/${id}`, {
+                cliente_tipo:    clienteTipo,
+                colaborador_id:  clienteTipo === 'colaborador' ? clienteId : null,
+                particular_id:   clienteTipo === 'particular'  ? clienteId : null,
+                dados_pedido_id: dadosPedidoId,
+                estado_pedido:   document.getElementById('f-pt-estado').value,
+                data_pedido:     document.getElementById('f-pt-data').value || today(),
+            });
+        }
+
+        await carregarDados();
+        showPage('pedidos');
+    } catch (err) {
+        console.error('savePedidoDetalhe erro:', err);
+        _erroToast('Erro ao guardar pedido: ' + (err.message || 'verifique o servidor'));
     }
-
-    p.estado_pedido = document.getElementById('f-pt-estado').value;
-
-    const key = document.getElementById('f-clienteKey').value;
-    const [tipo, idStr] = key.split(':');
-
-    p.clienteTipo = tipo === 'colab' ? 'colaborador' : 'particular';
-    p.clienteId = parseInt(idStr);
-    // A data é automática (readonly)
-
-    const newRef = document.getElementById('f-dp-ref').value.trim();
-    let dp = DB.dados_pedido.find((d) => d.ref === newRef);
-
-    if (!dp) {
-        dp = {
-            id: nextId(),
-            ref: newRef || 'DP-' + Date.now().toString().slice(-4),
-        };
-        DB.dados_pedido.push(dp);
-    }
-
-    dp.equipamento = document.getElementById('f-dp-equipamento').value;
-    dp.orgao = document.getElementById('f-dp-orgao').value;
-    dp.parte = document.getElementById('f-dp-parte').value;
-    dp.breveDescricao = document.getElementById('f-dp-breve').value;
-    dp.imagem = document.getElementById('f-dp-imagem').value;
-    dp.tipo_contacto = document.getElementById('f-dp-tipo_contacto').value;
-    dp.ordem_compra = document.getElementById('f-dp-ordem_compra').value;
-    dp.data_rececao_oc = document.getElementById('f-dp-data_rececao_oc').value;
-
-    p.dadosPedidoId = dp.id;
-
-    if (isNew) {
-        p.data = document.getElementById('f-pt-data').value || today();
-        DB.pedidos.push(p);
-    }
-
-    showPage('pedidos');
 }
 
 /*
  * Remove a associação entre uma peça e um pedido (não apaga a peça).
  */
-function removerPecaDoPedido(pedidoId, pecaId) {
-    const idx = DB.pecas_pedidos.findIndex(
-        (pp) => pp.pecaId === pecaId && pp.pedidoId === pedidoId,
-    );
-    if (idx !== -1) DB.pecas_pedidos.splice(idx, 1);
-
-    // Remover itens de orçamento desta peça nos orçamentos do pedido e recalcular totais
-    const orcDosPedido = DB.orcamentos.filter(o => o.pedidoId === pedidoId);
-    const orcIds = orcDosPedido.map(o => o.id);
-    DB.orcamento_itens = DB.orcamento_itens.filter(
-        i => !(orcIds.includes(i.orcamentoId) && i.pecaId === pecaId),
-    );
-    orcDosPedido.forEach(orc => {
-        const total = DB.orcamento_itens
-            .filter(i => i.orcamentoId === orc.id)
-            .reduce((acc, i) => acc + i.subtotal, 0);
-        orc.valor = total;
-        if (orc.ativo && orc.estado === 'Aprovado') {
-            const pedido = DB.pedidos.find(p => p.id === pedidoId);
-            if (pedido) pedido.custo_liquido = total;
-        }
-    });
-
-    _currentPedidoId = pedidoId;
-    renderPedidoDetalhe();
+async function removerPecaDoPedido(pedidoId, pecaId) {
+    const pp = DB.pecas_pedidos.find((x) => x.pecaId === pecaId && x.pedidoId === pedidoId);
+    if (!pp) return;
+    try {
+        await fetch(`${API_BASE}/pecas-pedidos/${pp.id}`, { method: 'DELETE' });
+        await carregarDados();
+        _currentPedidoId = pedidoId;
+        renderPedidoDetalhe();
+    } catch (err) {
+        console.error(err);
+        _erroToast('Erro ao remover peça: ' + (err.message || 'verifique o servidor'));
+    }
 }
 
 /* -------- Overlay de visualização de peça -------- */
@@ -715,14 +834,19 @@ function _renderPecaSearchRows() {
         </table>`;
 }
 
-function associarPecaDaOverlay(pecaId) {
+async function associarPecaDaOverlay(pecaId) {
     const pedidoId = _pedidoIdParaAssoc;
-    if (!DB.pecas_pedidos.some((pp) => pp.pecaId === pecaId && pp.pedidoId === pedidoId)) {
-        DB.pecas_pedidos.push({ id: nextId(), pecaId, pedidoId });
+    if (DB.pecas_pedidos.some((pp) => pp.pecaId === pecaId && pp.pedidoId === pedidoId)) return;
+    try {
+        await apiPost('/pecas-pedidos', { peca_id: pecaId, pedido_id: pedidoId });
+        await carregarDados();
+        _currentPedidoId = pedidoId;
+        renderPedidoDetalhe();
+        _renderPecaSearchRows();
+    } catch (err) {
+        console.error(err);
+        _erroToast('Erro ao associar peça: ' + (err.message || 'verifique o servidor'));
     }
-    _currentPedidoId = pedidoId;
-    renderPedidoDetalhe();   // actualiza a lista no fundo
-    _renderPecaSearchRows(); // actualiza a lista no overlay
 }
 
 function fecharPesquisaPecas() {
@@ -733,17 +857,30 @@ function fecharPesquisaPecas() {
 
 /* -------- Notas de pedido -------- */
 
-function adicionarNota(pedidoId) {
+async function adicionarNota(pedidoId) {
     const criadoPorId = parseInt(document.getElementById('nota-criado-por').value);
     const nota = document.getElementById('nota-texto').value.trim();
     if (!criadoPorId) { alert('Selecione quem cria a nota.'); return; }
     if (!nota) { alert('Escreva o texto da nota.'); return; }
-    DB.notas_pedido.push({ id: nextId(), pedidoId, data: today(), criadoPorId, nota });
-    renderPedidoDetalhe();
+    try {
+        await apiPost('/notas-pedido', { pedido_id: pedidoId, colaborador_dm_id: criadoPorId, nota });
+        await carregarDados();
+        _currentPedidoId = pedidoId;
+        renderPedidoDetalhe();
+    } catch (err) {
+        console.error(err);
+        _erroToast('Erro ao adicionar nota: ' + (err.message || 'verifique o servidor'));
+    }
 }
 
-function apagarNota(notaId) {
+async function apagarNota(notaId) {
     if (!confirm('Apagar esta nota?')) return;
-    DB.notas_pedido = DB.notas_pedido.filter(n => n.id !== notaId);
-    renderPedidoDetalhe();
+    try {
+        await fetch(`${API_BASE}/notas-pedido/${notaId}`, { method: 'DELETE' });
+        await carregarDados();
+        renderPedidoDetalhe();
+    } catch (err) {
+        console.error(err);
+        _erroToast('Erro ao apagar nota: ' + (err.message || 'verifique o servidor'));
+    }
 }

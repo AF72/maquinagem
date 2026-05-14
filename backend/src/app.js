@@ -14,6 +14,7 @@ const orcamentosRoutes = require('./routes/orcamentos');
 const materiaPrimaRoutes = require('./routes/materiaPrima');
 const colaboradoresDmRoutes = require('./routes/colaboradoresDm');
 const pecasPedidosRoutes    = require('./routes/pecasPedidos');
+const notasPedidoRoutes     = require('./routes/notasPedido');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/orcamentos', orcamentosRoutes);
 app.use('/api/materia-prima', materiaPrimaRoutes);
 app.use('/api/colaboradores-dm', colaboradoresDmRoutes);
 app.use('/api/pecas-pedidos',    pecasPedidosRoutes);
+app.use('/api/notas-pedido',     notasPedidoRoutes);
 
 app.use(errorHandler);
 

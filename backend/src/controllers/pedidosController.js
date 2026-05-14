@@ -8,8 +8,8 @@ const ESTADOS = ['Orçamentar', 'Pendente', 'Produção', 'Faturar', 'Concluido'
 const schema = z.object({
   ref: z.string().min(1),
   cliente_tipo: z.enum(['colaborador', 'particular']),
-  colaborador_id: z.number().int().optional(),
-  particular_id: z.number().int().optional(),
+  colaborador_id: z.number().int().nullable().optional(),
+  particular_id: z.number().int().nullable().optional(),
   dados_pedido_id: z.number().int(),
   estado_pedido: z.enum(ESTADOS).optional(),
   data_pedido: z.string().optional(),
@@ -47,9 +47,16 @@ async function obter(req, res, next) {
   } catch (err) { next(err); }
 }
 
+function parseDados(dados) {
+  if (dados.data_pedido) {
+    dados.data_pedido = new Date(dados.data_pedido);
+  }
+  return dados;
+}
+
 async function criar(req, res, next) {
   try {
-    const dados = schema.parse(req.body);
+    const dados = parseDados(schema.parse(req.body));
     const pedido = await prisma.pedido.create({ data: dados, include });
     res.status(201).json(pedido);
   } catch (err) { next(err); }
@@ -57,7 +64,7 @@ async function criar(req, res, next) {
 
 async function atualizar(req, res, next) {
   try {
-    const dados = schema.partial().parse(req.body);
+    const dados = parseDados(schema.partial().parse(req.body));
     const pedido = await prisma.pedido.update({
       where: { id: Number(req.params.id) },
       data: dados,

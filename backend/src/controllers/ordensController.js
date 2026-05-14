@@ -35,9 +35,14 @@ async function obter(req, res, next) {
   } catch (err) { next(err); }
 }
 
+function parseDados(dados) {
+  if (dados.prazo) dados.prazo = new Date(dados.prazo);
+  return dados;
+}
+
 async function criar(req, res, next) {
   try {
-    const dados = schema.parse(req.body);
+    const dados = parseDados(schema.parse(req.body));
     const ordem = await prisma.ordemTrabalho.create({ data: dados, include });
     res.status(201).json(ordem);
   } catch (err) { next(err); }

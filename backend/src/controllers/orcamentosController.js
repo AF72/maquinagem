@@ -36,9 +36,15 @@ async function obter(req, res, next) {
   } catch (err) { next(err); }
 }
 
+function parseDados(dados) {
+  if (dados.data_emissao)  dados.data_emissao  = new Date(dados.data_emissao);
+  if (dados.data_validade) dados.data_validade = new Date(dados.data_validade);
+  return dados;
+}
+
 async function criar(req, res, next) {
   try {
-    const dados = schema.parse(req.body);
+    const dados = parseDados(schema.parse(req.body));
     if (dados.ativo) {
       await prisma.orcamento.updateMany({
         where: { pedido_id: dados.pedido_id },
@@ -53,7 +59,7 @@ async function criar(req, res, next) {
 async function atualizar(req, res, next) {
   try {
     const id = Number(req.params.id);
-    const dados = schema.partial().parse(req.body);
+    const dados = parseDados(schema.partial().parse(req.body));
     if (dados.ativo) {
       const orc = await prisma.orcamento.findUnique({ where: { id } });
       await prisma.orcamento.updateMany({
@@ -94,8 +100,7 @@ async function salvarItens(req, res, next) {
       });
     }
 
-    const todos = await prisma.orcamentoItem.findMany({ where: { orcamento_id: id } });
-    const total = todos.reduce((s, i) => s + Number(i.subtotal ?? 0), 0);
+    const total = itens.reduce((s, i) => s + i.quantidade * i.valor_unitario, 0);
     await prisma.orcamento.update({ where: { id }, data: { total_liquido: total } });
 
     const orc = await prisma.orcamento.findUnique({ where: { id }, include });

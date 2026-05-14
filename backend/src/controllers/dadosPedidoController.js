@@ -10,6 +10,7 @@ const schema = z.object({
   parte:           z.string().optional(),
   breve_descricao: z.string().optional(),
   imagem:          z.string().optional(),
+  tipo_contacto:   z.string().optional(),
   ordem_compra:    z.string().optional(),
   data_rececao_oc: z.string().optional(),
 });
@@ -21,9 +22,16 @@ async function listar(req, res, next) {
   } catch (err) { next(err); }
 }
 
+function parseDados(dados) {
+  if (dados.data_rececao_oc) {
+    dados.data_rececao_oc = new Date(dados.data_rececao_oc);
+  }
+  return dados;
+}
+
 async function criar(req, res, next) {
   try {
-    const dados = schema.parse(req.body);
+    const dados = parseDados(schema.parse(req.body));
     const registo = await prisma.dadosPedido.create({ data: dados });
     res.status(201).json(registo);
   } catch (err) { next(err); }
@@ -31,7 +39,7 @@ async function criar(req, res, next) {
 
 async function atualizar(req, res, next) {
   try {
-    const dados = schema.partial().parse(req.body);
+    const dados = parseDados(schema.partial().parse(req.body));
     const registo = await prisma.dadosPedido.update({
       where: { id: Number(req.params.id) },
       data: dados,

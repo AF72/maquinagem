@@ -220,7 +220,7 @@ function renderOrcamentoDetalhe() {
     </div>
     <div class="form-group">
       <label class="form-label">Custo Líquido (€)</label>
-      <input id="f-orcamento-valor" type="number" step="0.01" value="${orc.valor || ''}" readonly style="background:#ddedda; cursor:not-allowed;">
+      <input id="f-orcamento-valor" type="number" step="0.01" value="${Number(orc.valor || 0).toFixed(2)}" readonly style="background:#ddedda; cursor:not-allowed;">
     </div>
     <div class="form-group">
       <label class="form-label">Pedido</label>

@@ -51,7 +51,11 @@ function mapColaborador(c) {
 }
 
 function mapDadosPedido(dp) {
-    return { ...dp, breveDescricao: dp.breve_descricao };
+    return {
+        ...dp,
+        breveDescricao:  dp.breve_descricao,
+        data_rececao_oc: dp.data_rececao_oc?.slice(0, 10) ?? '',
+    };
 }
 
 function mapPedido(p) {
@@ -95,14 +99,20 @@ async function carregarDados() {
             DB.orcamento_itens = v.flatMap(o => (o.itens || []).map(i => ({
                 id: i.id, orcamentoId: i.orcamento_id, pecaId: i.peca_id,
                 precoUnitario: Number(i.valor_unitario), quantidade: Number(i.quantidade),
-                subtotal: Number(i.subtotal ?? 0),
+                subtotal: Number(i.valor_unitario) * Number(i.quantidade),
             })));
             return v.map(mapOrcamento);
         }},
         { key: 'materia_prima', path: '/materia-prima',  map: v => v },
-        { key: 'pecas',            path: '/pecas',            map: v => v },
+        { key: 'pecas',            path: '/pecas',            map: v => v.map(p => ({ ...p, materiaPrimaId: p.materia_prima_id })) },
         { key: 'colaboradores_dm', path: '/colaboradores-dm', map: v => v },
         { key: 'pecas_pedidos',    path: '/pecas-pedidos',    map: v => v.map(j => ({ ...j, pecaId: j.peca_id, pedidoId: j.pedido_id })) },
+        { key: 'notas_pedido',     path: '/notas-pedido',     map: v => v.map(n => {
+            const dt = new Date(n.criado_em);
+            const data = dt.toLocaleDateString('pt-PT');
+            const hora = dt.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+            return { ...n, pedidoId: n.pedido_id, criadoPorId: n.colaborador_dm_id, dataHora: `${data} ${hora}` };
+        }) },
     ];
 
     const resultados = await Promise.allSettled(
