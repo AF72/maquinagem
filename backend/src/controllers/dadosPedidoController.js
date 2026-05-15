@@ -12,7 +12,7 @@ const schema = z.object({
   imagem:          z.string().optional(),
   tipo_contacto:   z.string().optional(),
   ordem_compra:    z.string().optional(),
-  data_rececao_oc: z.string().optional(),
+  data_rececao_oc: z.string().nullish(),
 });
 
 async function listar(req, res, next) {

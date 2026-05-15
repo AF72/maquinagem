@@ -38,7 +38,7 @@ function renderPedidos() {
       <table class="table">
         <thead>
           <tr>
-            <th style="width:90px">Ref.</th><th>Cliente</th><th>Equipamento</th><th>Órgão</th><th>Parte</th><th>Nº Orçamento</th><th>Custo Líquido</th><th>Ação</th><th style="width:90px">Estado</th>
+            <th style="width:90px">Ref.</th><th>Cliente</th><th>Equipamento</th><th>Órgão</th><th>Parte</th><th>Nº Orçamento</th><th>Custo Líquido</th><th>Ordem de Compra</th><th>Ação</th><th style="width:90px">Estado</th>
           </tr>
         </thead>
         <tbody>${_pedidosRows()}</tbody>
@@ -77,6 +77,7 @@ function _pedidosRows() {
           return orc ? orc.ref : '-';
       })()}</td>
       <td>${p.custo_liquido ? parseFloat(p.custo_liquido).toFixed(2) + ' €' : '-'}</td>
+      <td>${dp.ordem_compra || '-'}</td>
       <td style="vertical-align: middle;">
         <div style="display: flex; align-items: center; gap: 4px;">
           <button class="btn btn-ghost btn-sm" title="Ver pedido" onclick="showPedidoDetalhe(${p.id})">${ICON_VIEW}</button>
@@ -271,8 +272,8 @@ function renderPedidoDetalhe() {
     <div class="form-group"><label class="form-label">Data de Criação PT</label><input id="f-pt-data" type="date" value="${p.data}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
     <div class="form-group"><label class="form-label">Ordem de Trabalho</label><input id="f-dp-ordem_trabalho" value="${ot ? ot.num : ''}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
     <div class="form-group"><label class="form-label">Data de Criação OT</label><input id="f-ot-data" type="date" value="${today()}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
-    <div class="form-group"><label class="form-label">Ordem de Compra</label><input id="f-dp-ordem_compra" value="${dp.ordem_compra || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''} style="height:30px; box-sizing:border-box;"></div>
-    <div class="form-group"><label class="form-label">Data de Receção OC</label><input id="f-dp-data_rececao_oc" type="date" value="${dp.data_rececao_oc || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''} style="height:30px; box-sizing:border-box;"></div>
+    <div class="form-group"><label class="form-label">Ordem de Compra</label><input id="f-dp-ordem_compra" value="${dp.ordem_compra || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''} oninput="_toggleRececaoOC()" style="height:30px; box-sizing:border-box;"></div>
+    <div class="form-group"><label class="form-label">Data de Receção OC</label><input id="f-dp-data_rececao_oc" type="date" value="${dp.data_rececao_oc || ''}" ${!isNew && !_isEditMode || !(dp.ordem_compra) ? 'disabled' : ''} style="height:30px; box-sizing:border-box;"></div>
 
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Dados do Cliente</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
     <div class="form-group full">
@@ -640,7 +641,7 @@ async function savePedidoDetalhe(id) {
             breve_descricao: document.getElementById('f-dp-breve').value || undefined,
             tipo_contacto:   document.getElementById('f-dp-tipo_contacto').value || undefined,
             ordem_compra:    document.getElementById('f-dp-ordem_compra').value || undefined,
-            data_rececao_oc: document.getElementById('f-dp-data_rececao_oc').value || undefined,
+            data_rececao_oc: document.getElementById('f-dp-data_rececao_oc').value || null,
         };
 
         let dadosPedidoId;
@@ -883,4 +884,13 @@ async function apagarNota(notaId) {
         console.error(err);
         _erroToast('Erro ao apagar nota: ' + (err.message || 'verifique o servidor'));
     }
+}
+
+function _toggleRececaoOC() {
+    const oc = document.getElementById('f-dp-ordem_compra');
+    const dt = document.getElementById('f-dp-data_rececao_oc');
+    if (!oc || !dt) return;
+    const temOC = oc.value.trim() !== '';
+    dt.disabled = !temOC;
+    if (!temOC) dt.value = '';
 }

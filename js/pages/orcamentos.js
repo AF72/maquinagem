@@ -156,12 +156,14 @@ function showOrcamentoDetalhe(id) {
     _preSelectedPedidoId = null;
     _currentOrcamentoId = id;
     _isOrcamentoEditMode = false;
+    _validadeDias = 30;
     showPage('orcamento_detalhe');
 }
 
 function editarOrcamento(id) {
     _currentOrcamentoId = id;
     _isOrcamentoEditMode = true;
+    _validadeDias = 30;
     showPage('orcamento_detalhe');
 }
 
@@ -222,34 +224,44 @@ function renderOrcamentoDetalhe() {
       <label class="form-label">Custo Líquido (€)</label>
       <input id="f-orcamento-valor" type="number" step="0.01" value="${Number(orc.valor || 0).toFixed(2)}" readonly style="background:#ddedda; cursor:not-allowed;">
     </div>
-    <div class="form-group">
-      <label class="form-label">Pedido</label>
-      <select id="f-orcamento-pedido" onchange="onOrcamentoPedidoChange()" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
-        <option value="">Selecionar pedido</option>
-        ${pedidoOpts}
-      </select>
-    </div>
-    <div class="form-group" style="display:flex;flex-direction:column;gap:0.75rem;">
-      <div>
-        <label class="form-label">Estado</label>
+    <div class="form-group full" style="display:flex;flex-direction:row;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px;">
+        <label class="form-label" style="margin:0;">Pedido</label>
+        <select id="f-orcamento-pedido" onchange="onOrcamentoPedidoChange()" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
+          <option value="">Selecionar pedido</option>
+          ${pedidoOpts}
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label class="form-label" style="margin:0;">Estado</label>
         <select id="f-orcamento-estado" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
           <option value="Pendente" ${orc.estado === 'Pendente' ? 'selected' : ''}>Pendente</option>
           <option value="Aprovado" ${orc.estado === 'Aprovado' ? 'selected' : ''}>Aprovado</option>
           <option value="Rejeitado" ${orc.estado === 'Rejeitado' ? 'selected' : ''}>Rejeitado</option>
         </select>
       </div>
-      <div style="display:flex;flex-direction:row;align-items:center;gap:8px;">
-        <input type="checkbox" id="f-orcamento-ativo" ${isNew || orc.ativo ? 'checked' : ''} ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''} style="width:auto;margin:0;padding:0;">
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
         <label class="form-label" style="margin:0;cursor:pointer;" for="f-orcamento-ativo">Ativo</label>
+        <input type="checkbox" id="f-orcamento-ativo" ${isNew || orc.ativo ? 'checked' : ''} ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''} style="width:auto;margin:0;padding:0;height:34px;">
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Data Emissão</label>
-      <input id="f-orcamento-emissao" type="date" value="${orc.dataEmissao}" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Data Validade</label>
-      <input id="f-orcamento-validade" type="date" value="${orc.dataValidade}" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
+    <div class="form-group full" style="display:flex;flex-direction:row;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label class="form-label" style="margin:0;">Data Emissão</label>
+        <input id="f-orcamento-emissao" type="date" value="${orc.dataEmissao}" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''} oninput="_calcularValidade()" style="width:auto;">
+      </div>
+      ${isNew || _isOrcamentoEditMode ? `
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label class="form-label" style="margin:0;">Validade</label>
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="btn btn-sm" id="btn-val-15" onclick="_calcularValidade(15)" style="padding:7px 10px;font-size:13px;">15 dias</button>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-val-30" onclick="_calcularValidade(30)" style="padding:7px 10px;font-size:13px;">30 dias</button>
+        </div>
+      </div>` : ''}
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label class="form-label" style="margin:0;">Data Validade</label>
+        <input id="f-orcamento-validade" type="date" value="${orc.dataValidade}" readonly style="width:auto;background:#ddedda;cursor:not-allowed;">
+      </div>
     </div>
     <div class="form-group full">
       <label class="form-label">Descrição</label>
@@ -288,6 +300,7 @@ function renderOrcamentoDetalhe() {
       <div id="orcamento-pecas-section">${_htmlPecasDoPedido(pedidoIdInicial, orcamentoIdInicial, editavel)}</div>
     </div>
   `;
+    if (isNew || _isOrcamentoEditMode) _calcularValidade();
 }
 
 async function saveOrcamento(id) {
@@ -335,4 +348,23 @@ async function saveOrcamento(id) {
     } catch (err) {
         alert('Erro ao guardar orçamento: ' + err.message);
     }
+}
+
+let _validadeDias = null;
+
+function _calcularValidade(dias) {
+    if (dias !== undefined) {
+        _validadeDias = dias;
+        document.querySelectorAll('#btn-val-15, #btn-val-30').forEach(btn => btn.classList.remove('btn-primary'));
+        const btn = document.getElementById(`btn-val-${dias}`);
+        if (btn) btn.classList.add('btn-primary');
+    }
+    if (!_validadeDias) return;
+    const emissao = document.getElementById('f-orcamento-emissao')?.value;
+    if (!emissao) return;
+    const base = new Date(emissao);
+    base.setDate(base.getDate() + _validadeDias);
+    const validade = base.toISOString().slice(0, 10);
+    const input = document.getElementById('f-orcamento-validade');
+    if (input) input.value = validade;
 }
