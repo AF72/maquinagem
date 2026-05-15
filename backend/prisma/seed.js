@@ -569,7 +569,6 @@ async function main() {
             data: {
                 num: 'OT26-0001',
                 pedido_id: pedEfacec.id,
-                operador: 'Manuel Figueiredo',
                 estado: 'Em curso',
                 prazo: new Date('2026-01-30'),
                 mo_obra: 420.0,
@@ -580,7 +579,6 @@ async function main() {
             data: {
                 num: 'OT26-0002',
                 pedido_id: pedBosch.id,
-                operador: 'Filipe Cunha',
                 estado: 'Concluída',
                 prazo: new Date('2026-04-05'),
                 mo_obra: 96.0,

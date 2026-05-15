@@ -160,14 +160,17 @@ model OrdemTrabalho {
   id           Int       @id @default(autoincrement())
   num          String    @unique @db.VarChar(20)
   pedido_id    Int
-  operador     String?   @db.VarChar(150)
   estado       String    @default("Em curso") @db.VarChar(30)
-  prazo        DateTime? @db.Date
+  prazo        Int?
   mo_obra      Decimal?  @default(0) @db.Decimal(10, 2)
-  notas        String?
-  criado_em    DateTime  @default(now())
-  concluido_em DateTime?
-  pedido       Pedido    @relation(fields: [pedido_id], references: [id])
+  notas                String?
+  data_limite_entrega  DateTime? @db.Date
+  n_gt                 String?   @db.VarChar(50)
+  n_ft                 String?   @db.VarChar(50)
+  observacoes          String?
+  criado_em            DateTime  @default(now())
+  concluido_em         DateTime?
+  pedido               Pedido    @relation(fields: [pedido_id], references: [id])
 
   @@map("ordens_trabalho")
 }

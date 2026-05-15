@@ -4,6 +4,7 @@ const c = require('../controllers/ordensController');
 router.get('/', c.listar);
 router.get('/:id', c.obter);
 router.post('/', c.criar);
+router.put('/:id', c.atualizar);
 router.patch('/:id/concluir', c.concluir);
 router.delete('/:id', c.eliminar);
 

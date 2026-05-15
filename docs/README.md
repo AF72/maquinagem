@@ -80,7 +80,7 @@ Todas as outras funcionalidades usam apenas APIs nativas do browser.
 ### Ordens de Trabalho
 
 - Geração automática de referência (OT26-XXXX)
-- Atribuição de operador e prazo
+- Atribuição de prazo
 - Conclusão de ordem (atualiza estado do pedido)
 
 ### Custos

@@ -115,14 +115,17 @@ CREATE TABLE ordens_trabalho (
   id          SERIAL PRIMARY KEY,
   num         VARCHAR(20)  UNIQUE NOT NULL,    -- OTYY-XXXX
   pedido_id   INTEGER NOT NULL REFERENCES pedidos(id),
-  operador    VARCHAR(150),
   estado      VARCHAR(30)  NOT NULL DEFAULT 'Em curso',
   -- 'Em curso' | 'Concluída' | 'Cancelada'
-  prazo       DATE,
+  prazo       INTEGER,                             -- Número de semanas
   mo_obra     NUMERIC(10,2) DEFAULT 0,         -- Custo de mão de obra (€)
-  notas       TEXT,
-  criado_em   TIMESTAMP DEFAULT NOW(),
-  concluido_em TIMESTAMP
+  notas                TEXT,
+  data_limite_entrega  DATE,
+  n_gt                 VARCHAR(50),
+  n_ft                 VARCHAR(50),
+  observacoes          TEXT,
+  criado_em            TIMESTAMP DEFAULT NOW(),
+  concluido_em         TIMESTAMP
 );
 ```
 

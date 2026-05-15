@@ -100,9 +100,7 @@ async function criarOT(pedidoId) {
         await apiPost('/ordens', {
             num:       'OT' + ano + '-' + padNum(n, 4),
             pedido_id: pedidoId,
-            operador:  'Operador',
             estado:    'Em curso',
-            prazo:     addDays(14),
             mo_obra:   100,
         });
         await apiPut(`/pedidos/${pedidoId}`, { estado_pedido: 'Produção' });

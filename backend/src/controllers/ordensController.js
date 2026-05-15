@@ -6,11 +6,14 @@ const prisma = new PrismaClient();
 const schema = z.object({
   num: z.string().min(1),
   pedido_id: z.number().int(),
-  operador: z.string().optional(),
-  estado: z.enum(['Em curso', 'Concluída', 'Cancelada']).optional(),
-  prazo: z.string().optional(),
+  estado: z.enum(['Em curso', 'Pendente', 'Falta OC', 'Faturar', 'Concluída']).optional(),
+  prazo: z.number().int().optional().nullable(),
   mo_obra: z.number().optional(),
   notas: z.string().optional(),
+  data_limite_entrega: z.string().optional(),
+  n_gt: z.string().optional(),
+  n_ft: z.string().optional(),
+  observacoes: z.string().optional(),
 });
 
 const include = { pedido: { include: { dados_pedido: true } } };
@@ -36,8 +39,18 @@ async function obter(req, res, next) {
 }
 
 function parseDados(dados) {
-  if (dados.prazo) dados.prazo = new Date(dados.prazo);
+  if (dados.data_limite_entrega) dados.data_limite_entrega = new Date(dados.data_limite_entrega);
   return dados;
+}
+
+async function atualizar(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    const updateSchema = schema.partial().omit({ num: true, pedido_id: true });
+    const dados = parseDados(updateSchema.parse(req.body));
+    const ordem = await prisma.ordemTrabalho.update({ where: { id }, data: dados, include });
+    res.json(ordem);
+  } catch (err) { next(err); }
 }
 
 async function criar(req, res, next) {
@@ -70,4 +83,4 @@ async function eliminar(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { listar, obter, criar, concluir, eliminar };
+module.exports = { listar, obter, criar, atualizar, concluir, eliminar };

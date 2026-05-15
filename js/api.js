@@ -71,9 +71,10 @@ function mapPedido(p) {
 function mapOrdem(o) {
     return {
         ...o,
-        pedidoId: o.pedido_id,
-        moObra:   Number(o.mo_obra ?? 0),
-        prazo:    o.prazo?.slice(0, 10) ?? '',
+        pedidoId:           o.pedido_id,
+        moObra:             Number(o.mo_obra ?? 0),
+        prazo:              o.prazo ?? null,
+        dataLimiteEntrega:  o.data_limite_entrega?.slice(0, 10) ?? '',
     };
 }
 
@@ -131,5 +132,25 @@ async function carregarDados() {
 
     if (erros > 0) {
         console.warn(`${erros} endpoint(s) indisponível(-eis). Reinicia o backend.`);
+        mostrarErroBanner(`Backend indisponível (${erros} endpoint(s) com falha). Verifica se o servidor está a correr em localhost:3000.`);
+    } else {
+        esconderErroBanner();
     }
+}
+
+function mostrarErroBanner(msg) {
+    let el = document.getElementById('backend-erro-banner');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'backend-erro-banner';
+        el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#c0392b;color:#fff;padding:10px 16px;font-size:14px;text-align:center;';
+        document.body.prepend(el);
+    }
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+
+function esconderErroBanner() {
+    const el = document.getElementById('backend-erro-banner');
+    if (el) el.style.display = 'none';
 }

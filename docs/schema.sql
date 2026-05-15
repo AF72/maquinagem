@@ -147,13 +147,16 @@ CREATE TABLE ordens_trabalho (
   id           SERIAL PRIMARY KEY,
   num          VARCHAR(20)  UNIQUE NOT NULL,
   pedido_id    INTEGER NOT NULL REFERENCES pedidos(id),
-  operador     VARCHAR(150),
   estado       VARCHAR(30)  NOT NULL DEFAULT 'Em curso',
-  prazo        DATE,
+  prazo        INTEGER,
   mo_obra      NUMERIC(10,2) DEFAULT 0,
-  notas        TEXT,
-  criado_em    TIMESTAMP DEFAULT NOW(),
-  concluido_em TIMESTAMP
+  notas                TEXT,
+  data_limite_entrega  DATE,
+  n_gt                 VARCHAR(50),
+  n_ft                 VARCHAR(50),
+  observacoes          TEXT,
+  criado_em            TIMESTAMP DEFAULT NOW(),
+  concluido_em         TIMESTAMP
 );
 
 CREATE TABLE pecas_pedidos (
