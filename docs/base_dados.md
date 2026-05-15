@@ -116,7 +116,7 @@ CREATE TABLE ordens_trabalho (
   num         VARCHAR(20)  UNIQUE NOT NULL,    -- OTYY-XXXX
   pedido_id   INTEGER NOT NULL REFERENCES pedidos(id),
   estado      VARCHAR(30)  NOT NULL DEFAULT 'Em curso',
-  -- 'Em curso' | 'Concluída' | 'Cancelada'
+    -- 'Em curso' | 'Pendente' | 'Falta OC' | 'Faturar' | 'Concluída'
   prazo       INTEGER,                             -- Número de semanas
   mo_obra     NUMERIC(10,2) DEFAULT 0,         -- Custo de mão de obra (€)
   notas                TEXT,
@@ -238,7 +238,7 @@ CREATE TABLE orcamento_itens (
   valor_unitario   NUMERIC(12,2) NOT NULL DEFAULT 0,
   unidade          VARCHAR(20),
   subtotal         NUMERIC(12,2) GENERATED ALWAYS AS (quantidade * valor_unitario) STORED,
-  
+
   CONSTRAINT chk_item_tipo CHECK (
     (item_tipo = 'peca' AND peca_id IS NOT NULL AND servico_id IS NULL) OR
     (item_tipo = 'servico' AND servico_id IS NOT NULL AND peca_id IS NULL)
