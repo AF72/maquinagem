@@ -6,6 +6,7 @@
 .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
     padding: 6px 14px;
     font-size: 13px;
@@ -118,6 +119,29 @@
 }
 .table tbody tr:hover td {
     background: var(--color-surface-alt);
+}
+.table td input,
+.table td select {
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 11px;
+    width: 100%;
+    box-sizing: border-box;
+    color: var(--color-text);
+    font-family: inherit;
+}
+.table td input:not(:disabled):not([readonly]),
+.table td select:not(:disabled) {
+    border-color: var(--color-border);
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    padding: 3px 6px;
+}
+.table td input:disabled,
+.table td select:disabled {
+    cursor: default;
+    opacity: 1;
+    -webkit-text-fill-color: var(--color-text);
 }
 
 /* Row variants */

@@ -38,7 +38,7 @@ function renderPedidos() {
       <table class="table">
         <thead>
           <tr>
-            <th style="width:90px">Ref.</th><th>Cliente</th><th>Equipamento</th><th>Órgão</th><th>Parte</th><th>Nº Orçamento</th><th>Custo Líquido</th><th>Ordem de Compra</th><th>Ação</th><th style="width:90px">Estado</th>
+            <th style="width:90px">Ref.</th><th>Cliente</th><th>Breve Descrição</th><th>Nº Orçamento</th><th>Custo Líquido</th><th>Ordem de Compra</th><th>Ação</th><th style="width:90px">Estado</th>
           </tr>
         </thead>
         <tbody>${_pedidosRows()}</tbody>
@@ -67,9 +67,7 @@ function _pedidosRows() {
       <td>${p.ref}</td>
       <td>${inlineFlex(avatarHtml(cl.nome, cl.avClass, true), label)}</td>
 
-      <td>${dp.equipamento || '-'}</td>
-      <td>${dp.orgao || '-'}</td>
-      <td>${dp.parte || '-'}</td>
+      <td>${dp.breveDescricao || '-'}</td>
       <td>${(() => {
           const orc = DB.orcamentos.find(
               (o) => o.pedidoId === p.id && o.ativo && o.estado === 'Aprovado',
@@ -106,8 +104,9 @@ async function criarOT(pedidoId) {
         await apiPut(`/pedidos/${pedidoId}`, { estado_pedido: 'Produção' });
         await carregarDados();
         renderAll();
+        _successToast('Ordem de trabalho criada.');
     } catch (err) {
-        alert('Erro ao criar OT: ' + err.message);
+        _erroToast('Erro ao criar OT: ' + err.message);
     }
 }
 
@@ -117,9 +116,17 @@ let _preSelectedPedidoId = null;
 /*
  * Mostra os detalhes de um pedido
  */
-function showPedidoDetalhe(id) {
+async function showPedidoDetalhe(id) {
     _currentPedidoId = id;
     _isEditMode = false;
+    if (id) {
+        try {
+            const registos = await apiFetch(`/historico-precos/pedido/${id}`);
+            DB.historico_precos = registos;
+        } catch (_) { DB.historico_precos = []; }
+    } else {
+        DB.historico_precos = [];
+    }
     showPage('pedido_detalhe');
 }
 
@@ -144,6 +151,7 @@ async function encerrarPedido(id) {
             await apiPatch(`/pedidos/${id}/estado`, { estado_pedido: 'Concluido' });
         }
         await carregarDados();
+        _successToast('Pedido encerrado.');
         showPage('pedidos');
     } catch (err) {
         console.error(err);
@@ -266,43 +274,81 @@ function renderPedidoDetalhe() {
 
     const formHtml = `
   <div class="form-grid">
-    <div class="form-group"><label class="form-label">Referência do Pedido</label><input id="f-ref" value="${p.ref}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
-    <div class="form-group"><label class="form-label">Data de Criação PT</label><input id="f-pt-data" type="date" value="${p.data}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
-    <div class="form-group"><label class="form-label">Ordem de Trabalho</label><input id="f-dp-ordem_trabalho" value="${ot ? ot.num : ''}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
-    <div class="form-group"><label class="form-label">Data de Criação OT</label><input id="f-ot-data" type="date" value="${today()}" readonly style="background:#ddedda; cursor:not-allowed; height:30px; box-sizing:border-box;"></div>
-    <div class="form-group"><label class="form-label">Ordem de Compra</label><input id="f-dp-ordem_compra" value="${dp.ordem_compra || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''} oninput="_toggleRececaoOC()" style="height:30px; box-sizing:border-box;"></div>
-    <div class="form-group"><label class="form-label">Data de Receção OC</label><input id="f-dp-data_rececao_oc" type="date" value="${dp.data_rececao_oc || ''}" ${!isNew && !_isEditMode || !(dp.ordem_compra) ? 'disabled' : ''} style="height:30px; box-sizing:border-box;"></div>
-
-    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Dados do Cliente</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
-    <div class="form-group full">
-      <label class="form-label">Solicitado por</label>
-      <div style="display: flex; gap: 8px; align-items: center;">
-        <select id="f-clienteKey" ${!isNew && !_isEditMode ? 'disabled' : ''} style="flex: 1;">
-          <optgroup label="Colaboradores de empresa">${colabOpts}</optgroup>
-          <optgroup label="Particulares">${partOpts}</optgroup>
+    <div style="grid-column:1/-1;display:flex;flex-direction:row;gap:16px;">
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+        <label class="form-label">Referência do Pedido</label>
+        <input id="f-ref" value="${p.ref}" readonly style="background:#ddedda;cursor:not-allowed;height:30px;box-sizing:border-box;width:100%;border:none;">
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+        <label class="form-label">Data de Criação PT</label>
+        <input id="f-pt-data" type="date" value="${p.data}" readonly style="background:#ddedda;cursor:not-allowed;height:30px;box-sizing:border-box;width:100%;border:none;">
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+        <label class="form-label">Ordem de Trabalho</label>
+        ${ot
+          ? `<div style="height:30px;box-sizing:border-box;display:flex;align-items:center;background:#ddedda;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 8px;">
+               <a href="#" onclick="showOrdemDetalhe(${ot.id});return false;" style="font-weight:600;color:var(--color-primary);text-decoration:underline;">${ot.num}</a>
+             </div>`
+          : `<input value="" readonly style="background:#ddedda;cursor:not-allowed;height:30px;box-sizing:border-box;width:100%;">`
+        }
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+        <label class="form-label">Data de Criação OT</label>
+        <input id="f-ot-data" type="date" value="${today()}" readonly style="background:#ddedda;cursor:not-allowed;height:30px;box-sizing:border-box;width:100%;border:none;">
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+        <label class="form-label">Estado do Pedido</label>
+        <select id="f-pt-estado" ${!isNew && !_isEditMode ? 'disabled' : ''} style="height:30px;box-sizing:border-box;">
+          <option value="Orçamentar" ${p.estado_pedido === 'Orçamentar' ? 'selected' : ''}>Orçamentar</option>
+          <option value="Pendente" ${p.estado_pedido === 'Pendente' ? 'selected' : ''}>Pendente</option>
+          <option value="Produção" ${p.estado_pedido === 'Produção' ? 'selected' : ''}>Produção</option>
+          <option value="Faturar" ${p.estado_pedido === 'Faturar' ? 'selected' : ''}>Faturar</option>
+          <option value="Concluido" ${p.estado_pedido === 'Concluido' ? 'selected' : ''}>Concluido</option>
+          <option value="Cancelado" ${p.estado_pedido === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
         </select>
-        <button class="btn btn-ghost" title="Ver detalhes do cliente" onclick="verDetalhesCliente()">${ICON_VIEW}</button>
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Tipo de Contacto</label>
-      <select id="f-dp-tipo_contacto" ${!isNew && !_isEditMode ? 'disabled' : ''}>
-        <option value="" ${!dp.tipo_contacto ? 'selected' : ''}>Selecione...</option>
-        <option value="Instalações Cliente" ${dp.tipo_contacto === 'Instalações Cliente' ? 'selected' : ''}>Instalações Cliente</option>
-        <option value="Instalações DM" ${dp.tipo_contacto === 'Instalações DM' ? 'selected' : ''}>Instalações DM</option>
-        <option value="E-mail" ${dp.tipo_contacto === 'E-mail' ? 'selected' : ''}>E-mail</option>
-      </select>
+    <div style="grid-column:1/-1;display:flex;flex-direction:row;align-items:flex-end;gap:16px;">
+      <div class="form-group" style="flex:0 0 auto;">
+        <label class="form-label">Ordem de Compra</label>
+        <input id="f-dp-ordem_compra" value="${dp.ordem_compra || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''} oninput="_toggleRececaoOC()">
+      </div>
+      <div class="form-group" style="flex:0 0 auto;">
+        <label class="form-label">Data de Receção OC</label>
+        <input id="f-dp-data_rececao_oc" type="date" value="${dp.data_rececao_oc || ''}" ${!isNew && !_isEditMode || !(dp.ordem_compra) ? 'disabled' : ''}>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end;">
+        <button class="btn" style="width:120px;" onclick="showPage('pedidos')">Cancelar</button>
+        ${isNew
+          ? `<button class="btn btn-primary" style="width:120px;" onclick="savePedidoDetalhe(null)">Criar Pedido</button>`
+          : !_isEditMode
+            ? `<button class="btn btn-primary" style="width:120px;" onclick="toggleEditMode()">Editar</button>`
+            : `<button class="btn btn-primary" style="width:120px;" onclick="savePedidoDetalhe(${p.id})">Guardar alterações</button>`
+        }
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Estado do Pedido</label>
-      <select id="f-pt-estado" ${!isNew && !_isEditMode ? 'disabled' : ''}>
-        <option value="Orçamentar" ${p.estado_pedido === 'Orçamentar' ? 'selected' : ''}>Orçamentar</option>
-        <option value="Pendente" ${p.estado_pedido === 'Pendente' ? 'selected' : ''}>Pendente</option>
-        <option value="Produção" ${p.estado_pedido === 'Produção' ? 'selected' : ''}>Produção</option>
-        <option value="Faturar" ${p.estado_pedido === 'Faturar' ? 'selected' : ''}>Faturar</option>
-        <option value="Concluido" ${p.estado_pedido === 'Concluido' ? 'selected' : ''}>Concluido</option>
-        <option value="Cancelado" ${p.estado_pedido === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
-      </select>
+
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Dados do Cliente</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
+    <div style="grid-column:1/-1;display:flex;flex-direction:row;align-items:flex-end;gap:16px;">
+      <div class="form-group" style="flex:2;">
+        <label class="form-label">Solicitado por</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="f-clienteKey" ${!isNew && !_isEditMode ? 'disabled' : ''} style="flex:1;">
+            <optgroup label="Colaboradores de empresa">${colabOpts}</optgroup>
+            <optgroup label="Particulares">${partOpts}</optgroup>
+          </select>
+          <button class="btn btn-ghost" title="Ver detalhes do cliente" onclick="verDetalhesCliente()">${ICON_VIEW}</button>
+        </div>
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label class="form-label">Tipo de Contacto</label>
+        <select id="f-dp-tipo_contacto" ${!isNew && !_isEditMode ? 'disabled' : ''}>
+          <option value="" ${!dp.tipo_contacto ? 'selected' : ''}>Selecione...</option>
+          <option value="Instalações Cliente" ${dp.tipo_contacto === 'Instalações Cliente' ? 'selected' : ''}>Instalações Cliente</option>
+          <option value="Instalações DM" ${dp.tipo_contacto === 'Instalações DM' ? 'selected' : ''}>Instalações DM</option>
+          <option value="E-mail" ${dp.tipo_contacto === 'E-mail' ? 'selected' : ''}>E-mail</option>
+        </select>
+      </div>
     </div>
     
     <!-- Seccao dados do equipamento -->
@@ -337,21 +383,62 @@ function renderPedidoDetalhe() {
           pecasList.length > 0
               ? `<div class="form-group full">
         <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">Peças associadas (${pecasList.length})</p>
-        <table class="table" style="font-size:12px;">
-          <thead><tr><th>Ref.</th><th>Denominação</th><th>Plano</th><th>Material</th><th>Ação</th></tr></thead>
+        <table class="table" style="font-size:12px;table-layout:fixed;width:100%;">
+          <thead><tr>
+            <th style="width:100px;">Ref.</th>
+            <th style="width:160px;">Denominação</th>
+            <th style="width:80px;">Plano</th>
+            <th style="width:160px;">Material</th>
+            <th style="width:160px;">Dimensões (mm)</th>
+            <th style="width:70px;">Peso (kg)</th>
+            <th style="width:160px;">Fornecedor</th>
+            <th style="width:100px;">Preço Compra (€)</th>
+            <th style="width:80px;">Ação</th>
+          </tr></thead>
           <tbody>${pecasList
-              .map(
-                  (pc) => `<tr>
-            <td>${pc.ref}</td>
-            <td>${pc.denominacao || '-'}</td>
-            <td>${pc.plano || '-'}</td>
-            <td>${_resolverMaterial(pc.materiaPrimaId)}</td>
+              .map((pc) => {
+                  const emOrcamento = DB.orcamento_itens.some(item =>
+                      item.pecaId === pc.id &&
+                      DB.orcamentos.some(o => o.id === item.orcamentoId && o.pedidoId === p.id)
+                  );
+                  const hist = (DB.historico_precos || []).find(h => h.peca_id === pc.id && h.pedido_id === p.id);
+                  const fornOpts = DB.fornecedores.map(f =>
+                      `<option value="${f.id}" ${hist && hist.fornecedor_id === f.id ? 'selected' : ''}>${f.nome}</option>`
+                  ).join('');
+                  const dimParts = [];
+                  if (pc.comprimento) dimParts.push(`C:${pc.comprimento}`);
+                  if (pc.largura)     dimParts.push(`L:${pc.largura}`);
+                  if (pc.diametro_ext) dimParts.push(`∅ext:${pc.diametro_ext}`);
+                  if (pc.diametro_int) dimParts.push(`∅int:${pc.diametro_int}`);
+                  const dim = dimParts.join(' · ') || '—';
+                  const mpPc = DB.materia_prima.find(m => m.id === pc.materiaPrimaId);
+                  const pesoPc = _calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mpPc?.peso_esp);
+                  return `<tr>
+            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.ref}</td>
+            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.denominacao || '-'}</td>
+            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.plano || '-'}</td>
+            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_resolverMaterial(pc.materiaPrimaId)}</td>
+            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${dim}</td>
+            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pesoPc || '—'}</td>
+            <td>
+              <select style="font-size:11px;width:100%;box-sizing:border-box;" ${!_isEditMode ? 'disabled' : ''} onchange="guardarHistoricoPreco(${p.id},${pc.id},this.value,null)">
+                <option value="">—</option>
+                ${fornOpts}
+              </select>
+            </td>
+            <td>
+              <input type="number" step="0.01" min="0" value="${hist && hist.preco_compra != null ? Number(hist.preco_compra).toFixed(2) : ''}"
+                style="font-size:11px;width:100%;box-sizing:border-box;"
+                ${!_isEditMode ? 'disabled' : ''}
+                onchange="guardarHistoricoPreco(${p.id},${pc.id},null,this.value)">
+            </td>
             <td style="display:flex;gap:4px;">
               <button class="btn btn-ghost btn-sm" title="Ver peça" onclick="verPecaOverlay(${pc.id})">${ICON_VIEW}</button>
-              <button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" onclick="removerPecaDoPedido(${p.id},${pc.id})" title="Remover associação">✕</button>
+              <button class="btn btn-ghost btn-sm" title="Historial de preços" onclick="verHistorialPrecos(${pc.id})">📋</button>
+              ${emOrcamento ? '' : `<button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" onclick="removerPecaDoPedido(${p.id},${pc.id})" title="Remover associação">✕</button>`}
             </td>
-          </tr>`,
-              )
+          </tr>`;
+              })
               .join('')}</tbody>
         </table>
       </div>`
@@ -360,6 +447,75 @@ function renderPedidoDetalhe() {
     `
             : ''
     }
+
+    <!-- Seccao de servicos -->
+    ${!isNew ? `
+    <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Serviços</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
+    <div style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <button class="btn btn-primary" onclick="abrirAdicionarServico(${p.id})" ${isCancelado ? 'disabled' : ''}>+ Adicionar Serviço</button>
+      </div>
+      ${(() => {
+          const spList = DB.servicos_pedidos.filter(sp => sp.pedidoId === p.id);
+          if (spList.length === 0) return '<p style="font-size:12px;color:var(--color-text-muted);margin:0;">Sem serviços associados.</p>';
+          return `<table class="table" style="font-size:12px;table-layout:fixed;width:100%;">
+            <thead><tr>
+              <th style="width:100px;">Ref.</th>
+              <th style="width:160px;">Tipo de Serviço</th>
+              <th style="width:180px;">Descrição</th>
+              <th style="width:60px;">Unid.</th>
+              <th style="width:180px;">Fornecedor</th>
+              <th style="width:80px;">Qtd.</th>
+              <th style="width:100px;">Preço Unit. (€)</th>
+              <th style="width:100px;">Total (€)</th>
+              <th style="width:60px;">Ação</th>
+            </tr></thead>
+            <tbody>${spList.map(sp => {
+                const sv = DB.servicos.find(s => s.id === sp.servicoId);
+                if (!sv) return '';
+                const total = (sp.quantidade * sp.precoUnitario).toFixed(2);
+                return `<tr>
+                  <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sv.ref}</td>
+                  <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sv.tipo_servico}</td>
+                  <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sv.descricao || '—'}</td>
+                  <td>${sv.unidade || '—'}</td>
+                  <td>
+                    <select style="font-size:11px;width:100%;box-sizing:border-box;" ${!_isEditMode ? 'disabled' : ''}
+                      onchange="guardarFornecedorServico(${sp.id}, this.value)">
+                      <option value="">—</option>
+                      ${DB.fornecedores.map(f => `<option value="${f.id}" ${sp.fornecedorId === f.id ? 'selected' : ''}>${f.nome}</option>`).join('')}
+                    </select>
+                  </td>
+                  <td>
+                    <input type="number" step="0.01" min="0.01" value="${sp.quantidade}"
+                      style="font-size:11px;width:100%;box-sizing:border-box;"
+                      ${!_isEditMode ? 'disabled' : ''}
+                      onchange="guardarServicoPedido(${sp.id}, 'quantidade', this.value)">
+                  </td>
+                  <td>
+                    <input type="number" step="0.01" min="0" value="${sp.precoUnitario.toFixed(2)}"
+                      style="font-size:11px;width:100%;box-sizing:border-box;"
+                      ${!_isEditMode ? 'disabled' : ''}
+                      onchange="guardarServicoPedido(${sp.id}, 'preco_unitario', this.value)">
+                  </td>
+                  <td style="text-align:right;font-weight:600;">${total} €</td>
+                  <td>${(() => {
+                    const emOrcamentoItem = DB.orcamento_itens.some(item =>
+                        item.itemTipo === 'servico' &&
+                        item.servicoId === sp.servicoId &&
+                        DB.orcamentos.some(o => o.id === item.orcamentoId && o.pedidoId === p.id)
+                    );
+                    const pedidoTemOrcamentoAtivo = DB.orcamentos.some(o => o.pedidoId === p.id && o.ativo);
+                    const emOrcamento = emOrcamentoItem || pedidoTemOrcamentoAtivo;
+                    if (isCancelado || emOrcamento) return '';
+                    return `<button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);"
+                      onclick="removerServicoDoPedido(${sp.id})" title="Remover serviço">✕</button>`;
+                  })()}</td>
+                </tr>`;
+            }).join('')}</tbody>
+          </table>`;
+      })()}
+    </div>` : ''}
 
     <!-- Seccao de orçamentos  -->
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Orçamentos</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
@@ -454,16 +610,7 @@ function renderPedidoDetalhe() {
   </div>
 
 
-  <div class="form-actions" style="margin-top: 2rem;">
-    <button class="btn" onclick="showPage('pedidos')">Cancelar</button>
-    ${
-        isNew
-            ? `<button class="btn btn-primary" onclick="savePedidoDetalhe(null)">Criar Pedido</button>`
-            : !_isEditMode
-              ? `<button class="btn btn-primary" onclick="toggleEditMode()">Editar</button>`
-              : `<button class="btn btn-primary" onclick="savePedidoDetalhe(${p.id})">Guardar alterações</button>`
-    }
-  </div>`;
+  `;
 
     document.getElementById('page-pedido_detalhe').innerHTML = `
     <div class="section-header">
@@ -471,7 +618,7 @@ function renderPedidoDetalhe() {
       <span class="section-count">${isNew ? 'Novo Pedido' : 'Detalhe do Pedido: ' + p.ref}</span>
       ${!isNew ? `<button class="btn" onclick="exportarPedidoPDF(${p.id})">⬇ Exportar PDF</button>` : ''}
     </div>
-    <div class="full-card" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
+    <div class="full-card" style="padding: 2rem;">
       ${formHtml}
     </div>
   `;
@@ -632,7 +779,7 @@ async function savePedidoDetalhe(id) {
 
         const dpRefInput = document.getElementById('f-dp-ref').value.trim();
         const dpPayload = {
-            ref:             dpRefInput || 'DP-' + Date.now().toString().slice(-4),
+            ref:             dpRefInput || undefined,
             equipamento:     document.getElementById('f-dp-equipamento').value || undefined,
             orgao:           document.getElementById('f-dp-orgao').value || undefined,
             parte:           document.getElementById('f-dp-parte').value || undefined,
@@ -649,14 +796,8 @@ async function savePedidoDetalhe(id) {
             dadosPedidoId = p.dadosPedidoId;
             await apiPut(`/dados-pedido/${dadosPedidoId}`, dpPayload);
         } else {
-            const existingDp = DB.dados_pedido.find((d) => d.ref === dpPayload.ref);
-            if (existingDp) {
-                dadosPedidoId = existingDp.id;
-                await apiPut(`/dados-pedido/${dadosPedidoId}`, dpPayload);
-            } else {
-                const newDp = await apiPost('/dados-pedido', dpPayload);
-                dadosPedidoId = newDp.id;
-            }
+            const newDp = await apiPost('/dados-pedido', dpPayload);
+            dadosPedidoId = newDp.id;
         }
 
         if (isNew) {
@@ -682,6 +823,7 @@ async function savePedidoDetalhe(id) {
         }
 
         await carregarDados();
+        _successToast('Pedido gravado com sucesso.');
         showPage('pedidos');
     } catch (err) {
         console.error('savePedidoDetalhe erro:', err);
@@ -700,6 +842,7 @@ async function removerPecaDoPedido(pedidoId, pecaId) {
         await carregarDados();
         _currentPedidoId = pedidoId;
         renderPedidoDetalhe();
+        _successToast('Peça removida.');
     } catch (err) {
         console.error(err);
         _erroToast('Erro ao remover peça: ' + (err.message || 'verifique o servidor'));
@@ -754,8 +897,8 @@ function verPecaOverlay(pecaId) {
                 <p style="font-size:13px;margin:0;">${pc.nota_descritiva}</p>` : ''}
                 ${pc.imagem ? `
                 <div class="vpc-section-title">Imagem</div>
-                <div style="width:100%;max-height:220px;overflow:hidden;border-radius:var(--radius-md);border:1px solid var(--color-border);">
-                    <img src="${pc.imagem}" style="width:100%;height:100%;object-fit:contain;">
+                <div style="width:100%;border-radius:var(--radius-md);border:1px solid var(--color-border);display:flex;justify-content:center;background:var(--color-surface-alt);">
+                    <img src="${pc.imagem}" style="max-width:100%;max-height:220px;object-fit:contain;">
                 </div>` : ''}
             </div>
         </div>`;
@@ -765,6 +908,41 @@ function verPecaOverlay(pecaId) {
 function fecharVerPecaOverlay() {
     const overlay = document.getElementById('ver-peca-overlay');
     if (overlay) overlay.remove();
+}
+
+function verServicoOverlay(servicoId) {
+    const sv = DB.servicos.find(x => x.id === servicoId);
+    if (!sv) return;
+
+    const existente = document.getElementById('ver-servico-overlay');
+    if (existente) existente.remove();
+
+    function campo(label, valor) {
+        return `<div class="vpc-field">
+            <span class="vpc-label">${label}</span>
+            <span class="vpc-value">${valor || '—'}</span>
+        </div>`;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'ver-servico-overlay';
+    overlay.className = 'peca-search-overlay';
+    overlay.innerHTML = `
+        <div class="peca-search-panel" style="max-width:480px;">
+            <div class="peca-search-header">
+                <h3 style="margin:0;font-size:15px;font-weight:600;">Serviço — ${sv.ref || '—'}</h3>
+                <button class="btn btn-ghost" onclick="document.getElementById('ver-servico-overlay').remove()">✕</button>
+            </div>
+            <div class="peca-search-body">
+                <div class="vpc-grid">
+                    ${campo('Referência', sv.ref)}
+                    ${campo('Tipo de Serviço', sv.tipo_servico)}
+                    ${campo('Descrição', sv.descricao)}
+                    ${campo('Unidade', sv.unidade)}
+                </div>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
 }
 
 /* -------- Overlay de pesquisa de peças -------- */
@@ -842,6 +1020,7 @@ async function associarPecaDaOverlay(pecaId) {
         _currentPedidoId = pedidoId;
         renderPedidoDetalhe();
         _renderPecaSearchRows();
+        _successToast('Peça associada ao pedido.');
     } catch (err) {
         console.error(err);
         _erroToast('Erro ao associar peça: ' + (err.message || 'verifique o servidor'));
@@ -866,6 +1045,7 @@ async function adicionarNota(pedidoId) {
         await carregarDados();
         _currentPedidoId = pedidoId;
         renderPedidoDetalhe();
+        _successToast('Nota adicionada.');
     } catch (err) {
         console.error(err);
         _erroToast('Erro ao adicionar nota: ' + (err.message || 'verifique o servidor'));
@@ -878,10 +1058,73 @@ async function apagarNota(notaId) {
         await fetch(`${API_BASE}/notas-pedido/${notaId}`, { method: 'DELETE' });
         await carregarDados();
         renderPedidoDetalhe();
+        _successToast('Nota apagada.');
     } catch (err) {
         console.error(err);
         _erroToast('Erro ao apagar nota: ' + (err.message || 'verifique o servidor'));
     }
+}
+
+/* -------- Historial de preços -------- */
+
+async function guardarHistoricoPreco(pedidoId, pecaId, fornecedorIdRaw, precoRaw) {
+    const hist = (DB.historico_precos || []).find(h => h.peca_id === pecaId && h.pedido_id === pedidoId) || {};
+    const fornecedor_id = fornecedorIdRaw !== null
+        ? (fornecedorIdRaw ? parseInt(fornecedorIdRaw) : null)
+        : (hist.fornecedor_id || null);
+    const preco_compra = precoRaw !== null
+        ? (precoRaw !== '' ? parseFloat(precoRaw) : null)
+        : (hist.preco_compra != null ? Number(hist.preco_compra) : null);
+    try {
+        const atualizado = await apiPost('/historico-precos', {
+            peca_id: pecaId, pedido_id: pedidoId, fornecedor_id, preco_compra,
+        });
+        const idx = (DB.historico_precos || []).findIndex(h => h.peca_id === pecaId && h.pedido_id === pedidoId);
+        if (idx !== -1) DB.historico_precos[idx] = atualizado;
+        else { DB.historico_precos = DB.historico_precos || []; DB.historico_precos.push(atualizado); }
+        _successToast('Preço gravado.');
+    } catch (err) {
+        _erroToast('Erro ao guardar preço: ' + err.message);
+    }
+}
+
+async function verHistorialPrecos(pecaId) {
+    const pc = DB.pecas.find(x => x.id === pecaId);
+    let registos = [];
+    try { registos = await apiFetch(`/historico-precos/peca/${pecaId}`); } catch (_) {}
+
+    const existente = document.getElementById('hist-precos-overlay');
+    if (existente) existente.remove();
+
+    const rows = registos.length === 0
+        ? `<tr><td colspan="4" style="text-align:center;color:var(--color-text-muted);padding:1rem;">Sem registos.</td></tr>`
+        : registos.map(h => {
+            const pedido = DB.pedidos.find(p => p.id === h.pedido_id);
+            return `<tr>
+              <td style="white-space:nowrap;">${new Date(h.data).toLocaleDateString('pt-PT')}</td>
+              <td>${pedido ? pedido.ref : '—'}</td>
+              <td>${h.fornecedor ? h.fornecedor.nome : '—'}</td>
+              <td>${h.preco_compra != null ? Number(h.preco_compra).toFixed(2) + ' €' : '—'}</td>
+            </tr>`;
+          }).join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'hist-precos-overlay';
+    overlay.className = 'peca-search-overlay';
+    overlay.innerHTML = `
+      <div class="peca-search-panel" style="max-width:560px;">
+        <div class="peca-search-header">
+          <h3 style="margin:0;font-size:15px;font-weight:600;">Historial de Preços — ${pc ? pc.ref : ''}</h3>
+          <button class="btn btn-ghost" onclick="document.getElementById('hist-precos-overlay').remove()">✕</button>
+        </div>
+        <div class="peca-search-body">
+          <table class="table" style="font-size:12px;">
+            <thead><tr><th>Data</th><th>Pedido</th><th>Fornecedor</th><th>Preço Compra</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
 }
 
 function _toggleRececaoOC() {
@@ -891,4 +1134,174 @@ function _toggleRececaoOC() {
     const temOC = oc.value.trim() !== '';
     dt.disabled = !temOC;
     if (!temOC) dt.value = '';
+}
+
+/* -------- Serviços do Pedido -------- */
+
+function abrirAdicionarServico(pedidoId) {
+    const existente = document.getElementById('servico-add-overlay');
+    if (existente) existente.remove();
+
+    const temServicos = DB.servicos.length > 0;
+    const svOpts = DB.servicos
+        .map(s => `<option value="${s.id}">${s.ref} — ${s.tipo_servico}</option>`)
+        .join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'servico-add-overlay';
+    overlay.className = 'peca-search-overlay';
+    overlay.innerHTML = `
+      <div class="peca-search-panel" style="max-width:480px;">
+        <div class="peca-search-header">
+          <h3 style="margin:0;font-size:15px;font-weight:600;">Adicionar Serviço</h3>
+          <button class="btn btn-ghost" onclick="document.getElementById('servico-add-overlay').remove()">✕</button>
+        </div>
+        <div class="peca-search-body" style="display:flex;flex-direction:column;gap:16px;">
+
+          ${temServicos ? `
+          <div>
+            <p style="font-size:12px;font-weight:600;margin:0 0 8px;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;">Selecionar existente</p>
+            <div class="form-group">
+              <label class="form-label">Serviço</label>
+              <select id="sv-add-id" style="width:100%;" onchange="_svToggleNovo()">
+                <option value="">Selecione...</option>
+                ${svOpts}
+              </select>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:12px;color:var(--color-text-muted);">— ou —</div>` : ''}
+
+          <div>
+            <p style="font-size:12px;font-weight:600;margin:0 0 8px;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;">Criar novo serviço</p>
+            <div style="display:flex;flex-direction:column;gap:8px;" id="sv-novo-form">
+              <div style="display:flex;gap:8px;">
+                <div class="form-group" style="flex:1;">
+                  <label class="form-label">Referência</label>
+                  <input id="sv-novo-ref" placeholder="Ex: SV-001">
+                </div>
+                <div class="form-group" style="flex:1;">
+                  <label class="form-label">Unidade</label>
+                  <select id="sv-novo-unidade">
+                    <option value="und">und</option>
+                    <option value="H">H</option>
+                    <option value="kg">kg</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo de Serviço</label>
+                <input id="sv-novo-tipo" placeholder="Ex: Maquinagem CNC">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Descrição</label>
+                <input id="sv-novo-desc" placeholder="Descrição opcional">
+              </div>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--color-border);padding-top:12px;">
+            <p style="font-size:12px;font-weight:600;margin:0 0 8px;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;">Quantidade, preço e fornecedor</p>
+            <div style="display:flex;gap:8px;">
+              <div class="form-group" style="flex:1;">
+                <label class="form-label">Quantidade</label>
+                <input id="sv-add-qty" type="number" step="0.01" min="0.01" value="1">
+              </div>
+              <div class="form-group" style="flex:1;">
+                <label class="form-label">Preço Unit. (€)</label>
+                <input id="sv-add-preco" type="number" step="0.01" min="0" value="0">
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:8px;">
+              <label class="form-label">Fornecedor</label>
+              <select id="sv-add-fornecedor" style="width:100%;">
+                <option value="">— Sem fornecedor —</option>
+                ${DB.fornecedores.map(f => `<option value="${f.id}">${f.nome}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;gap:8px;">
+            <button class="btn" onclick="document.getElementById('servico-add-overlay').remove()">Cancelar</button>
+            <button class="btn btn-primary" onclick="confirmarAdicionarServico(${pedidoId})">Adicionar</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+}
+
+function _svToggleNovo() {
+    const sel = document.getElementById('sv-add-id')?.value;
+    const form = document.getElementById('sv-novo-form');
+    if (!form) return;
+    const inputs = form.querySelectorAll('input, select');
+    inputs.forEach(el => el.disabled = !!sel);
+    form.style.opacity = sel ? '0.4' : '1';
+}
+
+async function confirmarAdicionarServico(pedidoId) {
+    const quantidade    = parseFloat(document.getElementById('sv-add-qty')?.value) || 1;
+    const precoUnitario = parseFloat(document.getElementById('sv-add-preco')?.value) || 0;
+
+    let servicoId = Number(document.getElementById('sv-add-id')?.value) || 0;
+
+    try {
+        if (!servicoId) {
+            const ref  = document.getElementById('sv-novo-ref')?.value.trim();
+            const tipo = document.getElementById('sv-novo-tipo')?.value.trim();
+            const desc = document.getElementById('sv-novo-desc')?.value.trim();
+            const unidade = document.getElementById('sv-novo-unidade')?.value || 'und';
+            if (!ref || !tipo) { _erroToast('Preencha a Referência e o Tipo de Serviço.'); return; }
+            const novo = await apiPost('/servicos', { ref, tipo_servico: tipo, descricao: desc || undefined, unidade });
+            servicoId = novo.id;
+        }
+
+        const fornecedorId = Number(document.getElementById('sv-add-fornecedor')?.value) || null;
+        await apiPost('/servicos-pedidos', {
+            servico_id: servicoId,
+            pedido_id: pedidoId,
+            quantidade,
+            preco_unitario: precoUnitario,
+            fornecedor_id: fornecedorId,
+        });
+        document.getElementById('servico-add-overlay')?.remove();
+        await carregarDados();
+        _currentPedidoId = pedidoId;
+        renderPedidoDetalhe();
+        _successToast('Serviço adicionado.');
+    } catch (err) {
+        _erroToast('Erro ao adicionar serviço: ' + err.message);
+    }
+}
+
+async function guardarFornecedorServico(spId, fornecedorId) {
+    try {
+        await apiPut(`/servicos-pedidos/${spId}`, {
+            fornecedor_id: fornecedorId ? Number(fornecedorId) : null,
+        });
+        await carregarDados();
+        renderPedidoDetalhe();
+    } catch (err) {
+        _erroToast('Erro ao guardar fornecedor: ' + err.message);
+    }
+}
+
+async function guardarServicoPedido(spId, campo, valor) {
+    try {
+        await apiPut(`/servicos-pedidos/${spId}`, { [campo]: parseFloat(valor) });
+        await carregarDados();
+        renderPedidoDetalhe();
+    } catch (err) {
+        _erroToast('Erro ao guardar: ' + err.message);
+    }
+}
+
+async function removerServicoDoPedido(spId) {
+    try {
+        await apiDelete(`/servicos-pedidos/${spId}`);
+        await carregarDados();
+        renderPedidoDetalhe();
+        _successToast('Serviço removido.');
+    } catch (err) {
+        _erroToast('Erro ao remover serviço: ' + err.message);
+    }
 }

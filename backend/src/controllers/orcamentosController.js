@@ -10,11 +10,12 @@ const schema = z.object({
   data_validade: z.string().optional(),
   estado:        z.string().optional(),
   observacoes:   z.string().optional(),
+  notas:         z.string().optional(),
   ativo:         z.boolean().optional(),
   total_liquido: z.number().optional(),
 });
 
-const include = { itens: { include: { peca: true } } };
+const include = { itens: { include: { peca: true, servico: true } } };
 
 async function listar(req, res, next) {
   try {
@@ -81,19 +82,20 @@ async function atualizar(req, res, next) {
 async function salvarItens(req, res, next) {
   try {
     const id = Number(req.params.id);
-    const itens = z.array(z.object({
-      peca_id:        z.number().int(),
-      quantidade:     z.number(),
-      valor_unitario: z.number(),
-    })).parse(req.body);
+    const itemSchema = z.union([
+      z.object({ item_tipo: z.literal('peca'),    peca_id:    z.number().int(), quantidade: z.number(), valor_unitario: z.number() }),
+      z.object({ item_tipo: z.literal('servico'), servico_id: z.number().int(), quantidade: z.number(), valor_unitario: z.number() }),
+    ]);
+    const itens = z.array(itemSchema).parse(req.body);
 
     await prisma.orcamentoItem.deleteMany({ where: { orcamento_id: id } });
     if (itens.length > 0) {
       await prisma.orcamentoItem.createMany({
         data: itens.map(i => ({
           orcamento_id:   id,
-          item_tipo:      'peca',
-          peca_id:        i.peca_id,
+          item_tipo:      i.item_tipo,
+          peca_id:        i.item_tipo === 'peca'    ? i.peca_id    : null,
+          servico_id:     i.item_tipo === 'servico' ? i.servico_id : null,
           quantidade:     i.quantidade,
           valor_unitario: i.valor_unitario,
         })),

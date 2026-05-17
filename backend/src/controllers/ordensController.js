@@ -10,7 +10,8 @@ const schema = z.object({
   prazo: z.number().int().optional().nullable(),
   mo_obra: z.number().optional(),
   notas: z.string().optional(),
-  data_limite_entrega: z.string().optional(),
+  data_limite_entrega: z.string().optional().nullable(),
+  concluido_em: z.string().optional().nullable(),
   n_gt: z.string().optional(),
   n_ft: z.string().optional(),
   observacoes: z.string().optional(),
@@ -40,6 +41,7 @@ async function obter(req, res, next) {
 
 function parseDados(dados) {
   if (dados.data_limite_entrega) dados.data_limite_entrega = new Date(dados.data_limite_entrega);
+  if (dados.concluido_em) dados.concluido_em = new Date(dados.concluido_em);
   return dados;
 }
 

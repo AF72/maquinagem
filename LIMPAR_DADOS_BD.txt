@@ -1,0 +1,60 @@
+LIMPAR DADOS DA BASE DE DADOS — PASSOS
+=======================================
+
+PRÉ-REQUISITO
+-------------
+O servidor backend pode estar parado ou a correr — não importa.
+Tens de estar dentro da pasta backend:
+
+   cd backend
+
+
+OPÇÃO A — LIMPAR TUDO (todas as tabelas)
+-----------------------------------------
+Apaga todos os dados: peças, pedidos, ordens, orçamentos, clientes, matéria-prima, etc.
+
+   node prisma/limpar.js tudo
+
+
+OPÇÃO B — LIMPAR POR MÓDULO (escolhe o que precisas)
+------------------------------------------------------
+Podes passar um ou mais módulos de seguida:
+
+   node prisma/limpar.js orcamentos
+   node prisma/limpar.js pecas
+   node prisma/limpar.js pedidos
+   node prisma/limpar.js ordens
+   node prisma/limpar.js clientes
+
+Exemplos combinados:
+   node prisma/limpar.js orcamentos pecas
+   node prisma/limpar.js pedidos ordens
+
+
+O QUE CADA OPÇÃO APAGA
+-----------------------
+  orcamentos   → orcamento_itens + orcamentos
+  pecas        → pecas_pedidos + orcamento_itens + pecas
+  pedidos      → notas_pedido + orcamentos + orcamento_itens + pecas_pedidos
+                 + ordens_trabalho + pedidos + dados_pedido
+  ordens       → ordens_trabalho
+  clientes     → colaboradores + empresas + particulares
+  tudo         → todas as tabelas acima + materia_prima + servicos + colaboradores_dm
+
+
+ATENÇÃO
+-------
+- A operação é irreversível — não há desfazer.
+- Faz sempre um backup antes se os dados forem importantes:
+
+   Backup rápido via Prisma Studio (visual):
+      npx prisma studio
+      Abre em: http://localhost:5555
+
+   Backup via pg_dump (linha de comandos):
+      pg_dump -h 127.0.0.1 -p 5433 -U postgres maquinagemdev > backup_$(date +%Y%m%d).sql
+
+
+REPOPULAR COM DADOS DE TESTE (após limpeza)
+--------------------------------------------
+   npm run db:seed

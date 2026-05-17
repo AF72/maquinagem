@@ -12,6 +12,10 @@ const DB = {
     notas_pedido:    [],
     colaboradores_dm:[],
     materia_prima:   [],
+    fornecedores:    [],
+    historico_precos:[],
+    servicos:        [],
+    servicos_pedidos:[],
 
     /** UI state */
     expanded:      {},

@@ -46,6 +46,15 @@ async function apiPatch(path, body) {
     return res.json();
 }
 
+async function apiDelete(path) {
+    const res = await fetch(API_BASE + path, { method: 'DELETE' });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.erro || `DELETE ${path} → ${res.status}`);
+    }
+    return null;
+}
+
 function mapColaborador(c) {
     return { ...c, empresaId: c.empresa_id };
 }
@@ -98,7 +107,11 @@ async function carregarDados() {
         { key: 'ordens',        path: '/ordens',         map: v => v.map(mapOrdem) },
         { key: 'orcamentos', path: '/orcamentos', map: v => {
             DB.orcamento_itens = v.flatMap(o => (o.itens || []).map(i => ({
-                id: i.id, orcamentoId: i.orcamento_id, pecaId: i.peca_id,
+                id: i.id, orcamentoId: i.orcamento_id,
+                itemTipo: i.item_tipo,
+                pecaId:    i.peca_id,
+                servicoId: i.servico_id,
+                servico:   i.servico || null,
                 precoUnitario: Number(i.valor_unitario), quantidade: Number(i.quantidade),
                 subtotal: Number(i.valor_unitario) * Number(i.quantidade),
             })));
@@ -107,6 +120,7 @@ async function carregarDados() {
         { key: 'materia_prima', path: '/materia-prima',  map: v => v },
         { key: 'pecas',            path: '/pecas',            map: v => v.map(p => ({ ...p, materiaPrimaId: p.materia_prima_id })) },
         { key: 'colaboradores_dm', path: '/colaboradores-dm', map: v => v },
+        { key: 'fornecedores',    path: '/fornecedores',     map: v => v },
         { key: 'pecas_pedidos',    path: '/pecas-pedidos',    map: v => v.map(j => ({ ...j, pecaId: j.peca_id, pedidoId: j.pedido_id })) },
         { key: 'notas_pedido',     path: '/notas-pedido',     map: v => v.map(n => {
             const dt = new Date(n.criado_em);
@@ -114,6 +128,15 @@ async function carregarDados() {
             const hora = dt.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
             return { ...n, pedidoId: n.pedido_id, criadoPorId: n.colaborador_dm_id, dataHora: `${data} ${hora}` };
         }) },
+        { key: 'servicos',         path: '/servicos',          map: v => v },
+        { key: 'servicos_pedidos', path: '/servicos-pedidos',  map: v => v.map(s => ({
+            ...s,
+            servicoId:    s.servico_id,
+            pedidoId:     s.pedido_id,
+            fornecedorId: s.fornecedor_id,
+            quantidade:   Number(s.quantidade),
+            precoUnitario: Number(s.preco_unitario),
+        })) },
     ];
 
     const resultados = await Promise.allSettled(

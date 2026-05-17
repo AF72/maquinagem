@@ -4,7 +4,7 @@ const { z } = require('zod');
 const prisma = new PrismaClient();
 
 const schema = z.object({
-  ref:             z.string().min(1),
+  ref:             z.string().optional().nullable(),
   equipamento:     z.string().optional(),
   orgao:           z.string().optional(),
   parte:           z.string().optional(),

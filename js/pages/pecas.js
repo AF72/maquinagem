@@ -23,7 +23,7 @@ function renderPecas() {
       <table class="table">
         <thead>
           <tr>
-            <th style="width:150px;white-space:nowrap">Ref.</th><th>Denominação</th><th>Órgão</th><th>Parte</th><th style="width:1%;white-space:nowrap">Material</th><th>Ação</th>
+            <th style="width:120px;">Ref.</th><th style="width:160px;">Denominação</th><th style="width:100px;">Órgão</th><th style="width:100px;">Parte</th><th style="width:160px;">Material</th><th style="width:160px;">Dimensões (mm)</th><th style="width:80px;">Peso (kg)</th><th style="width:80px;">Ação</th>
           </tr>
         </thead>
         <tbody>${_pecasRows()}</tbody>
@@ -48,12 +48,22 @@ function _pecasRows() {
     }
     return DB.pecas
         .map((pc) => {
+            const dimParts = [];
+            if (pc.comprimento)  dimParts.push(`C:${pc.comprimento}`);
+            if (pc.largura)      dimParts.push(`L:${pc.largura}`);
+            if (pc.diametro_ext) dimParts.push(`∅ext:${pc.diametro_ext}`);
+            if (pc.diametro_int) dimParts.push(`∅int:${pc.diametro_int}`);
+            const dim = dimParts.join(' · ') || '—';
+            const mp = DB.materia_prima.find(m => m.id === pc.materiaPrimaId);
+            const peso = _calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mp?.peso_esp);
             return `<tr>
-      <td>${pc.ref}</td>
-      <td>${pc.denominacao || '-'}</td>
-      <td>${pc.orgao || '-'}</td>
-      <td>${pc.parte || '-'}</td>
-      <td>${_resolverMaterial(pc.materiaPrimaId)}</td>
+      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.ref}</td>
+      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.denominacao || '-'}</td>
+      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.orgao || '-'}</td>
+      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.parte || '-'}</td>
+      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_resolverMaterial(pc.materiaPrimaId)}</td>
+      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${dim}</td>
+      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${peso || '—'}</td>
       <td style="display:flex;gap:4px;align-items:center;">
         <button class="btn btn-ghost btn-sm" title="Ver peça" onclick="verPecaOverlay(${pc.id})">${ICON_VIEW}</button>
         <button class="btn btn-ghost btn-sm" title="Editar peça" onclick="showPecaDetalhe(${pc.id})">${ICON_ORCAMENTO_EDIT}</button>
@@ -88,7 +98,7 @@ function criarPecaParaPedido(pedidoId) {
  */
 function _pecaRefPrefixo(pedido) {
     const ano = new Date().getFullYear().toString().slice(-2);
-    if (!pedido) return 'DM' + ano + '-';
+    if (!pedido) return 'DM' + ano + '-????';
     const seq = pedido.ref.split('-')[1] || '????';
     return 'DM' + ano + '-' + seq;
 }
@@ -446,8 +456,9 @@ async function savePecaDetalhe(id) {
             await apiPut(`/pecas/${id}`, dados);
         }
         await carregarDados();
+        _successToast('Peça gravada com sucesso.');
         _voltarDePeca();
     } catch (err) {
-        alert('Erro ao guardar peça: ' + err.message);
+        _erroToast('Erro ao guardar peça: ' + err.message);
     }
 }

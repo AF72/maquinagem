@@ -359,22 +359,28 @@ function formDadosPedido() {
    Helpers de feedback
    ============================================================ */
 
-function _erroToast(msg) {
-    let t = document.getElementById('_api-toast');
+function _showToast(msg, type) {
+    let t = document.getElementById('_app-toast');
     if (!t) {
         t = document.createElement('div');
-        t.id = '_api-toast';
+        t.id = '_app-toast';
         t.style.cssText =
-            'position:fixed;bottom:24px;right:24px;background:#e53e3e;color:#fff;' +
-            'padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;' +
-            'box-shadow:0 4px 12px rgba(0,0,0,.25);max-width:340px;';
+            'position:fixed;top:20px;left:50%;transform:translateX(-50%);' +
+            'color:#fff;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;' +
+            'z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:420px;' +
+            'text-align:center;transition:opacity .2s;pointer-events:none;';
         document.body.appendChild(t);
     }
+    t.style.background = type === 'success' ? '#2e7d32' : '#e53e3e';
     t.textContent = msg;
+    t.style.opacity = '1';
     t.style.display = 'block';
     clearTimeout(t._timer);
-    t._timer = setTimeout(() => (t.style.display = 'none'), 5000);
+    t._timer = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => (t.style.display = 'none'), 200); }, 3500);
 }
+
+function _successToast(msg) { _showToast(msg, 'success'); }
+function _erroToast(msg)    { _showToast(msg, 'error'); }
 
 async function _apiSave(fn) {
     try {

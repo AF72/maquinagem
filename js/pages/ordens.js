@@ -58,10 +58,17 @@ function _ordensRows() {
 }
 
 let _currentOrdemId = null;
+let _isOTEditMode = false;
 
 function showOrdemDetalhe(otId) {
     _currentOrdemId = otId;
+    _isOTEditMode = false;
     showPage('ordem_detalhe');
+}
+
+function toggleOTEditMode() {
+    _isOTEditMode = true;
+    renderOrdemDetalhe();
 }
 
 function verDetalheOT(otId) {
@@ -74,75 +81,184 @@ function renderOrdemDetalhe() {
     const pd  = getPedido(ot.pedidoId);
     const cl  = resolveCliente(pd.clienteTipo, pd.clienteId);
     const dp  = getDadosPedido(pd.dadosPedidoId);
-    const orc = DB.orcamentos.find((o) => o.pedidoId === pd.id && o.ativo)
+    const orc = DB.orcamentos.find((o) => o.pedidoId === pd.id && o.ativo && o.estado === 'Aprovado')
+             || DB.orcamentos.find((o) => o.pedidoId === pd.id && o.ativo)
              || DB.orcamentos.find((o) => o.pedidoId === pd.id);
+    const orcAprovado = DB.orcamentos.find((o) => o.pedidoId === pd.id && o.ativo && o.estado === 'Aprovado');
+    const orcItens        = orcAprovado ? DB.orcamento_itens.filter(i => i.orcamentoId === orcAprovado.id && i.itemTipo !== 'servico') : [];
+    const orcServicos     = orcAprovado ? DB.orcamento_itens.filter(i => i.orcamentoId === orcAprovado.id && i.itemTipo === 'servico')  : [];
+    const _dimPeca = (pc) => {
+        const parts = [];
+        if (pc.comprimento) parts.push(`C:${pc.comprimento}`);
+        if (pc.largura)     parts.push(`L:${pc.largura}`);
+        if (pc.diametro_ext) parts.push(`∅ext:${pc.diametro_ext}`);
+        if (pc.diametro_int) parts.push(`∅int:${pc.diametro_int}`);
+        return parts.join(' · ') || '—';
+    };
 
     document.getElementById('page-ordem_detalhe').innerHTML = `
     <div class="section-header">
       <button class="btn btn-ghost-back" onclick="showPage('ordens')">&#x21a9 Voltar às Ordens</button>
       <span class="section-count">Detalhe da Ordem: ${ot.num}</span>
     </div>
-    <div class="full-card" style="max-width:800px;margin:0 auto;padding:2rem">
+    <div class="full-card" style="padding:2rem;">
       <div class="form-grid">
 
-        <div class="form-group full">
-          <h4 style="margin:0 0 0.25rem;color:var(--color-primary);">Ordem de Trabalho</h4>
-          <hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem">
-        </div>
-
-        <div class="form-group" style="display:flex;flex-direction:column;gap:8px;">
-          <div>
+        <div style="grid-column:1/-1;display:flex;flex-direction:row;gap:16px;">
+          <div style="flex:2;display:flex;flex-direction:column;gap:4px;">
+            <label class="form-label">Nº Ordem de Trabalho</label>
+            <input value="${ot.num || '—'}" readonly style="background:#ddedda;cursor:not-allowed;height:30px;box-sizing:border-box;width:100%;border:none;">
+          </div>
+          <div style="flex:1.5;display:flex;flex-direction:column;gap:4px;">
             <label class="form-label">Criado em</label>
-            <input type="date" value="${ot.criado_em?.slice(0,10) || ''}" readonly style="background:#ddedda;cursor:not-allowed;height:30px;box-sizing:border-box;width:100%;">
+            <input type="date" value="${ot.criado_em?.slice(0,10) || ''}" readonly style="background:#ddedda;cursor:not-allowed;height:30px;box-sizing:border-box;width:100%;border:none;">
           </div>
-          <div style="display:flex;gap:8px;">
-            <div style="flex:0 0 100px;">
-              <label class="form-label">Prazo (sem.)</label>
-              <input id="f-prazo" type="number" min="1" value="${ot.prazo ?? ''}" oninput="_calcDataLimite('${ot.criado_em?.slice(0,10) || today()}')" style="height:30px;box-sizing:border-box;width:100%;">
-            </div>
-            <div style="flex:1;">
-              <label class="form-label">Data Limite Entrega</label>
-              <input id="f-data_limite_entrega" type="date" value="${ot.dataLimiteEntrega || ''}" readonly style="background:#ddedda;cursor:not-allowed;height:30px;box-sizing:border-box;width:100%;">
-            </div>
+          <div style="flex:0 0 90px;display:flex;flex-direction:column;gap:4px;">
+            <label class="form-label">Prazo (sem.)</label>
+            <input id="f-prazo" type="number" min="1" value="${ot.prazo ?? ''}" oninput="_calcDataLimite('${ot.criado_em?.slice(0,10) || today()}')" ${!_isOTEditMode ? 'disabled' : ''} style="height:30px;box-sizing:border-box;width:100%;">
+          </div>
+          <div style="flex:1.5;display:flex;flex-direction:column;gap:4px;">
+            <label class="form-label">Data Limite Entrega</label>
+            <input id="f-data_limite_entrega" type="date" value="${ot.dataLimiteEntrega || ''}" readonly style="background:#ddedda;cursor:not-allowed;height:30px;box-sizing:border-box;width:100%;border:none;">
+          </div>
+          <div style="flex:1.5;display:flex;flex-direction:column;gap:4px;">
+            <label class="form-label">Estado</label>
+            <select id="f-estado" ${!_isOTEditMode ? 'disabled' : ''} style="height:30px;box-sizing:border-box;width:100%;">
+              ${['Em curso','Pendente','Falta OC','Faturar','Concluída'].map(s =>
+                `<option value="${s}" ${ot.estado === s ? 'selected' : ''}>${s}</option>`
+              ).join('')}
+            </select>
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Estado</label>
-          <select id="f-estado" style="height:30px;box-sizing:border-box;">
-            ${['Em curso','Pendente','Falta OC','Faturar','Concluída'].map(s =>
-              `<option value="${s}" ${ot.estado === s ? 'selected' : ''}>${s}</option>`
-            ).join('')}
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">Concluído em</label><input id="f-concluido_em" type="date" value="${ot.concluido_em?.slice(0,10) || ''}" style="height:30px;box-sizing:border-box;"></div>
 
-        <div class="form-group full">
-          <h4 style="margin:1.5rem 0 0.25rem;color:var(--color-primary);">Dados do Pedido</h4>
-          <hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem">
-        </div>
-
-        <div class="form-group"><label class="form-label">Nº Pedido</label><input value="${pd.ref || '—'}" disabled></div>
-        <div class="form-group"><label class="form-label">Ordem de Compra</label><input value="${dp.ordem_compra || '—'}" disabled></div>
-        <div class="form-group"><label class="form-label">Cliente</label><input value="${cl.nome}" disabled></div>
-        <div class="form-group"><label class="form-label">Empresa / Tipo</label><input value="${cl.subtexto}" disabled></div>
-        <div class="form-group"><label class="form-label">Nº Orçamento</label><input value="${orc ? orc.ref : '—'}" disabled></div>
-        <div class="form-group"><label class="form-label">Valor Orçamento</label><input value="${orc ? Number(orc.valor).toFixed(2) + ' €' : '—'}" disabled></div>
-
-        <div class="form-group full">
-          <h4 style="margin:1.5rem 0 0.25rem;color:var(--color-primary);">Dados do Equipamento</h4>
-          <hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem">
+        <div style="grid-column:1/-1;display:flex;flex-direction:row;align-items:flex-end;gap:16px;">
+          <div class="form-group" style="flex:0 0 auto;">
+            <label class="form-label">Concluído em</label>
+            <input id="f-concluido_em" type="date" value="${ot.concluido_em?.slice(0,10) || ''}" ${!_isOTEditMode ? 'disabled' : ''}>
+          </div>
+          <div class="form-group" style="flex:0 0 auto;">
+            <label class="form-label">Guia Transporte</label>
+            <input id="f-n_gt" value="${ot.n_gt || ''}" ${!_isOTEditMode ? 'disabled' : ''}>
+          </div>
+          <div class="form-group" style="flex:0 0 auto;">
+            <label class="form-label">Fatura</label>
+            <input id="f-n_ft" value="${ot.n_ft || ''}" ${!_isOTEditMode ? 'disabled' : ''}>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end;">
+            <button class="btn" style="width:120px;" onclick="showPage('ordens')">Cancelar</button>
+            ${!_isOTEditMode
+              ? `<button class="btn btn-primary" style="width:120px;" onclick="toggleOTEditMode()">Editar</button>`
+              : `<button class="btn btn-primary" style="width:120px;" onclick="saveOrdemDetalhe(${ot.id})">Guardar alterações</button>`
+            }
+          </div>
         </div>
 
+        <div class="form-group full"><h4 style="margin:1.5rem 0 0.25rem;color:var(--color-primary);">Dados do Pedido</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
+        <div style="grid-column:1/-1;display:flex;flex-direction:row;gap:16px;">
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">Nº Pedido</label>
+            <div style="height:34px;box-sizing:border-box;display:flex;align-items:center;background:#ddedda;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:0 10px;">
+              <a href="#" onclick="showPedidoDetalhe(${pd.id});return false;" style="font-weight:600;color:var(--color-primary);text-decoration:underline;">${pd.ref}</a>
+            </div>
+          </div>
+          <div class="form-group" style="flex:2;">
+            <label class="form-label">Cliente</label>
+            <input value="${cl.nome}" readonly>
+          </div>
+          <div class="form-group" style="flex:2;">
+            <label class="form-label">Empresa / Tipo</label>
+            <input value="${cl.subtexto}" readonly>
+          </div>
+        </div>
+        <div style="grid-column:1/-1;display:flex;flex-direction:row;gap:16px;">
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">Ordem de Compra</label>
+            <input value="${dp.ordem_compra || '—'}" readonly>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">Nº Orçamento</label>
+            <input value="${orc ? orc.ref : '—'}" readonly>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">Valor Orçamento</label>
+            <input value="${orc ? Number(orc.valor).toFixed(2) + ' €' : '—'}" readonly>
+          </div>
+        </div>
+
+        <div class="form-group full"><h4 style="margin:1.5rem 0 0.25rem;color:var(--color-primary);">Dados do Equipamento</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
         <div class="form-group"><label class="form-label">Ref. Equipamento</label><input value="${dp.ref || '—'}" disabled></div>
         <div class="form-group"><label class="form-label">Equipamento</label><input value="${dp.equipamento || '—'}" disabled></div>
         <div class="form-group"><label class="form-label">Órgão</label><input value="${dp.orgao || '—'}" disabled></div>
         <div class="form-group"><label class="form-label">Parte</label><input value="${dp.parte || '—'}" disabled></div>
         <div class="form-group full"><label class="form-label">Breve Descrição</label><input value="${dp.breveDescricao || dp.breve_descricao || '—'}" disabled></div>
 
-      </div>
-      <div class="form-actions" style="margin-top:2rem">
-        <button class="btn" onclick="showPage('ordens')">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveOrdemDetalhe(${ot.id})">Guardar alterações</button>
+        <div class="form-group full"><h4 style="margin:1.5rem 0 0.25rem;color:var(--color-primary);">Lista de Peças Orçamentadas</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
+        <div class="form-group full">
+          ${orcItens.length === 0
+            ? `<p style="font-size:12px;color:var(--color-text-muted);margin:0;">${orcAprovado ? 'Sem peças no orçamento.' : 'Não existe orçamento ativo e aprovado.'}</p>`
+            : `<table class="table" style="font-size:12px;">
+                <thead><tr>
+                  <th>Referência</th>
+                  <th>Denominação</th>
+                  <th>Plano</th>
+                  <th>Material</th>
+                  <th>Dimensões (mm)</th>
+                  <th>Peso (kg)</th>
+                  <th style="text-align:center;">Qtd.</th>
+                  <th style="text-align:right;">Custo (€)</th>
+                </tr></thead>
+                <tbody>
+                  ${orcItens.map(item => {
+                    const pc = DB.pecas.find(p => p.id === item.pecaId);
+                    if (!pc) return '';
+                    return `<tr>
+                      <td><a href="#" onclick="verPecaOverlay(${pc.id});return false;" style="font-weight:600;color:var(--color-primary);text-decoration:underline;">${pc.ref || '—'}</a></td>
+                      <td>${pc.denominacao || '—'}</td>
+                      <td>${pc.plano || '—'}</td>
+                      <td>${_resolverMaterial(pc.materiaPrimaId)}</td>
+                      <td>${_dimPeca(pc)}</td>
+                      <td>${pc.peso != null ? pc.peso : '—'}</td>
+                      <td style="text-align:center;">${item.quantidade}</td>
+                      <td style="text-align:right;">${Number(item.precoUnitario).toFixed(2)}</td>
+                    </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>`
+          }
+        </div>
+
+        <div class="form-group full"><h4 style="margin:1.5rem 0 0.25rem;color:var(--color-primary);">Lista de Serviços Orçamentados</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
+        <div class="form-group full">
+          ${orcServicos.length === 0
+            ? `<p style="font-size:12px;color:var(--color-text-muted);margin:0;">${orcAprovado ? 'Sem serviços no orçamento.' : 'Não existe orçamento ativo e aprovado.'}</p>`
+            : `<table class="table" style="font-size:12px;">
+                <thead><tr>
+                  <th>Referência</th>
+                  <th>Tipo de Serviço</th>
+                  <th style="text-align:center;">Qtd.</th>
+                  <th>Unidade</th>
+                  <th style="text-align:right;">Preço Unit. (€)</th>
+                  <th style="text-align:right;">Sub-total (€)</th>
+                </tr></thead>
+                <tbody>
+                  ${orcServicos.map(item => {
+                    const sv = item.servico || DB.servicos.find(s => s.id === item.servicoId);
+                    if (!sv) return '';
+                    const subtotal = (item.quantidade * item.precoUnitario).toFixed(2);
+                    return `<tr>
+                      <td><a href="#" onclick="verServicoOverlay(${sv.id});return false;" style="font-weight:600;color:var(--color-primary);text-decoration:underline;">${sv.ref || '—'}</a></td>
+                      <td>${sv.tipo_servico || '—'}</td>
+                      <td style="text-align:center;">${item.quantidade}</td>
+                      <td>${sv.unidade || '—'}</td>
+                      <td style="text-align:right;">${Number(item.precoUnitario).toFixed(2)}</td>
+                      <td style="text-align:right;font-weight:600;">${subtotal}</td>
+                    </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>`
+          }
+        </div>
+
       </div>
     </div>`;
 }
@@ -167,13 +283,17 @@ async function saveOrdemDetalhe(otId) {
         data_limite_entrega: dataLimite || null,
         concluido_em:        concluidoEm || null,
         estado:              estado || undefined,
+        n_gt:                document.getElementById('f-n_gt')?.value || undefined,
+        n_ft:                document.getElementById('f-n_ft')?.value || undefined,
     };
     try {
         await apiPut(`/ordens/${otId}`, payload);
+        _isOTEditMode = false;
         await carregarDados();
         renderAll();
+        _successToast('Ordem de trabalho gravada com sucesso.');
     } catch (err) {
-        alert('Erro ao guardar: ' + err.message);
+        _erroToast('Erro ao guardar: ' + err.message);
     }
 }
 
@@ -182,7 +302,8 @@ async function concluirOT(otId) {
         await apiPatch(`/ordens/${otId}/concluir`);
         await carregarDados();
         renderAll();
+        _successToast('Ordem concluída.');
     } catch (err) {
-        alert('Erro ao concluir OT: ' + err.message);
+        _erroToast('Erro ao concluir OT: ' + err.message);
     }
 }

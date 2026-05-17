@@ -113,43 +113,107 @@ function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel) {
         return `<tr>
             <td><strong>${pc.ref}</strong></td>
             <td>${pc.denominacao || '-'}</td>
-            <td>${pc.orgao || '-'}</td>
-            <td>${pc.parte || '-'}</td>
-            <td>${_resolverMaterial(pc.materiaPrimaId)}</td>
-            <td>${precoCell}</td>
             <td>${qtdCell}</td>
+            <td>und</td>
+            <td>${precoCell}</td>
             <td class="orc-item-subtotal" style="font-weight:600;">${subtotalDisplay}</td>
         </tr>`;
     }).join('');
     return `<table class="table">
-        <thead><tr><th>Ref.</th><th>Denominação</th><th>Órgão</th><th>Parte</th><th>Material</th><th>Preço Unit. (€)</th><th>Qtd.</th><th>Sub-total (€)</th></tr></thead>
+        <thead><tr><th>Ref.</th><th>Denominação</th><th>Qtd.</th><th>Unidade</th><th>Preço Unit. (€)</th><th>Sub-total (€)</th></tr></thead>
         <tbody>${rows}</tbody>
     </table>`;
 }
 
-/* Recalcula o sub-total da linha e atualiza o campo Custo Líquido */
+/* HTML da secção de serviços do orçamento */
+function _htmlServicosDoPedido(orcamentoId, editavel, pedidoId) {
+    let itens = orcamentoId
+        ? DB.orcamento_itens.filter(i => i.orcamentoId === orcamentoId && i.itemTipo === 'servico')
+        : [];
+
+    // novo orçamento: pré-popular com os serviços do pedido
+    if (!orcamentoId && pedidoId) {
+        const spList = DB.servicos_pedidos.filter(sp => sp.pedidoId === pedidoId);
+        itens = spList.map(sp => ({
+            servicoId:     sp.servicoId,
+            servico:       DB.servicos.find(s => s.id === sp.servicoId) || null,
+            quantidade:    sp.quantidade,
+            precoUnitario: sp.precoUnitario,
+        })).filter(i => i.servico);
+    }
+
+    const rows = itens.map(item => {
+        const sv = item.servico || DB.servicos.find(s => s.id === item.servicoId);
+        if (!sv) return '';
+        const subtotal = (item.quantidade * item.precoUnitario).toFixed(2);
+        const qtdCell = editavel
+            ? `<input type="number" min="0.01" step="0.01" class="orc-sv-qtd" data-servico-id="${sv.id}" value="${item.quantidade}" oninput="calcOrcamentoServico(this)">`
+            : item.quantidade;
+        const precoCell = editavel
+            ? `<input type="number" min="0" step="0.01" class="orc-sv-preco" data-servico-id="${sv.id}" value="${Number(item.precoUnitario).toFixed(2)}" oninput="calcOrcamentoServico(this)">`
+            : `${Number(item.precoUnitario).toFixed(2)} €`;
+        return `<tr data-servico-id="${sv.id}">
+            <td><strong>${sv.ref}</strong></td>
+            <td>${sv.tipo_servico}</td>
+            <td>${qtdCell}</td>
+            <td>${sv.unidade || '—'}</td>
+            <td>${precoCell}</td>
+            <td class="orc-sv-subtotal" style="font-weight:600;">${subtotal} €</td>
+        </tr>`;
+    }).join('');
+
+    const thead = `<thead><tr>
+        <th>Ref.</th><th>Tipo de Serviço</th><th>Qtd.</th><th>Unidade</th><th>Preço Unit. (€)</th><th>Sub-total (€)</th>
+    </tr></thead>`;
+
+    const tbody = rows || '<tr><td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:1rem;">Sem serviços.</td></tr>';
+
+    return `<table class="table" id="orcamento-servicos-table">
+        ${thead}
+        <tbody>${tbody}</tbody>
+    </table>`;
+}
+
+function _calcTotalOrcamento() {
+    let total = 0;
+    document.querySelectorAll('#orcamento-pecas-section tbody tr').forEach(r => {
+        total += (parseFloat(r.querySelector('.orc-item-preco')?.value) || 0)
+               * (parseFloat(r.querySelector('.orc-item-qtd')?.value)   || 0);
+    });
+    document.querySelectorAll('#orcamento-servicos-table tbody tr[data-servico-id]').forEach(r => {
+        total += (parseFloat(r.querySelector('.orc-sv-preco')?.value) || 0)
+               * (parseFloat(r.querySelector('.orc-sv-qtd')?.value)   || 0);
+    });
+    const el = document.getElementById('f-orcamento-valor');
+    if (el) el.value = total.toFixed(2);
+}
+
+/* Recalcula o sub-total da linha de peça e atualiza o total */
 function calcOrcamentoItem(input) {
     const row = input.closest('tr');
     const preco = parseFloat(row.querySelector('.orc-item-preco').value) || 0;
     const qtd   = parseFloat(row.querySelector('.orc-item-qtd').value)   || 0;
-    const sub   = preco * qtd;
-    row.querySelector('.orc-item-subtotal').textContent = sub > 0 ? sub.toFixed(2) + ' €' : '—';
-
-    let total = 0;
-    document.querySelectorAll('#orcamento-pecas-section tbody tr').forEach(r => {
-        const p = parseFloat(r.querySelector('.orc-item-preco')?.value) || 0;
-        const q = parseFloat(r.querySelector('.orc-item-qtd')?.value)   || 0;
-        total += p * q;
-    });
-    const valorEl = document.getElementById('f-orcamento-valor');
-    if (valorEl) valorEl.value = total.toFixed(2);
+    row.querySelector('.orc-item-subtotal').textContent = (preco * qtd) > 0 ? (preco * qtd).toFixed(2) + ' €' : '—';
+    _calcTotalOrcamento();
 }
+
+/* Recalcula o sub-total da linha de serviço e atualiza o total */
+function calcOrcamentoServico(input) {
+    const row = input.closest('tr');
+    const preco = parseFloat(row.querySelector('.orc-sv-preco').value) || 0;
+    const qtd   = parseFloat(row.querySelector('.orc-sv-qtd').value)   || 0;
+    row.querySelector('.orc-sv-subtotal').textContent = (preco * qtd) > 0 ? (preco * qtd).toFixed(2) + ' €' : '—';
+    _calcTotalOrcamento();
+}
+
 
 /* Atualiza a secção de peças quando o utilizador muda o pedido no select */
 function onOrcamentoPedidoChange() {
     const pedidoId = parseInt(document.getElementById('f-orcamento-pedido').value) || null;
-    const container = document.getElementById('orcamento-pecas-section');
-    if (container) container.innerHTML = _htmlPecasDoPedido(pedidoId, _currentOrcamentoId, true);
+    const pecasContainer = document.getElementById('orcamento-pecas-section');
+    if (pecasContainer) pecasContainer.innerHTML = _htmlPecasDoPedido(pedidoId, _currentOrcamentoId, true);
+    const svContainer = document.getElementById('orcamento-servicos-section');
+    if (svContainer) svContainer.innerHTML = _htmlServicosDoPedido(_currentOrcamentoId, true, pedidoId);
 }
 
 function showOrcamentoDetalhe(id) {
@@ -214,6 +278,10 @@ function renderOrcamentoDetalhe() {
         })
         .join('');
 
+    const isAprovado = !isNew && orc.estado === 'Aprovado';
+    const bloqueado  = !isNew && (!_isOrcamentoEditMode || isAprovado);
+    const d          = bloqueado ? 'disabled' : '';
+
     const formHtml = `
   <div class="form-grid">
     <div class="form-group">
@@ -227,14 +295,14 @@ function renderOrcamentoDetalhe() {
     <div class="form-group full" style="display:flex;flex-direction:row;align-items:flex-end;gap:12px;flex-wrap:wrap;">
       <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px;">
         <label class="form-label" style="margin:0;">Pedido</label>
-        <select id="f-orcamento-pedido" onchange="onOrcamentoPedidoChange()" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
+        <select id="f-orcamento-pedido" onchange="onOrcamentoPedidoChange()" ${d}>
           <option value="">Selecionar pedido</option>
           ${pedidoOpts}
         </select>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;">
         <label class="form-label" style="margin:0;">Estado</label>
-        <select id="f-orcamento-estado" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
+        <select id="f-orcamento-estado" ${d}>
           <option value="Pendente" ${orc.estado === 'Pendente' ? 'selected' : ''}>Pendente</option>
           <option value="Aprovado" ${orc.estado === 'Aprovado' ? 'selected' : ''}>Aprovado</option>
           <option value="Rejeitado" ${orc.estado === 'Rejeitado' ? 'selected' : ''}>Rejeitado</option>
@@ -242,15 +310,15 @@ function renderOrcamentoDetalhe() {
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
         <label class="form-label" style="margin:0;cursor:pointer;" for="f-orcamento-ativo">Ativo</label>
-        <input type="checkbox" id="f-orcamento-ativo" ${isNew || orc.ativo ? 'checked' : ''} ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''} style="width:auto;margin:0;padding:0;height:34px;">
+        <input type="checkbox" id="f-orcamento-ativo" ${isNew || orc.ativo ? 'checked' : ''} ${d} style="width:auto;margin:0;padding:0;height:34px;">
       </div>
     </div>
     <div class="form-group full" style="display:flex;flex-direction:row;align-items:flex-end;gap:12px;flex-wrap:wrap;">
       <div style="display:flex;flex-direction:column;gap:4px;">
         <label class="form-label" style="margin:0;">Data Emissão</label>
-        <input id="f-orcamento-emissao" type="date" value="${orc.dataEmissao}" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''} oninput="_calcularValidade()" style="width:auto;">
+        <input id="f-orcamento-emissao" type="date" value="${orc.dataEmissao}" ${d} oninput="_calcularValidade()" style="width:auto;">
       </div>
-      ${isNew || _isOrcamentoEditMode ? `
+      ${!bloqueado ? `
       <div style="display:flex;flex-direction:column;gap:4px;">
         <label class="form-label" style="margin:0;">Validade</label>
         <div style="display:flex;gap:6px;">
@@ -265,11 +333,11 @@ function renderOrcamentoDetalhe() {
     </div>
     <div class="form-group full">
       <label class="form-label">Descrição</label>
-      <input id="f-orcamento-descricao" value="${orc.descricao || ''}" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>
+      <input id="f-orcamento-descricao" value="${orc.observacoes || ''}" ${d}>
     </div>
     <div class="form-group full">
       <label class="form-label">Notas</label>
-      <textarea id="f-orcamento-notas" style="min-height:80px;" ${!isNew && !_isOrcamentoEditMode ? 'disabled' : ''}>${orc.notas || ''}</textarea>
+      <textarea id="f-orcamento-notas" style="min-height:80px;" ${d}>${orc.notas || ''}</textarea>
     </div>
   </div>
   <div class="form-actions" style="margin-top: 2rem;">
@@ -277,15 +345,17 @@ function renderOrcamentoDetalhe() {
     ${
         isNew
             ? `<button class="btn btn-primary" onclick="saveOrcamento(null)">Criar Orçamento</button>`
-            : !_isOrcamentoEditMode
-              ? `<button class="btn btn-primary" onclick="editarOrcamento(${orc.id})">Editar</button>`
-              : `<button class="btn btn-primary" onclick="saveOrcamento(${orc.id})">Guardar Alterações</button>`
+            : isAprovado
+              ? ''
+              : !_isOrcamentoEditMode
+                ? `<button class="btn btn-primary" onclick="editarOrcamento(${orc.id})">Editar</button>`
+                : `<button class="btn btn-primary" onclick="saveOrcamento(${orc.id})">Guardar Alterações</button>`
     }
   </div>`;
 
     const pedidoIdInicial  = orc.pedidoId ? parseInt(orc.pedidoId) : null;
     const orcamentoIdInicial = isNew ? null : _currentOrcamentoId;
-    const editavel = isNew || _isOrcamentoEditMode;
+    const editavel = !bloqueado;
 
     document.getElementById('page-orcamento_detalhe').innerHTML = `
     <div class="section-header">
@@ -299,8 +369,12 @@ function renderOrcamentoDetalhe() {
       <h3 style="margin: 0 0 1rem; color: var(--color-primary); font-size: 1rem;">Peças do Pedido</h3>
       <div id="orcamento-pecas-section">${_htmlPecasDoPedido(pedidoIdInicial, orcamentoIdInicial, editavel)}</div>
     </div>
+    <div class="full-card" style="margin: 1.5rem auto; max-width: 900px; padding: 2rem;">
+      <h3 style="margin: 0 0 1rem; color: var(--color-primary); font-size: 1rem;">Serviços do Pedido</h3>
+      <div id="orcamento-servicos-section">${_htmlServicosDoPedido(orcamentoIdInicial, editavel, pedidoIdInicial)}</div>
+    </div>
   `;
-    if (isNew || _isOrcamentoEditMode) _calcularValidade();
+    if (!bloqueado) _calcularValidade();
 }
 
 async function saveOrcamento(id) {
@@ -319,6 +393,7 @@ async function saveOrcamento(id) {
         data_validade: document.getElementById('f-orcamento-validade').value || undefined,
         estado,
         observacoes:   document.getElementById('f-orcamento-descricao').value || undefined,
+        notas:         document.getElementById('f-orcamento-notas').value || undefined,
         ativo:         isAtivo,
         total_liquido: valor,
     };
@@ -331,22 +406,32 @@ async function saveOrcamento(id) {
             orc = await apiPut(`/orcamentos/${id}`, dados);
         }
 
-        // Guardar itens
+        // Guardar itens — peças
         const itens = [];
         document.querySelectorAll('#orcamento-pecas-section .orc-item-preco').forEach(el => {
-            const row  = el.closest('tr');
+            const row   = el.closest('tr');
             const preco = parseFloat(el.value) || 0;
             const qtd   = parseFloat(row.querySelector('.orc-item-qtd').value) || 0;
             if (preco > 0 || qtd > 0) {
-                itens.push({ peca_id: parseInt(el.dataset.pecaId), quantidade: qtd || 1, valor_unitario: preco });
+                itens.push({ item_tipo: 'peca', peca_id: parseInt(el.dataset.pecaId), quantidade: qtd || 1, valor_unitario: preco });
+            }
+        });
+        // Guardar itens — serviços
+        document.querySelectorAll('#orcamento-servicos-table tbody tr[data-servico-id]').forEach(row => {
+            const svId  = parseInt(row.dataset.servicoId);
+            const preco = parseFloat(row.querySelector('.orc-sv-preco')?.value) || 0;
+            const qtd   = parseFloat(row.querySelector('.orc-sv-qtd')?.value)   || 0;
+            if (svId) {
+                itens.push({ item_tipo: 'servico', servico_id: svId, quantidade: qtd || 1, valor_unitario: preco });
             }
         });
         await apiPost(`/orcamentos/${orc.id}/itens`, itens);
 
         await carregarDados();
+        _successToast('Orçamento gravado com sucesso.');
         showPage('orcamentos');
     } catch (err) {
-        alert('Erro ao guardar orçamento: ' + err.message);
+        _erroToast('Erro ao guardar orçamento: ' + err.message);
     }
 }
 

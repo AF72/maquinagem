@@ -117,7 +117,8 @@ async function saveColabDM() {
         }
         fecharFormColabDM();
         renderColaboradoresDM();
+        _successToast('Colaborador gravado com sucesso.');
     } catch (err) {
-        alert('Erro ao guardar: ' + err.message);
+        _erroToast('Erro ao guardar: ' + err.message);
     }
 }

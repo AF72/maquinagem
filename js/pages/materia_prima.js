@@ -166,8 +166,9 @@ async function saveMp(id) {
             await apiPut(`/materia-prima/${id}`, dados);
         }
         await carregarDados();
+        _successToast('Material gravado com sucesso.');
         showPage('materia_prima');
     } catch (err) {
-        alert('Erro ao guardar: ' + err.message);
+        _erroToast('Erro ao guardar: ' + err.message);
     }
 }
