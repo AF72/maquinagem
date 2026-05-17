@@ -49,6 +49,7 @@
 .metric-card {
     background: var(--color-surface-alt);
     border-radius: var(--radius-md);
+    text-align: center;
     padding: 1rem;
 }
 .metric-label {
@@ -202,7 +203,6 @@
     background: var(--color-black-bg);
     color: var(--color-black-fg);
 }
-
 
 /* ---------- Avatars ---------- */
 .avatar {
