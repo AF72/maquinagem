@@ -144,6 +144,39 @@ function renderOrdemDetalhe() {
             <label class="form-label">Fatura</label>
             <input id="f-n_ft" value="${ot.n_ft || ''}" ${!_isOTEditMode ? 'disabled' : ''}>
           </div>
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">Informação</label>
+            <div style="height:34px;display:flex;align-items:center;padding:0 10px;border-radius:var(--radius-md);border:1px solid var(--color-border);font-size:12px;font-weight:500;
+              ${(() => {
+                const estado = ot.estado;
+                if (estado === 'Em curso' || estado === 'Pendente') return 'background:#fff8e1;color:#7c5a00;';
+                if (estado === 'Falta OC') return 'background:#fdecea;color:#a00;';
+                if (estado === 'Concluída') return 'background:#e8f5e9;color:#2e7d32;';
+                return 'background:var(--color-surface-alt);color:var(--color-text-muted);';
+              })()}">
+              ${(() => {
+                const hoje = new Date(); hoje.setHours(0,0,0,0);
+                const estado = ot.estado;
+                if (estado === 'Em curso' || estado === 'Pendente') {
+                  if (!ot.dataLimiteEntrega) return 'Sem data limite definida';
+                  const limite = new Date(ot.dataLimiteEntrega); limite.setHours(0,0,0,0);
+                  const dias = Math.round((limite - hoje) / 86400000);
+                  if (dias < 0) return 'Data limite ultrapassada há ' + Math.abs(dias) + ' dia(s)';
+                  if (dias === 0) return 'Data limite é hoje!';
+                  return 'Faltam ' + dias + ' dia(s) para atingir a data limite';
+                }
+                if (estado === 'Falta OC') {
+                  const conc = ot.concluido_em ? new Date(ot.concluido_em.slice(0,10)) : null;
+                  const limite = ot.dataLimiteEntrega ? new Date(ot.dataLimiteEntrega) : null;
+                  if (!conc) return 'Sem data de conclusão — PEDIR OC';
+                  const dias = Math.round((hoje - conc) / 86400000);
+                  return 'Trabalho entregue há ' + dias + ' dia(s) — PEDIR OC';
+                }
+                if (estado === 'Concluída') return 'Ordem de Trabalho Faturada';
+                return '';
+              })()}
+            </div>
+          </div>
           <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end;">
             <button class="btn" style="width:120px;" onclick="showPage('ordens')">Cancelar</button>
             ${!_isOTEditMode

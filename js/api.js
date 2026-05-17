@@ -60,8 +60,10 @@ function mapColaborador(c) {
 }
 
 function mapDadosPedido(dp) {
+    const _clean = v => (!v || v.toUpperCase() === 'NULL') ? null : v;
     return {
         ...dp,
+        ref:             _clean(dp.ref),
         breveDescricao:  dp.breve_descricao,
         data_rececao_oc: dp.data_rececao_oc?.slice(0, 10) ?? '',
     };
