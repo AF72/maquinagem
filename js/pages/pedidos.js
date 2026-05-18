@@ -530,21 +530,34 @@ function renderPedidoDetalhe() {
               ? `<div class="form-group full">
         <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px;">Historial de orçamentos (${orcList.length})</p>
         <table class="table" style="font-size:12px;">
-          <thead><tr><th>Ref.</th><th>Custo Líquido</th><th>Emissão</th><th>Estado</th><th>Ativo</th><th></th></tr></thead>
-          <tbody>${orcList
-              .map(
-                  (
-                      o,
-                  ) => `<tr style="${o.ativo ? 'font-weight:600;' : 'opacity:0.7;'}">
-            <td>${o.ref}</td>
-            <td>${o.valor > 0 ? Number(o.valor).toFixed(2) + ' €' : '—'}</td>
-            <td>${o.dataEmissao}</td>
-            <td><span class="badge ${o.estado === 'Aprovado' ? 'badge-green' : o.estado === 'Rejeitado' ? 'badge-red' : 'badge-orange'}">${o.estado}</span></td>
-            <td>${o.ativo ? '<span class="badge badge-blue">Ativo</span>' : '<span class="badge badge-gray">—</span>'}</td>
-            <td><button class="btn btn-ghost btn-sm" title="Editar orçamento" onclick="editarOrcamento(${o.id})">${ICON_EDIT}</button></td>
-          </tr>`,
-              )
-              .join('')}</tbody>
+          <thead><tr><th>Ref.</th><th>Quantidade</th><th>Unidades</th><th>Preço Unitário</th><th>Custo Líquido</th><th>Emissão</th><th>Estado</th><th>Ativo</th><th></th></tr></thead>
+          <tbody>${orcList.flatMap(o => {
+              const itens = DB.orcamento_itens.filter(i => i.orcamentoId === o.id);
+              const headerRow = `<tr style="${o.ativo ? 'font-weight:600;' : 'opacity:0.7;'}">
+                <td>${o.ref}</td>
+                <td colspan="3" style="font-size:11px;color:var(--color-text-muted);">${itens.length > 0 ? itens.length + ' item(ns)' : '—'}</td>
+                <td>${o.valor > 0 ? Number(o.valor).toFixed(2) + ' €' : '—'}</td>
+                <td>${o.dataEmissao}</td>
+                <td><span class="badge ${o.estado === 'Aprovado' ? 'badge-green' : o.estado === 'Rejeitado' ? 'badge-red' : 'badge-orange'}">${o.estado}</span></td>
+                <td>${o.ativo ? '<span class="badge badge-blue">Ativo</span>' : '<span class="badge badge-gray">—</span>'}</td>
+                <td><button class="btn btn-ghost btn-sm" title="Editar orçamento" onclick="editarOrcamento(${o.id})">${ICON_EDIT}</button></td>
+              </tr>`;
+              const itemRows = itens.map(i => {
+                  const unidade = i.itemTipo === 'servico' ? (i.servico?.unidade || '—') : 'pç';
+                  const ref = i.itemTipo === 'peca'
+                      ? (DB.pecas.find(pc => pc.id === i.pecaId)?.ref || '—')
+                      : (i.servico?.ref || '—');
+                  return `<tr style="font-size:11px;background:var(--color-surface-alt);opacity:${o.ativo ? '1' : '0.6'};">
+                    <td style="padding-left:20px;color:var(--color-text-muted);">${ref}</td>
+                    <td>${i.quantidade}</td>
+                    <td>${unidade}</td>
+                    <td>${Number(i.precoUnitario).toFixed(2)} €</td>
+                    <td style="color:var(--color-text-muted);">${(i.quantidade * i.precoUnitario).toFixed(2)} €</td>
+                    <td colspan="4"></td>
+                  </tr>`;
+              });
+              return [headerRow, ...itemRows];
+          }).join('')}</tbody>
         </table>
       </div>`
               : ''
