@@ -94,7 +94,7 @@ function estadoBadge(estado) {
         'Concluido':  'badge-green',
         'Cancelado':  'badge-black',
         'Em curso':   'badge-blue',
-        'Falta OC':   'badge-amber',
+        'Falta OC':   'badge-orange',
         'Concluída':  'badge-green',
     };
     return `<span class="badge ${map[estado] || 'badge-gray'}">${estado}</span>`;

@@ -4,68 +4,103 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**MaquinaGest** is a browser-based production management system for a machining/manufacturing shop. It is a vanilla HTML + CSS + JavaScript SPA (no framework, no build step). All code runs directly in the browser — open `index.html` to run it.
+**MaquinaGest** is a browser-based production management system for a machining/manufacturing shop. The frontend is a vanilla HTML + CSS + JavaScript SPA (no framework, no build step). The backend is Node.js + Express + PostgreSQL + Prisma.
 
 The UI language is **Portuguese**. Variable names, comments, labels, and module concepts are all in Portuguese (e.g. `pedidos` = orders, `ordens` = work orders, `orcamentos` = quotes, `pecas` = parts, `clientes` = clients, `estado` = status).
 
 ## Running the App
 
+### First-time setup
+
 ```bash
-open index.html        # macOS — open directly in browser
-# OR serve via any static file server:
-npx serve .
-python3 -m http.server
+cd backend
+cp .env.example .env
+# Edit .env: DATABASE_URL="postgresql://USER:PASS@localhost:5433/maquinagemdev"
+npm install
+npx prisma generate
+npm run db:seed   # optional — seeds test data
 ```
 
-There is no build, no npm install, no transpilation. Chart.js 4.4.1 is loaded via CDN.
+### Normal startup (two terminals)
+
+```bash
+# Terminal 1 — backend API on port 3000
+cd backend && npm run dev
+
+# Terminal 2 — frontend static server
+python3 -m http.server   # opens at http://localhost:8000
+# OR: npx serve .
+```
+
+### Useful backend commands
+
+```bash
+cd backend
+npx prisma studio   # DB GUI at http://localhost:5555
+npm run db:seed     # WARNING: wipes and reseeds all data
+```
+
+> The local PostgreSQL instance runs on **port 5433** (not the default 5432) — adjust `DATABASE_URL` accordingly. DB name: `maquinagemdev`.
 
 ## Architecture
 
-### Global State
+### Two-layer design
 
-All application data lives in the `DB` global object defined in [js/data.js](js/data.js). It is in-memory only — data resets on page reload. Collections: `empresas`, `colaboradores`, `particulares`, `dados_pedido`, `pedidos`, `ordens`, `orcamentos`, `pecas`, `pecas_pedidos`, `materia_prima`.
+The frontend is a plain SPA that fetches all data from the backend REST API on load. The frontend has **no persistence of its own** — everything lives in PostgreSQL.
 
-`DB` also holds UI state: `DB.expanded` (expandable lists) and `DB.clienteFilter`.
+### Frontend global state (`js/data.js`)
 
-### Routing and Rendering
+All data fetched from the API is stored in the `DB` global object. Collections: `empresas`, `colaboradores`, `particulares`, `dados_pedido`, `pedidos`, `ordens`, `orcamentos`, `orcamento_itens`, `pecas`, `pecas_pedidos`, `materia_prima`, `colaboradores_dm`, `fornecedores`, `notas_pedido`, `servicos`, `servicos_pedidos`.
 
-[js/app.js](js/app.js) owns navigation. It maps the 12 page names to render functions via `PAGE_RENDERERS`. When a sidebar nav item is clicked, `showPage(pageName)` toggles the active `.page` div in the DOM and calls the corresponding renderer.
+`DB` also holds UI state: `DB.expanded` and `DB.clienteFilter`.
 
-`renderAll()` is the global refresh — call it after any `DB` mutation to update the current page view.
+### API layer (`js/api.js`)
 
-Each page under [js/pages/](js/pages/) exports a single `render<PageName>()` function that builds an HTML string and sets `innerHTML` on its container. Event listeners are attached inline via `onclick` attributes or by querying the DOM immediately after setting `innerHTML`.
+`carregarDados()` fetches all endpoints in parallel via `Promise.allSettled` and populates `DB`. It shows a red banner if any endpoint fails. Field-name mapping between snake_case API responses and camelCase frontend properties is done via `map*` functions (e.g. `mapColaborador`, `mapPedido`, `mapOrdem`). The API base is `http://localhost:3000/api`. CRUD helpers: `apiFetch`, `apiPost`, `apiPut`, `apiPatch`, `apiDelete`.
 
-### Modal / Form System
+### Routing and rendering (`js/app.js`)
 
-[js/modal.js](js/modal.js) manages a single global modal overlay. `openModal(type, extra)` receives a form type string and optional context (e.g. a client ID), builds the form HTML via a dispatcher, and injects it into `.modal-wrap`. The `.btn-save` button calls `saveForm()`, which reads form inputs, writes to `DB`, and calls `renderAll()`.
+`PAGE_RENDERERS` maps 15 page names to render functions. `showPage(pageName)` activates the corresponding `.page` div and calls its renderer. `renderAll()` re-renders only the current page — call it after any `DB` mutation.
 
-All 12 form types are defined in modal.js. To add a new form: add a builder function, register it in `buildModalForm`'s switch, and add a `openModal('myType', …)` call in the relevant page renderer.
+Each page under `js/pages/` has a single `render<PageName>()` function that builds an HTML string and sets `innerHTML`. Event listeners are attached via `onclick` attributes or by querying the DOM after setting `innerHTML`.
 
-### Helpers
+### Modal / form system (`js/modal.js`)
 
-[js/helpers.js](js/helpers.js) provides lookups (`getEmpresa`, `getPedido`, `resolveCliente`, …), HTML builders (`estadoBadge`, `avatarHtml`, `tipoBadge`), and date utilities (`today()`, `addDays(n)`). These are pure functions over `DB` — use them instead of accessing `DB` directly in page renderers.
+`openModal(type, extra)` builds a form via `buildModalForm`'s switch and injects it into `.modal-wrap`. The `.btn-save` button calls `saveForm()`, which writes to the API and calls `renderAll()`. All form types are registered in `modal.js`.
 
-### CSS Structure
+To add a new form: add a builder function → register in `buildModalForm`'s switch → call `openModal('myType', …)` from the relevant page renderer.
 
-Four CSS files loaded in order:
-- `base.css` — reset, CSS variables (`--color-*`, `--radius-*`), typography
-- `layout.css` — sidebar (fixed 240 px), topbar, `.page` container toggling via `.active`
-- `components.css` — buttons, cards, tables, badges (8 colour variants), avatars, tabs, forms
-- `modal.css` — modal overlay and dialog
+### Helpers (`js/helpers.js`)
 
-Badge colours map to `estado_pedido` values: `Orçamentar` → teal, `Pendente` → amber, `Produção` → blue, `Faturar` → coral, `Concluido` → green, `Cancelado` → gray/red. These are defined in `components.css` and used by `estadoBadge()`.
+Pure lookup and HTML-builder functions over `DB`: `getEmpresa`, `getPedido`, `resolveCliente`, `estadoBadge`, `avatarHtml`, `tipoBadge`, `today()`, `addDays(n)`. Use these instead of accessing `DB` directly.
 
-### Key Estado (Status) Values
+### Backend (`backend/`)
+
+Express REST API. Routes in `backend/src/routes/`, controllers in `backend/src/controllers/`. Prisma schema at `backend/prisma/schema.prisma`. The full SQL schema is documented in `docs/base_dados.md`.
+
+### CSS structure
+
+Four files loaded in order: `base.css` (reset, CSS variables), `layout.css` (sidebar 240 px, `.page` toggling via `.active`), `components.css` (buttons, cards, tables, badges), `modal.css`.
+
+Badge colours map to `estado_pedido` values: `Orçamentar` → teal, `Pendente` → amber, `Produção` → blue, `Faturar` → coral, `Concluido` → green, `Cancelado` → gray/red. Defined in `components.css`, generated by `estadoBadge()`.
+
+### Script load order
+
+`data.js` → `helpers.js` → `modal.js` → all page scripts → `api.js` → `app.js`. New page scripts must be added before `api.js` in `index.html`.
+
+### Key status values
 
 - **pedidos** `estado_pedido`: `'Orçamentar'` → `'Pendente'` → `'Produção'` → `'Faturar'` → `'Concluido'` / `'Cancelado'`
 - **ordens** `estado`: `'Em curso'` / `'Concluída'` / `'Cancelada'`
 
 Marking an ordem as `'Concluída'` also sets its linked pedido to `'Concluido'`.
 
-### ID Generation
+### ID generation
 
 Use `nextId()` (timestamp-based) for new entity IDs. Order references are auto-generated from the current year: `PT26-XXXX` for pedidos, `OT26-XXXX` for ordens.
 
-## Production Schema
+## Docs
 
-The prototype uses in-memory data. A full PostgreSQL schema is documented in [docs/base_dados.md](docs/base_dados.md) — 10 tables with FK relationships, constraints, and recommended indexes. The migration roadmap (React + Node/Express + PostgreSQL + Prisma) is in [docs/evolucao.md](docs/evolucao.md).
+- `docs/base_dados.md` — full PostgreSQL schema (10 tables, FKs, indexes)
+- `docs/evolucao.md` — migration roadmap to React + Node/Express + PostgreSQL + Prisma
+- `docs/modulos.md` — business logic description per module

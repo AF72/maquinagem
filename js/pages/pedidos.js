@@ -246,7 +246,7 @@ function renderPedidoDetalhe() {
           )
         : [];
 
-    const isCancelado = !isNew && ['Cancelado', 'Concluido', 'Faturar'].includes(p.estado_pedido) && !_isEditMode;
+    const isCancelado = !isNew && ['Cancelado', 'Concluido'].includes(p.estado_pedido) && !_isEditMode;
 
     const colabOpts = DB.colaboradores
         .map((c) => {
@@ -302,7 +302,6 @@ function renderPedidoDetalhe() {
           <option value="Orçamentar" ${p.estado_pedido === 'Orçamentar' ? 'selected' : ''}>Orçamentar</option>
           <option value="Pendente" ${p.estado_pedido === 'Pendente' ? 'selected' : ''}>Pendente</option>
           <option value="Produção" ${p.estado_pedido === 'Produção' ? 'selected' : ''}>Produção</option>
-          <option value="Faturar" ${p.estado_pedido === 'Faturar' ? 'selected' : ''}>Faturar</option>
           <option value="Concluido" ${p.estado_pedido === 'Concluido' ? 'selected' : ''}>Concluido</option>
           <option value="Cancelado" ${p.estado_pedido === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
         </select>

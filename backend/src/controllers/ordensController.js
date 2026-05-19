@@ -12,8 +12,8 @@ const schema = z.object({
   notas: z.string().optional(),
   data_limite_entrega: z.string().optional().nullable(),
   concluido_em: z.string().optional().nullable(),
-  n_gt: z.string().optional(),
-  n_ft: z.string().optional(),
+  n_gt: z.string().optional().nullable(),
+  n_ft: z.string().optional().nullable(),
   observacoes: z.string().optional(),
 });
 

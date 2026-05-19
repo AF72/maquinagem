@@ -370,8 +370,8 @@ async function saveOrdemDetalhe(otId) {
         data_limite_entrega: dataLimite || null,
         concluido_em: concluidoEm || null,
         estado: estado || undefined,
-        n_gt: document.getElementById('f-n_gt')?.value || undefined,
-        n_ft: document.getElementById('f-n_ft')?.value || undefined,
+        n_gt: document.getElementById('f-n_gt')?.value || null,
+        n_ft: document.getElementById('f-n_ft')?.value || null,
     };
     try {
         await apiPut(`/ordens/${otId}`, payload);

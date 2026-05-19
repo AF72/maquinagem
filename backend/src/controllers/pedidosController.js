@@ -3,7 +3,7 @@ const { z } = require('zod');
 
 const prisma = new PrismaClient();
 
-const ESTADOS = ['Orçamentar', 'Pendente', 'Produção', 'Faturar', 'Concluido', 'Cancelado'];
+const ESTADOS = ['Orçamentar', 'Pendente', 'Produção', 'Concluido', 'Cancelado'];
 
 const schema = z.object({
   ref: z.string().min(1),

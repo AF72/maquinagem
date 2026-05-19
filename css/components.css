@@ -203,6 +203,10 @@
     background: var(--color-black-bg);
     color: var(--color-black-fg);
 }
+.badge-orange {
+    background: #fde8c8;
+    color: #c05c00;
+}
 
 /* ---------- Avatars ---------- */
 .avatar {
