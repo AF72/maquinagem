@@ -255,7 +255,7 @@ function renderOrdemDetalhe() {
           </div>
           <div class="form-group" style="flex:1;">
             <label class="form-label">Valor Orçamento</label>
-            <input value="${orc ? Number(orc.valor).toFixed(2) + ' €' : '—'}" readonly>
+            <input value="${orc ? formatEuro(orc.valor) : '—'}" readonly>
           </div>
         </div>
 
@@ -295,7 +295,7 @@ function renderOrdemDetalhe() {
                       <td>${_dimPeca(pc)}</td>
                       <td>${pc.peso != null ? pc.peso : '—'}</td>
                       <td style="text-align:center;">${item.quantidade}</td>
-                      <td style="text-align:right;">${Number(item.precoUnitario).toFixed(2)}</td>
+                      <td style="text-align:right;">${formatEuro(item.precoUnitario)}</td>
                     </tr>`;
                       })
                       .join('')}
@@ -325,16 +325,14 @@ function renderOrdemDetalhe() {
                               item.servico ||
                               DB.servicos.find((s) => s.id === item.servicoId);
                           if (!sv) return '';
-                          const subtotal = (
-                              item.quantidade * item.precoUnitario
-                          ).toFixed(2);
+                          const subtotal = item.quantidade * item.precoUnitario;
                           return `<tr>
                       <td><a href="#" onclick="verServicoOverlay(${sv.id});return false;" style="font-weight:600;color:var(--color-primary);text-decoration:underline;">${sv.ref || '—'}</a></td>
                       <td>${sv.tipo_servico || '—'}</td>
                       <td style="text-align:center;">${item.quantidade}</td>
                       <td>${sv.unidade || '—'}</td>
-                      <td style="text-align:right;">${Number(item.precoUnitario).toFixed(2)}</td>
-                      <td style="text-align:right;font-weight:600;">${subtotal}</td>
+                      <td style="text-align:right;">${formatEuro(item.precoUnitario)}</td>
+                      <td style="text-align:right;font-weight:600;">${formatEuro(subtotal)}</td>
                     </tr>`;
                       })
                       .join('')}

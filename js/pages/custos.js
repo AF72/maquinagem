@@ -31,22 +31,22 @@ function renderCustos() {
     <div class="grid-metrics-4">
       <div class="metric-card">
         <div class="metric-label">Total orçamentado</div>
-        <div class="metric-value">${totalOrcamentado.toFixed(2)} €</div>
+        <div class="metric-value">${formatEuro(totalOrcamentado)}</div>
         <div class="metric-sub">orçamentos ativos</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Total Orc. Aprovados</div>
-        <div class="metric-value">${totalAprovados.toFixed(2)} €</div>
+        <div class="metric-value">${formatEuro(totalAprovados)}</div>
         <div class="metric-sub">orçamentos aprovados</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Total OT a faturar</div>
-        <div class="metric-value">${aFaturar.toFixed(2)} €</div>
+        <div class="metric-value">${formatEuro(aFaturar)}</div>
         <div class="metric-sub">ordens com estado "Faturar"</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Total faturado</div>
-        <div class="metric-value">${totalFaturado.toFixed(2)} €</div>
+        <div class="metric-value">${formatEuro(totalFaturado)}</div>
         <div class="metric-sub">ordens concluídas</div>
       </div>
     </div>
@@ -84,7 +84,7 @@ function _faturarRows() {
             <td>${tipoBadge(pd.clienteTipo)}</td>
             <td>${o.dataLimiteEntrega || '—'}</td>
             <td>${o.n_gt || '—'}</td>
-            <td><strong>${valor.toFixed(2)} €</strong></td>
+            <td><strong>${formatEuro(valor)}</strong></td>
             <td>${estadoBadge(o.estado)}</td>
         </tr>`;
     }).join('');

@@ -90,11 +90,14 @@ function renderDashboard() {
       <table class="table">
         <thead>
           <tr>
-            <th>Nº Ordem</th>
+            <th>Nº Pedido</th>
+            <th>Estado</th>
             <th>Cliente</th>
             <th>Data Criação</th>
             <th>Progresso</th>
             <th>Data Limite</th>
+            <th>Nº Ordem</th>
+            <th>Estado OT</th>
           </tr>
         </thead>
         <tbody>${_dashTimeline()}</tbody>
@@ -133,7 +136,7 @@ function _dashTimeline() {
         });
 
     if (!ativas.length)
-        return `<tr><td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:1.5rem">Sem ordens ativas.</td></tr>`;
+        return `<tr><td colspan="8" style="text-align:center;color:var(--color-text-muted);padding:1.5rem">Sem ordens ativas.</td></tr>`;
 
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
@@ -175,11 +178,14 @@ function _dashTimeline() {
         }
 
         return `<tr>
-          <td><strong>${o.num}</strong></td>
+          <td><a href="#" onclick="showPedidoDetalhe(${pd.id}); return false;" style="color:var(--color-primary);text-decoration:none;font-weight:600;">${pd.ref}</a></td>
+          <td>${estadoBadge(pd.estado_pedido)}</td>
           <td>${inlineFlex(avatarHtml(cl.nome, cl.avClass, true), clienteLabel)}</td>
           <td style="white-space:nowrap;">${criado ? criado.toLocaleDateString('pt-PT') : '—'}</td>
           <td>${barraHtml}</td>
           <td style="white-space:nowrap;">${limite ? limite.toLocaleDateString('pt-PT') : '—'}</td>
+          <td><a href="#" onclick="showOrdemDetalhe(${o.id}); return false;" style="color:var(--color-primary);text-decoration:none;font-weight:600;">${o.num}</a></td>
+          <td>${estadoBadge(o.estado)}</td>
         </tr>`;
     }).join('');
 }

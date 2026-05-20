@@ -58,7 +58,7 @@ function _orcamentosRows() {
       <td><strong>${orc.ref || '-'}</strong></td>
       <td><a href="#" onclick="showPedidoDetalhe(${pedido.id}); return false;" style="color:var(--color-primary); text-decoration:none; cursor:pointer;">${pedido.ref}</a></td>
       <td>${inlineFlex(avatarHtml(cliente.nome, cliente.avClass, true), label)}</td>
-      <td><strong>${(orc.valor || 0).toFixed(2)}</strong></td>
+      <td><strong>${formatEuro(orc.valor || 0)}</strong></td>
       <td>${orc.dataEmissao || '—'}</td>
       <td>${orc.dataValidade || '—'}</td>
       <td><span class="badge ${estadoBg}">${orc.estado}</span></td>
@@ -84,7 +84,7 @@ function _pecasDoPedido(pedidoId) {
 }
 
 /* HTML da secção de peças — com colunas de preço, quantidade e sub-total */
-function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel) {
+function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel, podeEliminar = false) {
     if (!pedidoId) {
         return `<p style="color:var(--color-text-muted);text-align:center;padding:1.5rem 0;">Selecione um pedido para ver as peças associadas.</p>`;
     }
@@ -102,13 +102,17 @@ function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel) {
 
         const precoCell = editavel
             ? `<input type="number" step="0.01" min="0" class="orc-item-preco" data-peca-id="${pc.id}" value="${preco}" oninput="calcOrcamentoItem(this)" style="width:90px;padding:4px 6px;">`
-            : (preco !== '' ? Number(preco).toFixed(2) + ' €' : '—');
+            : (preco !== '' ? formatEuro(preco) : '—');
 
         const qtdCell = editavel
             ? `<input type="number" min="1" step="1" class="orc-item-qtd" data-peca-id="${pc.id}" value="${qtd}" oninput="calcOrcamentoItem(this)" style="width:70px;padding:4px 6px;">`
             : (qtd !== '' ? qtd : '—');
 
-        const subtotalDisplay = subtotal !== '' ? Number(subtotal).toFixed(2) + ' €' : '—';
+        const subtotalDisplay = subtotal !== '' ? formatEuro(subtotal) : '—';
+
+        const eliminarCell = podeEliminar
+            ? `<td>${item ? `<button class="btn btn-ghost btn-sm" title="Eliminar peça do orçamento" onclick="eliminarItemOrcamento(${orcamentoId}, ${item.id})">✕</button>` : ''}</td>`
+            : '';
 
         return `<tr>
             <td><strong>${pc.ref}</strong></td>
@@ -117,16 +121,18 @@ function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel) {
             <td>und</td>
             <td>${precoCell}</td>
             <td class="orc-item-subtotal" style="font-weight:600;">${subtotalDisplay}</td>
+            ${eliminarCell}
         </tr>`;
     }).join('');
+    const acoesHeader = podeEliminar ? '<th></th>' : '';
     return `<table class="table">
-        <thead><tr><th>Ref.</th><th>Denominação</th><th>Qtd.</th><th>Unidade</th><th>Preço Unit. (€)</th><th>Sub-total (€)</th></tr></thead>
+        <thead><tr><th>Ref.</th><th>Denominação</th><th>Qtd.</th><th>Unidade</th><th>Preço Unit. (€)</th><th>Sub-total (€)</th>${acoesHeader}</tr></thead>
         <tbody>${rows}</tbody>
     </table>`;
 }
 
 /* HTML da secção de serviços do orçamento */
-function _htmlServicosDoPedido(orcamentoId, editavel, pedidoId) {
+function _htmlServicosDoPedido(orcamentoId, editavel, pedidoId, podeEliminar = false) {
     let itens = orcamentoId
         ? DB.orcamento_itens.filter(i => i.orcamentoId === orcamentoId && i.itemTipo === 'servico')
         : [];
@@ -142,31 +148,37 @@ function _htmlServicosDoPedido(orcamentoId, editavel, pedidoId) {
         })).filter(i => i.servico);
     }
 
+    const cols = podeEliminar ? 7 : 6;
     const rows = itens.map(item => {
         const sv = item.servico || DB.servicos.find(s => s.id === item.servicoId);
         if (!sv) return '';
-        const subtotal = (item.quantidade * item.precoUnitario).toFixed(2);
+        const subtotalNum = item.quantidade * item.precoUnitario;
         const qtdCell = editavel
             ? `<input type="number" min="0.01" step="0.01" class="orc-sv-qtd" data-servico-id="${sv.id}" value="${item.quantidade}" oninput="calcOrcamentoServico(this)">`
             : item.quantidade;
         const precoCell = editavel
             ? `<input type="number" min="0" step="0.01" class="orc-sv-preco" data-servico-id="${sv.id}" value="${Number(item.precoUnitario).toFixed(2)}" oninput="calcOrcamentoServico(this)">`
-            : `${Number(item.precoUnitario).toFixed(2)} €`;
+            : formatEuro(item.precoUnitario);
+        const eliminarCell = podeEliminar && item.id
+            ? `<td><button class="btn btn-ghost btn-sm" title="Eliminar serviço do orçamento" onclick="eliminarItemOrcamento(${orcamentoId}, ${item.id})">✕</button></td>`
+            : (podeEliminar ? '<td></td>' : '');
         return `<tr data-servico-id="${sv.id}">
             <td><strong>${sv.ref}</strong></td>
             <td>${sv.tipo_servico}</td>
             <td>${qtdCell}</td>
             <td>${sv.unidade || '—'}</td>
             <td>${precoCell}</td>
-            <td class="orc-sv-subtotal" style="font-weight:600;">${subtotal} €</td>
+            <td class="orc-sv-subtotal" style="font-weight:600;">${formatEuro(subtotalNum)}</td>
+            ${eliminarCell}
         </tr>`;
     }).join('');
 
+    const acoesHeader = podeEliminar ? '<th></th>' : '';
     const thead = `<thead><tr>
-        <th>Ref.</th><th>Tipo de Serviço</th><th>Qtd.</th><th>Unidade</th><th>Preço Unit. (€)</th><th>Sub-total (€)</th>
+        <th>Ref.</th><th>Tipo de Serviço</th><th>Qtd.</th><th>Unidade</th><th>Preço Unit. (€)</th><th>Sub-total (€)</th>${acoesHeader}
     </tr></thead>`;
 
-    const tbody = rows || '<tr><td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:1rem;">Sem serviços.</td></tr>';
+    const tbody = rows || `<tr><td colspan="${cols}" style="text-align:center;color:var(--color-text-muted);padding:1rem;">Sem serviços.</td></tr>`;
 
     return `<table class="table" id="orcamento-servicos-table">
         ${thead}
@@ -193,7 +205,7 @@ function calcOrcamentoItem(input) {
     const row = input.closest('tr');
     const preco = parseFloat(row.querySelector('.orc-item-preco').value) || 0;
     const qtd   = parseFloat(row.querySelector('.orc-item-qtd').value)   || 0;
-    row.querySelector('.orc-item-subtotal').textContent = (preco * qtd) > 0 ? (preco * qtd).toFixed(2) + ' €' : '—';
+    row.querySelector('.orc-item-subtotal').textContent = (preco * qtd) > 0 ? formatEuro(preco * qtd) : '—';
     _calcTotalOrcamento();
 }
 
@@ -202,7 +214,7 @@ function calcOrcamentoServico(input) {
     const row = input.closest('tr');
     const preco = parseFloat(row.querySelector('.orc-sv-preco').value) || 0;
     const qtd   = parseFloat(row.querySelector('.orc-sv-qtd').value)   || 0;
-    row.querySelector('.orc-sv-subtotal').textContent = (preco * qtd) > 0 ? (preco * qtd).toFixed(2) + ' €' : '—';
+    row.querySelector('.orc-sv-subtotal').textContent = (preco * qtd) > 0 ? formatEuro(preco * qtd) : '—';
     _calcTotalOrcamento();
 }
 
@@ -278,8 +290,8 @@ function renderOrcamentoDetalhe() {
         })
         .join('');
 
-    const isAprovado = !isNew && orc.estado === 'Aprovado';
-    const bloqueado  = !isNew && (!_isOrcamentoEditMode || isAprovado);
+    const bloqueado     = !isNew && !_isOrcamentoEditMode;
+    const podeEliminar  = !isNew && !orc.ativo && orc.estado === 'Pendente';
     const d          = bloqueado ? 'disabled' : '';
 
     const formHtml = `
@@ -345,9 +357,7 @@ function renderOrcamentoDetalhe() {
     ${
         isNew
             ? `<button class="btn btn-primary" onclick="saveOrcamento(null)">Criar Orçamento</button>`
-            : isAprovado
-              ? ''
-              : !_isOrcamentoEditMode
+            : !_isOrcamentoEditMode
                 ? `<button class="btn btn-primary" onclick="editarOrcamento(${orc.id})">Editar</button>`
                 : `<button class="btn btn-primary" onclick="saveOrcamento(${orc.id})">Guardar Alterações</button>`
     }
@@ -367,14 +377,31 @@ function renderOrcamentoDetalhe() {
     </div>
     <div class="full-card" style="margin: 1.5rem auto; max-width: 900px; padding: 2rem;">
       <h3 style="margin: 0 0 1rem; color: var(--color-primary); font-size: 1rem;">Peças do Pedido</h3>
-      <div id="orcamento-pecas-section">${_htmlPecasDoPedido(pedidoIdInicial, orcamentoIdInicial, editavel)}</div>
+      <div id="orcamento-pecas-section">${_htmlPecasDoPedido(pedidoIdInicial, orcamentoIdInicial, editavel, podeEliminar)}</div>
     </div>
     <div class="full-card" style="margin: 1.5rem auto; max-width: 900px; padding: 2rem;">
       <h3 style="margin: 0 0 1rem; color: var(--color-primary); font-size: 1rem;">Serviços do Pedido</h3>
-      <div id="orcamento-servicos-section">${_htmlServicosDoPedido(orcamentoIdInicial, editavel, pedidoIdInicial)}</div>
+      <div id="orcamento-servicos-section">${_htmlServicosDoPedido(orcamentoIdInicial, editavel, pedidoIdInicial, podeEliminar)}</div>
     </div>
   `;
     if (!bloqueado) _calcularValidade();
+}
+
+async function eliminarItemOrcamento(orcamentoId, itemId) {
+    try {
+        const restantes = DB.orcamento_itens
+            .filter(i => i.orcamentoId === orcamentoId && i.id !== itemId)
+            .map(i => i.itemTipo === 'peca'
+                ? { item_tipo: 'peca',    peca_id:    i.pecaId,    quantidade: i.quantidade, valor_unitario: i.precoUnitario }
+                : { item_tipo: 'servico', servico_id: i.servicoId, quantidade: i.quantidade, valor_unitario: i.precoUnitario }
+            );
+        await apiPost(`/orcamentos/${orcamentoId}/itens`, restantes);
+        await carregarDados();
+        renderAll();
+        _successToast('Item eliminado do orçamento.');
+    } catch (err) {
+        _erroToast('Erro ao eliminar item: ' + err.message);
+    }
 }
 
 async function saveOrcamento(id) {

@@ -60,7 +60,7 @@ model DadosPedido {
   orgao           String?   @db.VarChar(100)
   parte           String?   @db.VarChar(100)
   breve_descricao String?   @db.VarChar(255)
-  imagem          String?   @db.VarChar(255)
+  imagem          String?   @db.Text
   tipo_contacto   String?   @db.VarChar(50)
   ordem_compra    String?   @db.VarChar(50)
   data_rececao_oc DateTime? @db.Date

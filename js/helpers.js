@@ -116,6 +116,10 @@ function inlineFlex(avatarHtml, label) {
 
 /* ---------- Date ---------- */
 
+function formatEuro(value) {
+    return Number(value ?? 0).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
 function today() {
     return new Date().toISOString().slice(0, 10);
 }

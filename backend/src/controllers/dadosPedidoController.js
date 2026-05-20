@@ -4,14 +4,14 @@ const { z } = require('zod');
 const prisma = new PrismaClient();
 
 const schema = z.object({
-  ref:             z.string().optional().nullable(),
-  equipamento:     z.string().optional(),
-  orgao:           z.string().optional(),
-  parte:           z.string().optional(),
-  breve_descricao: z.string().optional(),
-  imagem:          z.string().optional(),
-  tipo_contacto:   z.string().optional(),
-  ordem_compra:    z.string().optional(),
+  ref:             z.string().nullable().optional(),
+  equipamento:     z.string().nullable().optional(),
+  orgao:           z.string().nullable().optional(),
+  parte:           z.string().nullable().optional(),
+  breve_descricao: z.string().nullable().optional(),
+  imagem:          z.string().nullable().optional(),
+  tipo_contacto:   z.string().nullable().optional(),
+  ordem_compra:    z.string().nullable().optional(),
   data_rececao_oc: z.string().nullish(),
 });
 

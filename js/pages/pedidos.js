@@ -63,23 +63,22 @@ function _pedidosRows() {
                     ? `<div style="line-height:1.2;"><div>${cl.nome}</div><div style="font-size:11px;color:var(--color-text-muted)">Particular</div></div>`
                     : `<div style="line-height:1.2;"><div>${cl.subtexto}</div><div style="font-size:11px;color:var(--color-text-muted)">${cl.nome}</div></div>`;
 
+            const orcAprovado = DB.orcamentos.find(
+                (o) => o.pedidoId === p.id && o.ativo && o.estado === 'Aprovado',
+            );
+
             return `<tr>
       <td>${p.ref}</td>
       <td>${inlineFlex(avatarHtml(cl.nome, cl.avClass, true), label)}</td>
 
       <td>${dp.breveDescricao || '-'}</td>
-      <td>${(() => {
-          const orc = DB.orcamentos.find(
-              (o) => o.pedidoId === p.id && o.ativo && o.estado === 'Aprovado',
-          );
-          return orc ? orc.ref : '-';
-      })()}</td>
-      <td>${p.custo_liquido ? parseFloat(p.custo_liquido).toFixed(2) + ' €' : '-'}</td>
+      <td>${orcAprovado ? orcAprovado.ref : '-'}</td>
+      <td>${orcAprovado && orcAprovado.valor ? formatEuro(orcAprovado.valor) : '-'}</td>
       <td>${dp.ordem_compra || '-'}</td>
       <td style="vertical-align: middle;">
         <div style="display: flex; align-items: center; gap: 4px;">
           <button class="btn btn-ghost btn-sm" title="Ver pedido" onclick="showPedidoDetalhe(${p.id})">${ICON_VIEW}</button>
-          ${ot ? `<span class="badge badge-blue">${ot.num}</span>` : canOT ? `<button class="btn btn-ghost btn-sm" title="Criar OT" onclick="criarOT(${p.id})">${ICON_CREATE_OT}</button>` : ''}
+          ${ot ? `<a href="#" onclick="verDetalheOT(${ot.id});return false;" class="badge badge-blue" style="text-decoration:none;cursor:pointer;">${ot.num}</a>` : canOT ? `<button class="btn btn-ghost btn-sm" title="Criar OT" onclick="criarOT(${p.id})">${ICON_CREATE_OT}</button>` : ''}
         </div>
       </td>
       <td>${estadoBadge(p.estado_pedido)}</td>
@@ -353,7 +352,7 @@ function renderPedidoDetalhe() {
     <!-- Seccao dados do equipamento -->
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Dados do Equipamento / Peça</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
     
-    <div class="form-group"><label class="form-label">Ref. Equipamento</label><input id="f-dp-ref" value="${dp.ref}" placeholder="Ex: DP-005" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
+    <div class="form-group"><label class="form-label">Ref. Equipamento</label><input id="f-dp-ref" value="${dp.ref || ''}" placeholder="Ex: DP-005" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
     <div class="form-group"><label class="form-label">Equipamento</label><input id="f-dp-equipamento" value="${dp.equipamento || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
     <div class="form-group"><label class="form-label">Órgão</label><input id="f-dp-orgao" value="${dp.orgao || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
     <div class="form-group"><label class="form-label">Parte</label><input id="f-dp-parte" value="${dp.parte || ''}" ${!isNew && !_isEditMode ? 'disabled' : ''}></div>
@@ -460,11 +459,11 @@ function renderPedidoDetalhe() {
           return `<table class="table" style="font-size:12px;table-layout:fixed;width:100%;">
             <thead><tr>
               <th style="width:100px;">Ref.</th>
+              <th style="width:180px;">Fornecedor</th>
               <th style="width:160px;">Tipo de Serviço</th>
               <th style="width:180px;">Descrição</th>
-              <th style="width:60px;">Unid.</th>
-              <th style="width:180px;">Fornecedor</th>
               <th style="width:80px;">Qtd.</th>
+              <th style="width:60px;">Unid.</th>
               <th style="width:100px;">Preço Unit. (€)</th>
               <th style="width:100px;">Total (€)</th>
               <th style="width:60px;">Ação</th>
@@ -472,12 +471,9 @@ function renderPedidoDetalhe() {
             <tbody>${spList.map(sp => {
                 const sv = DB.servicos.find(s => s.id === sp.servicoId);
                 if (!sv) return '';
-                const total = (sp.quantidade * sp.precoUnitario).toFixed(2);
+                const total = sp.quantidade * sp.precoUnitario;
                 return `<tr>
                   <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sv.ref}</td>
-                  <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sv.tipo_servico}</td>
-                  <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sv.descricao || '—'}</td>
-                  <td>${sv.unidade || '—'}</td>
                   <td>
                     <select style="font-size:11px;width:100%;box-sizing:border-box;" ${!_isEditMode ? 'disabled' : ''}
                       onchange="guardarFornecedorServico(${sp.id}, this.value)">
@@ -485,19 +481,22 @@ function renderPedidoDetalhe() {
                       ${DB.fornecedores.map(f => `<option value="${f.id}" ${sp.fornecedorId === f.id ? 'selected' : ''}>${f.nome}</option>`).join('')}
                     </select>
                   </td>
+                  <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sv.tipo_servico}</td>
+                  <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sv.descricao || '—'}</td>
                   <td>
                     <input type="number" step="0.01" min="0.01" value="${sp.quantidade}"
                       style="font-size:11px;width:100%;box-sizing:border-box;"
                       ${!_isEditMode ? 'disabled' : ''}
                       onchange="guardarServicoPedido(${sp.id}, 'quantidade', this.value)">
                   </td>
+                  <td>${sv.unidade || '—'}</td>
                   <td>
                     <input type="number" step="0.01" min="0" value="${sp.precoUnitario.toFixed(2)}"
                       style="font-size:11px;width:100%;box-sizing:border-box;"
                       ${!_isEditMode ? 'disabled' : ''}
                       onchange="guardarServicoPedido(${sp.id}, 'preco_unitario', this.value)">
                   </td>
-                  <td style="text-align:right;font-weight:600;">${total} €</td>
+                  <td style="font-weight:600;">${formatEuro(total)}</td>
                   <td>${(() => {
                     const emOrcamentoItem = DB.orcamento_itens.some(item =>
                         item.itemTipo === 'servico' &&
@@ -535,7 +534,7 @@ function renderPedidoDetalhe() {
               const headerRow = `<tr style="${o.ativo ? 'font-weight:600;' : 'opacity:0.7;'}">
                 <td>${o.ref}</td>
                 <td colspan="3" style="font-size:11px;color:var(--color-text-muted);">${itens.length > 0 ? itens.length + ' item(ns)' : '—'}</td>
-                <td>${o.valor > 0 ? Number(o.valor).toFixed(2) + ' €' : '—'}</td>
+                <td>${o.valor > 0 ? formatEuro(o.valor) : '—'}</td>
                 <td>${o.dataEmissao}</td>
                 <td><span class="badge ${o.estado === 'Aprovado' ? 'badge-green' : o.estado === 'Rejeitado' ? 'badge-red' : 'badge-orange'}">${o.estado}</span></td>
                 <td>${o.ativo ? '<span class="badge badge-blue">Ativo</span>' : '<span class="badge badge-gray">—</span>'}</td>
@@ -550,8 +549,8 @@ function renderPedidoDetalhe() {
                     <td style="padding-left:20px;color:var(--color-text-muted);">${ref}</td>
                     <td>${i.quantidade}</td>
                     <td>${unidade}</td>
-                    <td>${Number(i.precoUnitario).toFixed(2)} €</td>
-                    <td style="color:var(--color-text-muted);">${(i.quantidade * i.precoUnitario).toFixed(2)} €</td>
+                    <td>${formatEuro(i.precoUnitario)}</td>
+                    <td style="color:var(--color-text-muted);">${formatEuro(i.quantidade * i.precoUnitario)}</td>
                     <td colspan="4"></td>
                   </tr>`;
               });
@@ -567,7 +566,7 @@ function renderPedidoDetalhe() {
           return `<div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; margin-top:8px;">
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
           <span style="font-size:11px; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.05em;">Custo Líquido</span>
-          <span style="font-size:16px; font-weight:700; color:var(--color-primary);">${Number(orcAprovado.valor).toFixed(2)} €</span>
+          <span style="font-size:16px; font-weight:700; color:var(--color-primary);">${formatEuro(orcAprovado.valor)}</span>
         </div>
       </div>`;
       })()}
@@ -659,7 +658,7 @@ function exportarPedidoPDF(pedidoId) {
     const orcRows = orcList.map(o =>
         `<tr>
           <td style="padding:3px 6px;">${o.ref}</td>
-          <td style="padding:3px 6px;">${o.valor > 0 ? Number(o.valor).toFixed(2) + ' €' : '—'}</td>
+          <td style="padding:3px 6px;">${o.valor > 0 ? formatEuro(o.valor) : '—'}</td>
           <td style="padding:3px 6px;">${o.dataEmissao || '—'}</td>
           <td style="padding:3px 6px;">${o.estado}</td>
          </tr>`).join('');
@@ -766,6 +765,26 @@ function toggleEditMode() {
     _isEditMode = true;
     renderPedidoDetalhe();
 }
+
+function _guardarValoresFormulario() {
+    if (!_isEditMode) return null;
+    const ids = [
+        'f-dp-ref', 'f-dp-equipamento', 'f-dp-orgao', 'f-dp-parte',
+        'f-dp-breve', 'f-dp-tipo_contacto', 'f-dp-ordem_compra',
+        'f-dp-data_rececao_oc', 'f-pt-estado', 'f-clienteKey', 'f-dp-imagem',
+    ];
+    const vals = {};
+    ids.forEach(id => { const el = document.getElementById(id); if (el) vals[id] = el.value; });
+    return vals;
+}
+
+function _restaurarValoresFormulario(vals) {
+    if (!vals) return;
+    Object.entries(vals).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+    });
+}
 /*
  * Guarda os detalhes de um pedido
  */
@@ -791,13 +810,14 @@ async function savePedidoDetalhe(id) {
 
         const dpRefInput = document.getElementById('f-dp-ref').value.trim();
         const dpPayload = {
-            ref:             dpRefInput || undefined,
-            equipamento:     document.getElementById('f-dp-equipamento').value || undefined,
-            orgao:           document.getElementById('f-dp-orgao').value || undefined,
-            parte:           document.getElementById('f-dp-parte').value || undefined,
-            breve_descricao: document.getElementById('f-dp-breve').value || undefined,
-            tipo_contacto:   document.getElementById('f-dp-tipo_contacto').value || undefined,
-            ordem_compra:    document.getElementById('f-dp-ordem_compra').value || undefined,
+            ref:             dpRefInput || null,
+            equipamento:     document.getElementById('f-dp-equipamento').value || null,
+            orgao:           document.getElementById('f-dp-orgao').value || null,
+            parte:           document.getElementById('f-dp-parte').value || null,
+            breve_descricao: document.getElementById('f-dp-breve').value || null,
+            imagem:          document.getElementById('f-dp-imagem').value || null,
+            tipo_contacto:   document.getElementById('f-dp-tipo_contacto').value || null,
+            ordem_compra:    document.getElementById('f-dp-ordem_compra').value || null,
             data_rececao_oc: document.getElementById('f-dp-data_rececao_oc').value || null,
         };
 
@@ -805,7 +825,7 @@ async function savePedidoDetalhe(id) {
 
         if (!isNew) {
             const p = DB.pedidos.find((x) => x.id === id);
-            dadosPedidoId = p.dadosPedidoId;
+            dadosPedidoId = p?.dadosPedidoId;
             await apiPut(`/dados-pedido/${dadosPedidoId}`, dpPayload);
         } else {
             const newDp = await apiPost('/dados-pedido', dpPayload);
@@ -850,10 +870,12 @@ async function removerPecaDoPedido(pedidoId, pecaId) {
     const pp = DB.pecas_pedidos.find((x) => x.pecaId === pecaId && x.pedidoId === pedidoId);
     if (!pp) return;
     try {
+        const vals = _guardarValoresFormulario();
         await fetch(`${API_BASE}/pecas-pedidos/${pp.id}`, { method: 'DELETE' });
         await carregarDados();
         _currentPedidoId = pedidoId;
         renderPedidoDetalhe();
+        _restaurarValoresFormulario(vals);
         _successToast('Peça removida.');
     } catch (err) {
         console.error(err);
@@ -1027,10 +1049,12 @@ async function associarPecaDaOverlay(pecaId) {
     const pedidoId = _pedidoIdParaAssoc;
     if (DB.pecas_pedidos.some((pp) => pp.pecaId === pecaId && pp.pedidoId === pedidoId)) return;
     try {
+        const vals = _guardarValoresFormulario();
         await apiPost('/pecas-pedidos', { peca_id: pecaId, pedido_id: pedidoId });
         await carregarDados();
         _currentPedidoId = pedidoId;
         renderPedidoDetalhe();
+        _restaurarValoresFormulario(vals);
         _renderPecaSearchRows();
         _successToast('Peça associada ao pedido.');
     } catch (err) {
@@ -1053,10 +1077,12 @@ async function adicionarNota(pedidoId) {
     if (!criadoPorId) { alert('Selecione quem cria a nota.'); return; }
     if (!nota) { alert('Escreva o texto da nota.'); return; }
     try {
+        const vals = _guardarValoresFormulario();
         await apiPost('/notas-pedido', { pedido_id: pedidoId, colaborador_dm_id: criadoPorId, nota });
         await carregarDados();
         _currentPedidoId = pedidoId;
         renderPedidoDetalhe();
+        _restaurarValoresFormulario(vals);
         _successToast('Nota adicionada.');
     } catch (err) {
         console.error(err);
@@ -1067,9 +1093,11 @@ async function adicionarNota(pedidoId) {
 async function apagarNota(notaId) {
     if (!confirm('Apagar esta nota?')) return;
     try {
+        const vals = _guardarValoresFormulario();
         await fetch(`${API_BASE}/notas-pedido/${notaId}`, { method: 'DELETE' });
         await carregarDados();
         renderPedidoDetalhe();
+        _restaurarValoresFormulario(vals);
         _successToast('Nota apagada.');
     } catch (err) {
         console.error(err);
@@ -1116,7 +1144,7 @@ async function verHistorialPrecos(pecaId) {
               <td style="white-space:nowrap;">${new Date(h.data).toLocaleDateString('pt-PT')}</td>
               <td>${pedido ? pedido.ref : '—'}</td>
               <td>${h.fornecedor ? h.fornecedor.nome : '—'}</td>
-              <td>${h.preco_compra != null ? Number(h.preco_compra).toFixed(2) + ' €' : '—'}</td>
+              <td>${h.preco_compra != null ? formatEuro(h.preco_compra) : '—'}</td>
             </tr>`;
           }).join('');
 
@@ -1276,9 +1304,11 @@ async function confirmarAdicionarServico(pedidoId) {
             fornecedor_id: fornecedorId,
         });
         document.getElementById('servico-add-overlay')?.remove();
+        const vals = _guardarValoresFormulario();
         await carregarDados();
         _currentPedidoId = pedidoId;
         renderPedidoDetalhe();
+        _restaurarValoresFormulario(vals);
         _successToast('Serviço adicionado.');
     } catch (err) {
         _erroToast('Erro ao adicionar serviço: ' + err.message);
@@ -1287,11 +1317,13 @@ async function confirmarAdicionarServico(pedidoId) {
 
 async function guardarFornecedorServico(spId, fornecedorId) {
     try {
+        const vals = _guardarValoresFormulario();
         await apiPut(`/servicos-pedidos/${spId}`, {
             fornecedor_id: fornecedorId ? Number(fornecedorId) : null,
         });
         await carregarDados();
         renderPedidoDetalhe();
+        _restaurarValoresFormulario(vals);
     } catch (err) {
         _erroToast('Erro ao guardar fornecedor: ' + err.message);
     }
@@ -1299,9 +1331,11 @@ async function guardarFornecedorServico(spId, fornecedorId) {
 
 async function guardarServicoPedido(spId, campo, valor) {
     try {
+        const vals = _guardarValoresFormulario();
         await apiPut(`/servicos-pedidos/${spId}`, { [campo]: parseFloat(valor) });
         await carregarDados();
         renderPedidoDetalhe();
+        _restaurarValoresFormulario(vals);
     } catch (err) {
         _erroToast('Erro ao guardar: ' + err.message);
     }
@@ -1309,9 +1343,11 @@ async function guardarServicoPedido(spId, campo, valor) {
 
 async function removerServicoDoPedido(spId) {
     try {
+        const vals = _guardarValoresFormulario();
         await apiDelete(`/servicos-pedidos/${spId}`);
         await carregarDados();
         renderPedidoDetalhe();
+        _restaurarValoresFormulario(vals);
         _successToast('Serviço removido.');
     } catch (err) {
         _erroToast('Erro ao remover serviço: ' + err.message);
