@@ -25,13 +25,24 @@ const ICON_CREATE_PRJ = `<svg id="Calculator_24" width="24" height="24" viewBox=
 </g>
 </svg>`;
 
+let _pedidosPage = 1;
+const _PEDIDOS_PER_PAGE = 15;
+
 /*
  * Renderiza a lista de pedidos
  */
 function renderPedidos() {
+    const total = DB.pedidos.length;
+    const totalPages = Math.max(1, Math.ceil(total / _PEDIDOS_PER_PAGE));
+    if (_pedidosPage > totalPages) _pedidosPage = totalPages;
+
+    const inicio = (_pedidosPage - 1) * _PEDIDOS_PER_PAGE;
+    const paginados = DB.pedidos.slice(inicio, inicio + _PEDIDOS_PER_PAGE);
+
     document.getElementById('page-pedidos').innerHTML = `
     <div class="section-header">
-      <span class="section-count">${DB.pedidos.length} pedidos</span>
+      <span class="section-count">${total} pedidos</span>
+      ${totalPages > 1 ? _pedidosPaginacao(totalPages) : ''}
       <button class="btn btn-primary" onclick="showPedidoDetalhe(null)">+ Novo pedido</button>
     </div>
     <div class="full-card">
@@ -41,16 +52,46 @@ function renderPedidos() {
             <th style="width:90px">Ref.</th><th>Cliente</th><th>Breve Descrição</th><th>Nº Orçamento</th><th>Custo Líquido</th><th>Ordem de Compra</th><th>Ação</th><th style="width:90px">Estado</th>
           </tr>
         </thead>
-        <tbody>${_pedidosRows()}</tbody>
+        <tbody>${_pedidosRows(paginados)}</tbody>
       </table>
     </div>`;
+}
+
+function _pedidosPaginacao(totalPages) {
+    const prev = `<button class="btn btn-ghost btn-sm" ${_pedidosPage === 1 ? 'disabled' : ''} onclick="_setPedidosPage(${_pedidosPage - 1})">&#8249;</button>`;
+    const next = `<button class="btn btn-ghost btn-sm" ${_pedidosPage === totalPages ? 'disabled' : ''} onclick="_setPedidosPage(${_pedidosPage + 1})">&#8250;</button>`;
+
+    let paginas = '';
+    for (let i = 1; i <= totalPages; i++) {
+        if (
+            totalPages <= 7 ||
+            i === 1 || i === totalPages ||
+            Math.abs(i - _pedidosPage) <= 1
+        ) {
+            const active = i === _pedidosPage ? 'btn-primary' : 'btn-ghost';
+            paginas += `<button class="btn ${active} btn-sm" onclick="_setPedidosPage(${i})">${i}</button>`;
+        } else if (i === 2 && _pedidosPage > 4) {
+            paginas += `<span style="padding:0 4px;color:var(--color-text-muted);">…</span>`;
+        } else if (i === totalPages - 1 && _pedidosPage < totalPages - 3) {
+            paginas += `<span style="padding:0 4px;color:var(--color-text-muted);">…</span>`;
+        }
+    }
+
+    return `<div style="display:flex;justify-content:center;align-items:center;gap:4px;padding:12px 0 4px;">
+        ${prev}${paginas}${next}
+    </div>`;
+}
+
+function _setPedidosPage(n) {
+    _pedidosPage = n;
+    renderPedidos();
 }
 
 /*
  * Renderiza linhas da tabela de pedidos
  */
-function _pedidosRows() {
-    return DB.pedidos
+function _pedidosRows(pedidos) {
+    return pedidos
         .map((p) => {
             const cl = resolveCliente(p.clienteTipo, p.clienteId);
             const dp = getDadosPedido(p.dadosPedidoId);
@@ -420,7 +461,7 @@ function renderPedidoDetalhe() {
             <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pesoPc || '—'}</td>
             <td>
               <select style="font-size:11px;width:100%;box-sizing:border-box;" ${!_isEditMode ? 'disabled' : ''} onchange="guardarHistoricoPreco(${p.id},${pc.id},this.value,null)">
-                <option value="">—</option>
+                <option value="">DM</option>
                 ${fornOpts}
               </select>
             </td>
@@ -477,7 +518,7 @@ function renderPedidoDetalhe() {
                   <td>
                     <select style="font-size:11px;width:100%;box-sizing:border-box;" ${!_isEditMode ? 'disabled' : ''}
                       onchange="guardarFornecedorServico(${sp.id}, this.value)">
-                      <option value="">—</option>
+                      <option value="">DM</option>
                       ${DB.fornecedores.map(f => `<option value="${f.id}" ${sp.fornecedorId === f.id ? 'selected' : ''}>${f.nome}</option>`).join('')}
                     </select>
                   </td>
@@ -924,7 +965,7 @@ function verPecaOverlay(pecaId) {
                     ${campo('Altura (mm)', pc.altura)}
                     ${campo('Diâmetro Ext. (mm)', pc.diametro_ext)}
                     ${campo('Diâmetro Int. (mm)', pc.diametro_int)}
-                    ${campo('Peso (kg)', pc.peso)}
+                    ${(() => { const mp = DB.materia_prima.find(m => m.id === pc.materiaPrimaId); const p = _calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mp?.peso_esp); return campo('Peso (kg)', p ? p + ' kg' : null); })()}
                 </div>
                 ${pc.nota_descritiva ? `
                 <div class="vpc-section-title">Nota Descritiva</div>
@@ -1143,7 +1184,7 @@ async function verHistorialPrecos(pecaId) {
             return `<tr>
               <td style="white-space:nowrap;">${new Date(h.data).toLocaleDateString('pt-PT')}</td>
               <td>${pedido ? pedido.ref : '—'}</td>
-              <td>${h.fornecedor ? h.fornecedor.nome : '—'}</td>
+              <td>${h.fornecedor ? h.fornecedor.nome : 'DM'}</td>
               <td>${h.preco_compra != null ? formatEuro(h.preco_compra) : '—'}</td>
             </tr>`;
           }).join('');
@@ -1254,7 +1295,7 @@ function abrirAdicionarServico(pedidoId) {
             <div class="form-group" style="margin-top:8px;">
               <label class="form-label">Fornecedor</label>
               <select id="sv-add-fornecedor" style="width:100%;">
-                <option value="">— Sem fornecedor —</option>
+                <option value="">DM</option>
                 ${DB.fornecedores.map(f => `<option value="${f.id}">${f.nome}</option>`).join('')}
               </select>
             </div>

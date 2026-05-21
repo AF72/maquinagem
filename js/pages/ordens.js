@@ -5,10 +5,21 @@
  * -------------------------------------------------
  */
 
+let _ordensPage = 1;
+const _ORDENS_PER_PAGE = 15;
+
 function renderOrdens() {
+    const total = DB.ordens.length;
+    const totalPages = Math.max(1, Math.ceil(total / _ORDENS_PER_PAGE));
+    if (_ordensPage > totalPages) _ordensPage = totalPages;
+
+    const inicio = (_ordensPage - 1) * _ORDENS_PER_PAGE;
+    const paginadas = DB.ordens.slice(inicio, inicio + _ORDENS_PER_PAGE);
+
     document.getElementById('page-ordens').innerHTML = `
     <div class="section-header">
-      <span class="section-count">${DB.ordens.length} ordens de trabalho</span>
+      <span class="section-count">${total} ordens de trabalho</span>
+      <div style="flex:1;display:flex;justify-content:center;">${totalPages > 1 ? _ordensPaginacao(totalPages) : ''}</div>
     </div>
     <div class="full-card">
       <table class="table">
@@ -18,17 +29,41 @@ function renderOrdens() {
             <th>Ordem de Compra</th><th>Prazo</th><th>Data Limite Entrega</th><th>Nº GT</th><th>Nº FT</th><th>Estado</th><th>Ação</th>
           </tr>
         </thead>
-        <tbody>${_ordensRows()}</tbody>
+        <tbody>${_ordensRows(paginadas)}</tbody>
       </table>
     </div>`;
 }
 
-function _ordensRows() {
-    if (!DB.ordens.length) {
+function _ordensPaginacao(totalPages) {
+    const prev = `<button class="btn btn-ghost btn-sm" ${_ordensPage === 1 ? 'disabled' : ''} onclick="_setOrdensPage(${_ordensPage - 1})">&#8249;</button>`;
+    const next = `<button class="btn btn-ghost btn-sm" ${_ordensPage === totalPages ? 'disabled' : ''} onclick="_setOrdensPage(${_ordensPage + 1})">&#8250;</button>`;
+
+    let paginas = '';
+    for (let i = 1; i <= totalPages; i++) {
+        if (totalPages <= 7 || i === 1 || i === totalPages || Math.abs(i - _ordensPage) <= 1) {
+            const active = i === _ordensPage ? 'btn-primary' : 'btn-ghost';
+            paginas += `<button class="btn ${active} btn-sm" onclick="_setOrdensPage(${i})">${i}</button>`;
+        } else if (i === 2 && _ordensPage > 4) {
+            paginas += `<span style="padding:0 4px;color:var(--color-text-muted);">…</span>`;
+        } else if (i === totalPages - 1 && _ordensPage < totalPages - 3) {
+            paginas += `<span style="padding:0 4px;color:var(--color-text-muted);">…</span>`;
+        }
+    }
+
+    return `<div style="display:flex;align-items:center;gap:4px;">${prev}${paginas}${next}</div>`;
+}
+
+function _setOrdensPage(n) {
+    _ordensPage = n;
+    renderOrdens();
+}
+
+function _ordensRows(ordens) {
+    if (!ordens.length) {
         return `<tr><td colspan="10" style="text-align:center;color:var(--color-text-muted);padding:2rem">
       Nenhuma ordem de trabalho criada.</td></tr>`;
     }
-    return DB.ordens
+    return ordens
         .map((o) => {
             const pd = getPedido(o.pedidoId);
             const cl = resolveCliente(pd.clienteTipo, pd.clienteId);
@@ -280,7 +315,7 @@ function renderOrdemDetalhe() {
                   <th>Dimensões (mm)</th>
                   <th>Peso (kg)</th>
                   <th style="text-align:center;">Qtd.</th>
-                  <th style="text-align:right;">Custo (€)</th>
+                  <th style="text-align:right;">Custo und (€)</th>
                 </tr></thead>
                 <tbody>
                   ${orcItens
@@ -293,7 +328,7 @@ function renderOrdemDetalhe() {
                       <td>${pc.plano || '—'}</td>
                       <td>${_resolverMaterial(pc.materiaPrimaId)}</td>
                       <td>${_dimPeca(pc)}</td>
-                      <td>${pc.peso != null ? pc.peso : '—'}</td>
+                      <td>${(() => { const mp = DB.materia_prima.find(m => m.id === pc.materiaPrimaId); const p = _calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mp?.peso_esp); return p ? p + ' kg' : '—'; })()}</td>
                       <td style="text-align:center;">${item.quantidade}</td>
                       <td style="text-align:right;">${formatEuro(item.precoUnitario)}</td>
                     </tr>`;

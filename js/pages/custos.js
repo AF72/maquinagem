@@ -52,6 +52,21 @@ function renderCustos() {
     </div>
 
     <div class="full-card">
+      <div class="card-title">Resumo por cliente</div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th style="text-align:center;">Nº Pedidos</th>
+            <th style="text-align:center;">Nº Ordens</th>
+            <th style="text-align:right;">Total Orçamentado (€)</th>
+          </tr>
+        </thead>
+        <tbody>${_resumoClientesRows()}</tbody>
+      </table>
+    </div>
+
+    <div class="full-card">
       <div class="card-title">Ordens de trabalho a faturar</div>
       <table class="table">
         <thead>
@@ -65,6 +80,44 @@ function renderCustos() {
     </div>
 
     `;
+}
+
+function _resumoClientesRows() {
+    const stats = {};
+
+    DB.pedidos.forEach(p => {
+        let key, nome;
+        if (p.clienteTipo === 'particular') {
+            const part = getParticular(p.clienteId);
+            key = `particular_${p.clienteId}`;
+            nome = part?.nome || '—';
+        } else {
+            const colab = getColab(p.clienteId);
+            const emp = getEmpresa(colab?.empresaId);
+            key = `empresa_${colab?.empresaId}`;
+            nome = emp?.nome || '—';
+        }
+
+        if (!stats[key]) stats[key] = { nome, pedidos: 0, ordens: 0, valorTotal: 0 };
+        stats[key].pedidos++;
+
+        const ordensP = DB.ordens.filter(o => o.pedidoId === p.id);
+        stats[key].ordens += ordensP.length;
+        ordensP.forEach(o => { stats[key].valorTotal += _valorOT(o); });
+    });
+
+    const linhas = Object.values(stats).sort((a, b) => b.valorTotal - a.valorTotal);
+
+    if (!linhas.length) {
+        return `<tr><td colspan="4" style="text-align:center;color:var(--color-text-muted);padding:2rem;">Sem dados.</td></tr>`;
+    }
+
+    return linhas.map(r => `<tr>
+        <td>${r.nome}</td>
+        <td style="text-align:center;">${r.pedidos}</td>
+        <td style="text-align:center;">${r.ordens}</td>
+        <td style="text-align:right;"><strong>${formatEuro(r.valorTotal)}</strong></td>
+    </tr>`).join('');
 }
 
 function _faturarRows() {

@@ -9,13 +9,24 @@
 const ICON_ORCAMENTO_VIEW = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>`;
 const ICON_ORCAMENTO_EDIT = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="matrix(1.05 0 0 1.05 12 12)"><path style="fill: currentColor;" transform="translate(-12.5, -11.5)" d="M 19.171875 2 C 18.448125 2 17.724375 2.275625 17.171875 2.828125 L 16 4 L 20 8 L 21.171875 6.828125 C 22.275875 5.724125 22.275875 3.933125 21.171875 2.828125 C 20.619375 2.275625 19.895625 2 19.171875 2 z M 14.5 5.5 L 5 15 C 5 15 6.005 15.005 6.5 15.5 C 6.995 15.995 6.984375 16.984375 6.984375 16.984375 C 6.984375 16.984375 8.004 17.004 8.5 17.5 C 8.996 17.996 9 19 9 19 L 18.5 9.5 L 14.5 5.5 z M 3.6699219 17 L 3.0136719 20.503906 C 2.9606719 20.789906 3.2100938 21.039328 3.4960938 20.986328 L 7 20.330078 L 3.6699219 17 z" /></g></svg>`;
 
+let _orcamentosPage = 1;
+const _ORCAMENTOS_PER_PAGE = 15;
+
 /**
  * Renderiza a lista de orçamentos
  */
 function renderOrcamentos() {
+    const total = DB.orcamentos.length;
+    const totalPages = Math.max(1, Math.ceil(total / _ORCAMENTOS_PER_PAGE));
+    if (_orcamentosPage > totalPages) _orcamentosPage = totalPages;
+
+    const inicio = (_orcamentosPage - 1) * _ORCAMENTOS_PER_PAGE;
+    const paginados = DB.orcamentos.slice(inicio, inicio + _ORCAMENTOS_PER_PAGE);
+
     document.getElementById('page-orcamentos').innerHTML = `
     <div class="section-header">
-      <span class="section-count">${DB.orcamentos.length} orçamentos</span>
+      <span class="section-count">${total} orçamentos</span>
+      <div style="flex:1;display:flex;justify-content:center;">${totalPages > 1 ? _orcamentosPaginacao(totalPages) : ''}</div>
       <button class="btn btn-primary" onclick="showOrcamentoDetalhe(null)">+ Novo Orçamento</button>
     </div>
     <div class="full-card">
@@ -25,16 +36,40 @@ function renderOrcamentos() {
             <th>Ref. Orçamento</th><th>Pedido</th><th>Cliente</th><th>Custo Líquido (€)</th><th>Data Emissão</th><th>Validade</th><th>Estado</th><th>Ativo</th><th>Ação</th>
           </tr>
         </thead>
-        <tbody>${_orcamentosRows()}</tbody>
+        <tbody>${_orcamentosRows(paginados)}</tbody>
       </table>
     </div>`;
+}
+
+function _orcamentosPaginacao(totalPages) {
+    const prev = `<button class="btn btn-ghost btn-sm" ${_orcamentosPage === 1 ? 'disabled' : ''} onclick="_setOrcamentosPage(${_orcamentosPage - 1})">&#8249;</button>`;
+    const next = `<button class="btn btn-ghost btn-sm" ${_orcamentosPage === totalPages ? 'disabled' : ''} onclick="_setOrcamentosPage(${_orcamentosPage + 1})">&#8250;</button>`;
+
+    let paginas = '';
+    for (let i = 1; i <= totalPages; i++) {
+        if (totalPages <= 7 || i === 1 || i === totalPages || Math.abs(i - _orcamentosPage) <= 1) {
+            const active = i === _orcamentosPage ? 'btn-primary' : 'btn-ghost';
+            paginas += `<button class="btn ${active} btn-sm" onclick="_setOrcamentosPage(${i})">${i}</button>`;
+        } else if (i === 2 && _orcamentosPage > 4) {
+            paginas += `<span style="padding:0 4px;color:var(--color-text-muted);">…</span>`;
+        } else if (i === totalPages - 1 && _orcamentosPage < totalPages - 3) {
+            paginas += `<span style="padding:0 4px;color:var(--color-text-muted);">…</span>`;
+        }
+    }
+
+    return `<div style="display:flex;align-items:center;gap:4px;">${prev}${paginas}${next}</div>`;
+}
+
+function _setOrcamentosPage(n) {
+    _orcamentosPage = n;
+    renderOrcamentos();
 }
 
 /**
  * Renderiza linhas da tabela de orçamentos
  */
-function _orcamentosRows() {
-    return DB.orcamentos
+function _orcamentosRows(orcamentos) {
+    return orcamentos
         .map((orc) => {
             const pedido = getPedido(orc.pedidoId);
             if (!pedido) return '';
