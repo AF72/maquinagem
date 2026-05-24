@@ -23,7 +23,7 @@ function renderPecas() {
       <table class="table">
         <thead>
           <tr>
-            <th style="width:120px;">Ref.</th><th style="width:160px;">Denominação</th><th style="width:100px;">Órgão</th><th style="width:100px;">Parte</th><th style="width:160px;">Material</th><th style="width:160px;">Dimensões (mm)</th><th style="width:80px;">Peso (kg)</th><th style="width:80px;">Ação</th>
+            <th style="width:120px;">Ref.</th><th style="width:120px;">Plano</th><th style="width:160px;">Denominação</th><th style="width:100px;">Órgão</th><th style="width:100px;">Parte</th><th style="width:160px;">Material</th><th style="width:160px;">Dimensões (mm)</th><th style="width:80px;">Peso (kg)</th><th style="width:80px;">Ação</th>
           </tr>
         </thead>
         <tbody>${_pecasRows()}</tbody>
@@ -43,7 +43,7 @@ function _resolverMaterial(materiaPrimaId) {
 
 function _pecasRows() {
     if (DB.pecas.length === 0) {
-        return `<tr><td colspan="7" style="text-align:center;color:var(--color-text-muted);padding:2rem;">
+        return `<tr><td colspan="8" style="text-align:center;color:var(--color-text-muted);padding:2rem;">
       Sem peças registadas.</td></tr>`;
     }
     return DB.pecas
@@ -58,6 +58,7 @@ function _pecasRows() {
             const peso = _calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mp?.peso_esp);
             return `<tr>
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.ref}</td>
+      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.plano || '-'}</td>
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.denominacao || '-'}</td>
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.orgao || '-'}</td>
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.parte || '-'}</td>

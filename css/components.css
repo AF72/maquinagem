@@ -44,6 +44,11 @@
 .btn-ghost:hover {
     background: var(--color-surface-alt);
 }
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: auto;
+}
 
 /* ---------- Metric cards ---------- */
 .metric-card {

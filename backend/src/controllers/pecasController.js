@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 const schema = z.object({
   ref: z.string().min(1),
-  denominacao: z.string().min(1),
+  denominacao: z.string().optional().nullable(),
   plano: z.string().optional(),
   orgao: z.string().optional(),
   parte: z.string().optional(),

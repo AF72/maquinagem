@@ -217,6 +217,33 @@ function handleImageUpload(input) {
 }
 
 /*
+ * Atualiza o dropdown de colaboradores quando muda a empresa/particular
+ */
+function _onClienteEmpresaChange() {
+    const val = document.getElementById('f-clienteEmpresaOuPart')?.value;
+    const colabSelect = document.getElementById('f-clienteColab');
+    const keyInput = document.getElementById('f-clienteKey');
+    if (!val || !colabSelect || !keyInput) return;
+    if (val.startsWith('emp:')) {
+        const empId = parseInt(val.split(':')[1]);
+        const colabs = DB.colaboradores.filter(c => c.empresaId === empId);
+        colabSelect.innerHTML = colabs.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+        colabSelect.style.display = '';
+        keyInput.value = colabs.length > 0 ? `colab:${colabs[0].id}` : '';
+    } else if (val.startsWith('part:')) {
+        colabSelect.style.display = 'none';
+        keyInput.value = val;
+    }
+}
+
+function _onClienteColabChange() {
+    const colabId = document.getElementById('f-clienteColab')?.value;
+    const keyInput = document.getElementById('f-clienteKey');
+    if (!colabId || !keyInput) return;
+    keyInput.value = `colab:${colabId}`;
+}
+
+/*
  * Abre o modal de consulta de detalhes do cliente selecionado
  */
 function verDetalhesCliente() {
@@ -288,29 +315,42 @@ function renderPedidoDetalhe() {
 
     const isCancelado = !isNew && ['Cancelado', 'Concluido'].includes(p.estado_pedido) && !_isEditMode;
 
-    const colabOpts = DB.colaboradores
-        .map((c) => {
-            const emp = getEmpresa(c.empresaId);
-            const sel =
-                !isNew &&
-                p.clienteTipo === 'colaborador' &&
-                p.clienteId === c.id
-                    ? 'selected'
-                    : '';
-            return `<option value="colab:${c.id}" ${sel}>${c.nome} — ${emp.nome}</option>`;
-        })
-        .join('');
+    const initColab = !isNew && p.clienteTipo === 'colaborador'
+        ? DB.colaboradores.find(c => c.id === p.clienteId)
+        : null;
+    const initParticular = !isNew && p.clienteTipo === 'particular'
+        ? DB.particulares.find(pt => pt.id === p.clienteId)
+        : null;
+    const initEmpresaId = initColab
+        ? initColab.empresaId
+        : (DB.empresas.length > 0 ? DB.empresas[0].id : null);
+    const isParticularSel = initParticular !== null;
+
+    const empOpts = DB.empresas
+        .map(e => {
+            const sel = !isParticularSel && e.id === initEmpresaId ? 'selected' : '';
+            return `<option value="emp:${e.id}" ${sel}>${e.nome}</option>`;
+        }).join('');
     const partOpts = DB.particulares
-        .map((part) => {
-            const sel =
-                !isNew &&
-                p.clienteTipo === 'particular' &&
-                p.clienteId === part.id
-                    ? 'selected'
-                    : '';
-            return `<option value="part:${part.id}" ${sel}>${part.nome} (particular)</option>`;
-        })
-        .join('');
+        .map(pt => {
+            const sel = isParticularSel && pt.id === initParticular.id ? 'selected' : '';
+            return `<option value="part:${pt.id}" ${sel}>${pt.nome}</option>`;
+        }).join('');
+
+    const colabsDeEmpresa = initEmpresaId
+        ? DB.colaboradores.filter(c => c.empresaId === initEmpresaId)
+        : [];
+    const colabOpts = colabsDeEmpresa
+        .map(c => {
+            const sel = initColab && initColab.id === c.id ? 'selected' : '';
+            return `<option value="${c.id}" ${sel}>${c.nome}</option>`;
+        }).join('');
+
+    const initialClienteKey = initColab
+        ? `colab:${initColab.id}`
+        : initParticular
+            ? `part:${initParticular.id}`
+            : colabsDeEmpresa.length > 0 ? `colab:${colabsDeEmpresa[0].id}` : '';
 
     const formHtml = `
   <div class="form-grid">
@@ -372,10 +412,12 @@ function renderPedidoDetalhe() {
       <div class="form-group" style="flex:2;">
         <label class="form-label">Solicitado por</label>
         <div style="display:flex;gap:8px;align-items:center;">
-          <select id="f-clienteKey" ${!isNew && !_isEditMode ? 'disabled' : ''} style="flex:1;">
-            <optgroup label="Colaboradores de empresa">${colabOpts}</optgroup>
+          <select id="f-clienteEmpresaOuPart" ${!isNew && !_isEditMode ? 'disabled' : ''} style="flex:1;" onchange="_onClienteEmpresaChange()">
+            <optgroup label="Empresas">${empOpts}</optgroup>
             <optgroup label="Particulares">${partOpts}</optgroup>
           </select>
+          <select id="f-clienteColab" ${!isNew && !_isEditMode ? 'disabled' : ''} style="flex:1;${isParticularSel ? 'display:none;' : ''}" onchange="_onClienteColabChange()">${colabOpts}</select>
+          <input id="f-clienteKey" type="hidden" value="${initialClienteKey}">
           <button class="btn btn-ghost" title="Ver detalhes do cliente" onclick="verDetalhesCliente()">${ICON_VIEW}</button>
         </div>
       </div>
@@ -415,8 +457,8 @@ function renderPedidoDetalhe() {
         !isNew
             ? `
       <div style="grid-column: 1 / -1; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
-        <button class="btn btn-primary" onclick="criarPecaParaPedido(${p.id})" ${isCancelado ? 'disabled' : ''}>+ Nova Peça</button>
-        <button class="btn" onclick="abrirPesquisaPecas(${p.id})" ${isCancelado ? 'disabled' : ''}>Pesquisar peças</button>
+        <button class="btn btn-primary" onclick="criarPecaParaPedido(${p.id})" ${isCancelado || !_isEditMode ? 'disabled' : ''}>+ Nova Peça</button>
+        <button class="btn" onclick="abrirPesquisaPecas(${p.id})" ${isCancelado || !_isEditMode ? 'disabled' : ''}>Pesquisar peças</button>
       </div>
       ${
           pecasList.length > 0
@@ -425,9 +467,9 @@ function renderPedidoDetalhe() {
         <table class="table" style="font-size:12px;table-layout:fixed;width:100%;">
           <thead><tr>
             <th style="width:100px;">Ref.</th>
+            <th style="width:130px;">Plano</th>
             <th style="width:160px;">Denominação</th>
-            <th style="width:80px;">Plano</th>
-            <th style="width:160px;">Material</th>
+            <th style="width:100px;">Material</th>
             <th style="width:160px;">Dimensões (mm)</th>
             <th style="width:70px;">Peso (kg)</th>
             <th style="width:160px;">Fornecedor</th>
@@ -454,8 +496,8 @@ function renderPedidoDetalhe() {
                   const pesoPc = _calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mpPc?.peso_esp);
                   return `<tr>
             <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.ref}</td>
-            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.denominacao || '-'}</td>
             <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.plano || '-'}</td>
+            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.denominacao || '-'}</td>
             <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_resolverMaterial(pc.materiaPrimaId)}</td>
             <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${dim}</td>
             <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pesoPc || '—'}</td>
@@ -474,7 +516,7 @@ function renderPedidoDetalhe() {
             <td style="display:flex;gap:4px;">
               <button class="btn btn-ghost btn-sm" title="Ver peça" onclick="verPecaOverlay(${pc.id})">${ICON_VIEW}</button>
               <button class="btn btn-ghost btn-sm" title="Historial de preços" onclick="verHistorialPrecos(${pc.id})">📋</button>
-              ${emOrcamento ? '' : `<button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" onclick="removerPecaDoPedido(${p.id},${pc.id})" title="Remover associação">✕</button>`}
+              ${emOrcamento ? '' : `<button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" onclick="removerPecaDoPedido(${p.id},${pc.id})" title="Remover associação"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`}
             </td>
           </tr>`;
               })
@@ -492,7 +534,7 @@ function renderPedidoDetalhe() {
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.25rem; color: var(--color-primary);">Serviços</h4><hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 0.5rem;"></div>
     <div style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:12px;">
       <div>
-        <button class="btn btn-primary" onclick="abrirAdicionarServico(${p.id})" ${isCancelado ? 'disabled' : ''}>+ Adicionar Serviço</button>
+        <button class="btn btn-primary" onclick="abrirAdicionarServico(${p.id})" ${isCancelado || !_isEditMode ? 'disabled' : ''}>+ Adicionar Serviço</button>
       </div>
       ${(() => {
           const spList = DB.servicos_pedidos.filter(sp => sp.pedidoId === p.id);
@@ -562,7 +604,7 @@ function renderPedidoDetalhe() {
         !isNew
             ? `
       <div style="grid-column: 1 / -1;">
-        <button class="btn btn-primary" onclick="criarOrcamentoParaPedido(${p.id})" ${isCancelado ? 'disabled' : ''}>+ Novo Orçamento</button>
+        <button class="btn btn-primary" onclick="criarOrcamentoParaPedido(${p.id})" ${isCancelado || !_isEditMode ? 'disabled' : ''}>+ Novo Orçamento</button>
       </div>
       ${
           orcList.length > 0
@@ -825,6 +867,26 @@ function _restaurarValoresFormulario(vals) {
         const el = document.getElementById(id);
         if (el) el.value = val;
     });
+    const key = vals['f-clienteKey'];
+    if (!key) return;
+    const [tipo, idStr] = key.split(':');
+    const empSelect = document.getElementById('f-clienteEmpresaOuPart');
+    const colabSelect = document.getElementById('f-clienteColab');
+    const keyInput = document.getElementById('f-clienteKey');
+    if (keyInput) keyInput.value = key;
+    if (tipo === 'colab') {
+        const colab = DB.colaboradores.find(c => c.id === parseInt(idStr));
+        if (colab && empSelect && colabSelect) {
+            empSelect.value = `emp:${colab.empresaId}`;
+            const colabs = DB.colaboradores.filter(c => c.empresaId === colab.empresaId);
+            colabSelect.innerHTML = colabs.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+            colabSelect.style.display = '';
+            colabSelect.value = idStr;
+        }
+    } else if (tipo === 'part') {
+        if (empSelect) empSelect.value = `part:${idStr}`;
+        if (colabSelect) colabSelect.style.display = 'none';
+    }
 }
 /*
  * Guarda os detalhes de um pedido
