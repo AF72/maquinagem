@@ -121,6 +121,25 @@ function _parsearSegmentos(ref, pedido) {
 /*
  * Atualiza o campo peso_esp quando o utilizador muda o material.
  */
+/* Devolve a primeira mensagem sobre o que falta para calcular o peso, ou '' se tudo ok */
+function _mensagemPesoPendente(forma, c, l, h, de, di, pesoEsp) {
+    if (!forma) return 'Falta indicar a forma da peça';
+    if (!parseFloat(pesoEsp)) return 'Falta indicar o material da peça';
+    if (forma === 'quadrado') {
+        if (!parseFloat(c)) return 'Falta indicar o comprimento';
+        if (!parseFloat(l)) return 'Falta indicar a largura';
+        if (!parseFloat(h)) return 'Falta indicar a altura';
+    } else if (forma === 'redondo_macico') {
+        if (!parseFloat(c))  return 'Falta indicar o comprimento';
+        if (!parseFloat(de)) return 'Falta indicar o diâmetro exterior';
+    } else if (forma === 'redondo_oco') {
+        if (!parseFloat(c))  return 'Falta indicar o comprimento';
+        if (!parseFloat(de)) return 'Falta indicar o diâmetro exterior';
+        if (!parseFloat(di)) return 'Falta indicar o diâmetro interior';
+    }
+    return '';
+}
+
 /* Calcula o volume (mm³) e devolve o peso em kg; '' se dados insuficientes */
 function _calcPeso(forma, c, l, h, de, di, pesoEsp) {
     const p = parseFloat(pesoEsp);
@@ -146,17 +165,18 @@ function _calcPeso(forma, c, l, h, de, di, pesoEsp) {
 
 /* Atualiza o campo Peso da Peça a partir dos valores actuais no DOM */
 function calcPecaPeso() {
-    const peso = _calcPeso(
-        document.querySelector('input[name="f-pc-forma"]:checked')?.value || '',
-        document.getElementById('f-pc-comprimento').value,
-        document.getElementById('f-pc-largura').value,
-        document.getElementById('f-pc-altura').value,
-        document.getElementById('f-pc-diametro_ext').value,
-        document.getElementById('f-pc-diametro_int').value,
-        document.getElementById('f-pc-peso_esp').value,
-    );
+    const forma = document.querySelector('input[name="f-pc-forma"]:checked')?.value || '';
+    const c  = document.getElementById('f-pc-comprimento').value;
+    const l  = document.getElementById('f-pc-largura').value;
+    const h  = document.getElementById('f-pc-altura').value;
+    const de = document.getElementById('f-pc-diametro_ext').value;
+    const di = document.getElementById('f-pc-diametro_int').value;
+    const pe = document.getElementById('f-pc-peso_esp').value;
+    const peso = _calcPeso(forma, c, l, h, de, di, pe);
     const el = document.getElementById('f-pc-peso');
     if (el) el.value = peso !== '' ? peso + ' kg' : '';
+    const hint = document.getElementById('f-pc-peso-hint');
+    if (hint) hint.textContent = peso !== '' ? '' : _mensagemPesoPendente(forma, c, l, h, de, di, pe);
 }
 
 function onPecaMaterialChange() {
@@ -225,16 +245,21 @@ function renderPecaDetalhe() {
 
     if (!pc) return;
 
+    // Para peças existentes, resolver o pedido associado via pecas_pedidos (DB.pecas não tem pedidoId)
+    const pedidoId = isNew
+        ? (_preSelectedPecaPedidoId || null)
+        : (DB.pecas_pedidos.find(pp => pp.pecaId === _currentPecaId)?.pedidoId ?? null);
+
     // Construir opções de pedidos
     const pedidoOpts = DB.pedidos
         .map((p) => {
-            const sel = pc.pedidoId === p.id ? 'selected' : '';
+            const sel = pedidoId === p.id ? 'selected' : '';
             return `<option value="${p.id}" ${sel}>${p.ref}</option>`;
         })
         .join('');
 
     // Segmentos da referência: DMyy-ppp-xxx-nn
-    const pedidoAssoc = DB.pedidos.find((p) => p.id === pc.pedidoId) || null;
+    const pedidoAssoc = DB.pedidos.find((p) => p.id === pedidoId) || null;
     const { prefixo, xxx, nn } = _parsearSegmentos(pc.ref, pedidoAssoc);
     const editavel = isNew || _isPecaEditMode;
 
@@ -302,28 +327,19 @@ function renderPecaDetalhe() {
 
     <div class="form-group full">
       <h4 style="margin: 1.5rem 0 0.75rem; color: var(--color-primary);">Dimensões</h4>
-      <div style="display:flex;gap:2rem;">
-        <label style="display:flex;align-items:center;gap:6px;cursor:${editavel ? 'pointer' : 'default'};">
-          <input type="radio" name="f-pc-forma" value="quadrado"
-            ${formaAtiva === 'quadrado' ? 'checked' : ''}
-            ${!editavel ? 'disabled' : ''}
-            onchange="onPecaFormaChange()">
-          Quadrado
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:${editavel ? 'pointer' : 'default'};">
-          <input type="radio" name="f-pc-forma" value="redondo_macico"
-            ${formaAtiva === 'redondo_macico' ? 'checked' : ''}
-            ${!editavel ? 'disabled' : ''}
-            onchange="onPecaFormaChange()">
-          Redondo maciço
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:${editavel ? 'pointer' : 'default'};">
-          <input type="radio" name="f-pc-forma" value="redondo_oco"
-            ${formaAtiva === 'redondo_oco' ? 'checked' : ''}
-            ${!editavel ? 'disabled' : ''}
-            onchange="onPecaFormaChange()">
-          Redondo oco
-        </label>
+      <div style="display:flex;gap:0.75rem;">
+        ${['quadrado','redondo_macico','redondo_oco'].map(forma => {
+          const ativo = formaAtiva === forma;
+          const label = forma === 'quadrado' ? 'Quadrado' : forma === 'redondo_macico' ? 'Redondo maciço' : 'Redondo oco';
+          const labelStyle = ativo
+            ? 'display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:6px;border:2px solid #0f3a65;background:#e8f0f8;font-weight:600;color:#0f3a65;cursor:' + (editavel ? 'pointer' : 'default')
+            : 'display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:6px;border:1.5px solid #e2e0d8;background:transparent;font-weight:400;color:inherit;cursor:' + (editavel ? 'pointer' : 'default');
+          return `<label style="${labelStyle}">
+            <input type="radio" name="f-pc-forma" value="${forma}" style="width:16px;height:16px;flex-shrink:0;"
+              ${ativo ? 'checked' : ''} ${!editavel ? 'disabled' : ''} onchange="onPecaFormaChange()">
+            ${label}
+          </label>`;
+        }).join('')}
       </div>
     </div>
     <div class="form-group"><label class="form-label">Comprimento (mm)</label><input id="f-pc-comprimento" type="number" step="0.01" value="${pc.comprimento || ''}" ${campoDisabled('comprimento')} oninput="calcPecaPeso()"></div>
@@ -334,6 +350,7 @@ function renderPecaDetalhe() {
     <div class="form-group full">
       <label class="form-label">Peso da Peça (kg)</label>
       <input id="f-pc-peso" value="${(() => { const p = _calcPeso(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial); return p !== '' ? p + ' kg' : ''; })()}" readonly style="background:#ddedda; cursor:not-allowed;">
+      <small id="f-pc-peso-hint" style="color:#c0392b;margin-top:4px;display:block;">${(() => { const p = _calcPeso(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial); return p !== '' ? '' : _mensagemPesoPendente(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial); })()}</small>
     </div>
 
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Notas e Imagem</h4></div>
@@ -425,9 +442,12 @@ async function savePecaDetalhe(id) {
     const prefEl = document.getElementById('f-pc-ref-prefix');
     const xxxEl  = document.getElementById('f-pc-ref-xxx');
     const nnEl   = document.getElementById('f-pc-ref-nn');
-    const ref = prefEl && xxxEl && nnEl
+    let ref = prefEl && xxxEl && nnEl
         ? prefEl.textContent + xxxEl.value.padStart(3, '0') + '-' + nnEl.value.padStart(2, '0')
         : (document.getElementById('f-pc-ref') || {}).value || '';
+    // Se o prefixo não foi resolvido (peça sem pedido associado), preservar a ref original
+    if (!id && ref.includes('????')) ref = '';
+    if (id && ref.includes('????')) ref = DB.pecas.find(p => p.id === id)?.ref || ref;
 
     const mpVal     = document.getElementById('f-pc-materiaPrimaId').value;
     const pedidoVal = document.getElementById('f-pc-pedidoId').value;
