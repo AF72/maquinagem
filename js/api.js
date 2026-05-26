@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'https://maquinagem-production.up.railway.app/api';
 
 async function apiFetch(path) {
     const res = await fetch(API_BASE + path);
@@ -157,7 +157,7 @@ async function carregarDados() {
 
     if (erros > 0) {
         console.warn(`${erros} endpoint(s) indisponível(-eis). Reinicia o backend.`);
-        mostrarErroBanner(`Backend indisponível (${erros} endpoint(s) com falha). Verifica se o servidor está a correr em localhost:3000.`);
+        mostrarErroBanner(`Backend indisponível (${erros} endpoint(s) com falha). Verifica a ligação ao servidor.`);
     } else {
         esconderErroBanner();
     }
