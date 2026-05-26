@@ -709,7 +709,7 @@ function renderPedidoDetalhe() {
     document.getElementById('page-pedido_detalhe').innerHTML = `
     <div class="section-header">
       <button class="btn btn-ghost-back" onclick="showPage('pedidos')">&#x21a9 Voltar aos Pedidos</button>
-      <span class="section-count">${isNew ? 'Novo Pedido' : 'Detalhe do Pedido: ' + p.ref}</span>
+      <span class="section-count" style="font-size:1.1rem;font-weight:600;color:var(--color-primary);">${isNew ? 'Novo Pedido' : 'Detalhe do Pedido: ' + p.ref}</span>
       ${!isNew ? `<button class="btn" onclick="exportarPedidoPDF(${p.id})">⬇ Exportar PDF</button>` : ''}
     </div>
     <div class="full-card" style="padding: 2rem;">

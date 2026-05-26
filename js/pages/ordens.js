@@ -149,7 +149,7 @@ function renderOrdemDetalhe() {
     document.getElementById('page-ordem_detalhe').innerHTML = `
     <div class="section-header">
       <button class="btn btn-ghost-back" onclick="showPage('ordens')">&#x21a9 Voltar às Ordens</button>
-      <span class="section-count">Detalhe da Ordem: ${ot.num}</span>
+      <span class="section-count" style="font-size:1.1rem;font-weight:600;color:var(--color-primary);">Detalhe da Ordem: ${ot.num}</span>
     </div>
     <div class="full-card" style="padding:2rem;">
       <div class="form-grid">

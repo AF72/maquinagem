@@ -151,6 +151,7 @@ function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel, podeEliminar = fals
 
         return `<tr>
             <td><strong>${pc.ref}</strong></td>
+            <td>${pc.plano || '—'}</td>
             <td>${pc.denominacao || '-'}</td>
             <td>${qtdCell}</td>
             <td>und</td>
@@ -161,7 +162,7 @@ function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel, podeEliminar = fals
     }).join('');
     const acoesHeader = podeEliminar ? '<th></th>' : '';
     return `<table class="table">
-        <thead><tr><th>Ref.</th><th>Denominação</th><th>Qtd.</th><th>Unidade</th><th>Preço Unit. (€)</th><th>Sub-total (€)</th>${acoesHeader}</tr></thead>
+        <thead><tr><th>Ref.</th><th>Plano</th><th>Denominação</th><th>Qtd.</th><th>Unidade</th><th>Preço Unit. (€)</th><th>Sub-total (€)</th>${acoesHeader}</tr></thead>
         <tbody>${rows}</tbody>
     </table>`;
 }
