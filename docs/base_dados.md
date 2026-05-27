@@ -115,14 +115,17 @@ CREATE TABLE ordens_trabalho (
   id          SERIAL PRIMARY KEY,
   num         VARCHAR(20)  UNIQUE NOT NULL,    -- OTYY-XXXX
   pedido_id   INTEGER NOT NULL REFERENCES pedidos(id),
-  operador    VARCHAR(150),
   estado      VARCHAR(30)  NOT NULL DEFAULT 'Em curso',
-  -- 'Em curso' | 'Concluída' | 'Cancelada'
-  prazo       DATE,
+    -- 'Em curso' | 'Pendente' | 'Falta OC' | 'Faturar' | 'Concluída'
+  prazo       INTEGER,                             -- Número de semanas
   mo_obra     NUMERIC(10,2) DEFAULT 0,         -- Custo de mão de obra (€)
-  notas       TEXT,
-  criado_em   TIMESTAMP DEFAULT NOW(),
-  concluido_em TIMESTAMP
+  notas                TEXT,
+  data_limite_entrega  DATE,
+  n_gt                 VARCHAR(50),
+  n_ft                 VARCHAR(50),
+  observacoes          TEXT,
+  criado_em            TIMESTAMP DEFAULT NOW(),
+  concluido_em         TIMESTAMP
 );
 ```
 
@@ -133,20 +136,53 @@ CREATE TABLE ordens_trabalho (
 ```sql
 CREATE TABLE pecas (
   id               SERIAL PRIMARY KEY,
-  ref              VARCHAR(50) UNIQUE NOT NULL, -- Ex: DM26 001 000 00
-  plano            VARCHAR(100),                -- Plano da peça
+  ref              VARCHAR(50) UNIQUE NOT NULL,  -- Ex: DM26-0001-000-00
+  plano            VARCHAR(100),
   denominacao      VARCHAR(150) NOT NULL,
   orgao            VARCHAR(100),
   parte            VARCHAR(100),
-  material         VARCHAR(100),
-  comprimento      NUMERIC(10,2),
-  largura          NUMERIC(10,2),
-  altura           NUMERIC(10,2),
-  diametro_ext     NUMERIC(10,2),
-  diametro_int     NUMERIC(10,2),
+  materia_prima_id INTEGER REFERENCES materia_prima(id),
+  forma            VARCHAR(20) CHECK (forma IN ('quadrado', 'redondo_macico', 'redondo_oco')),
+  comprimento      NUMERIC(10,2),               -- mm
+  largura          NUMERIC(10,2),               -- mm (quadrado)
+  altura           NUMERIC(10,2),               -- mm (quadrado)
+  diametro_ext     NUMERIC(10,2),               -- mm (redondo)
+  diametro_int     NUMERIC(10,2),               -- mm (redondo oco)
   nota_descritiva  TEXT,
-  imagem           VARCHAR(255),
+  imagem           TEXT,                         -- base64 ou caminho
   criado_em        TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+### `pecas_pedidos`
+
+```sql
+CREATE TABLE pecas_pedidos (
+  id         SERIAL PRIMARY KEY,
+  peca_id    INTEGER NOT NULL REFERENCES pecas(id)   ON DELETE CASCADE,
+  pedido_id  INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+  UNIQUE (peca_id, pedido_id)
+);
+```
+
+---
+
+### `materia_prima`
+
+```sql
+CREATE TABLE materia_prima (
+  id        SERIAL PRIMARY KEY,
+  ref_wnr   VARCHAR(20),           -- Werkstoffnummer (designação alemã, ex: 1.0503)
+  peso_esp  NUMERIC(6,3),          -- Peso específico (g/cm³)
+  ref_din   VARCHAR(50),           -- Designação DIN
+  ref_bs    VARCHAR(50),           -- Designação BS (British Standard)
+  ref_afnor VARCHAR(50),           -- Designação AFNOR (francesa)
+  ref_une   VARCHAR(50),           -- Designação UNE (espanhola)
+  ref_aisi  VARCHAR(50),           -- Designação AISI (americana)
+  ref_jis   VARCHAR(50),           -- Designação JIS (japonesa)
+  tipo_tt   VARCHAR(150)           -- Tipo de tratamento térmico aplicável
 );
 ```
 
@@ -202,11 +238,41 @@ CREATE TABLE orcamento_itens (
   valor_unitario   NUMERIC(12,2) NOT NULL DEFAULT 0,
   unidade          VARCHAR(20),
   subtotal         NUMERIC(12,2) GENERATED ALWAYS AS (quantidade * valor_unitario) STORED,
-  
+
   CONSTRAINT chk_item_tipo CHECK (
     (item_tipo = 'peca' AND peca_id IS NOT NULL AND servico_id IS NULL) OR
     (item_tipo = 'servico' AND servico_id IS NOT NULL AND peca_id IS NULL)
   )
+);
+```
+
+---
+
+### `colaboradores_dm`
+
+```sql
+CREATE TABLE colaboradores_dm (
+  id        SERIAL PRIMARY KEY,
+  nome      VARCHAR(150) NOT NULL,
+  funcao    VARCHAR(100),
+  contacto  VARCHAR(150),
+  estado    VARCHAR(10)  NOT NULL DEFAULT 'ativo' CHECK (estado IN ('ativo', 'inativo')),
+  criado_em TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+### `notas_pedido`
+
+```sql
+CREATE TABLE notas_pedido (
+  id                  SERIAL PRIMARY KEY,
+  pedido_id           INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+  colaborador_dm_id   INTEGER NOT NULL REFERENCES colaboradores_dm(id),
+  data                DATE NOT NULL DEFAULT CURRENT_DATE,
+  nota                TEXT NOT NULL,
+  criado_em           TIMESTAMP DEFAULT NOW()
 );
 ```
 
@@ -218,11 +284,17 @@ CREATE TABLE orcamento_itens (
 empresas ──< colaboradores >──┐
                                ├──> pedidos >──> ordens_trabalho
 particulares >─────────────────┘         │
-                                         └──< orcamentos ──< orcamento_itens
-                                                                  │
-                                         ┌────────────────────────┤
-                                         ▼                        ▼
-                                       pecas                   servicos
+                                         ├──< orcamentos ──< orcamento_itens
+                                         │                        │
+                                         │   ┌────────────────────┤
+                                         │   ▼                    ▼
+                                         │ pecas               servicos
+                                         │
+                                         └──< notas_pedido
+                                                    │
+                                                    └── colaboradores_dm
+
+materia_prima  (tabela de referência independente — pode ser referenciada por pecas.material)
 ```
 
 ---
@@ -237,6 +309,11 @@ CREATE INDEX idx_pedidos_estado        ON pedidos(estado_pedido);
 CREATE INDEX idx_ordens_pedido         ON ordens_trabalho(pedido_id);
 CREATE INDEX idx_orcamentos_pedido     ON orcamentos(pedido_id);
 CREATE INDEX idx_orc_itens_orc         ON orcamento_itens(orcamento_id);
+CREATE INDEX idx_pecas_pedidos_peca    ON pecas_pedidos(peca_id);
+CREATE INDEX idx_pecas_pedidos_pedido  ON pecas_pedidos(pedido_id);
+CREATE INDEX idx_pecas_material        ON pecas(materia_prima_id);
+CREATE INDEX idx_notas_pedido          ON notas_pedido(pedido_id);
+CREATE INDEX idx_notas_colaborador_dm  ON notas_pedido(colaborador_dm_id);
 ```
 
 ---

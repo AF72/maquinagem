@@ -6,6 +6,7 @@
 .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
     padding: 6px 14px;
     font-size: 13px;
@@ -43,11 +44,17 @@
 .btn-ghost:hover {
     background: var(--color-surface-alt);
 }
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: auto;
+}
 
 /* ---------- Metric cards ---------- */
 .metric-card {
     background: var(--color-surface-alt);
     border-radius: var(--radius-md);
+    text-align: center;
     padding: 1rem;
 }
 .metric-label {
@@ -119,6 +126,29 @@
 .table tbody tr:hover td {
     background: var(--color-surface-alt);
 }
+.table td input,
+.table td select {
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 11px;
+    width: 100%;
+    box-sizing: border-box;
+    color: var(--color-text);
+    font-family: inherit;
+}
+.table td input:not(:disabled):not([readonly]),
+.table td select:not(:disabled) {
+    border-color: var(--color-border);
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    padding: 3px 6px;
+}
+.table td input:disabled,
+.table td select:disabled {
+    cursor: default;
+    opacity: 1;
+    -webkit-text-fill-color: var(--color-text);
+}
 
 /* Row variants */
 .row-empresa {
@@ -178,7 +208,10 @@
     background: var(--color-black-bg);
     color: var(--color-black-fg);
 }
-
+.badge-orange {
+    background: #fde8c8;
+    color: #c05c00;
+}
 
 /* ---------- Avatars ---------- */
 .avatar {
@@ -277,4 +310,133 @@
 .type-btn.active {
     background: var(--color-primary);
     color: #fff;
+}
+
+/* ---------- Referência de Peça ---------- */
+.ref-input-group {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+.ref-prefix-fixed {
+    padding: 6px 10px;
+    background: var(--color-surface-alt);
+    border-right: 1px solid var(--color-border);
+    font-family: monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+}
+.ref-sep-fixed {
+    padding: 0 4px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-family: monospace;
+    display: flex;
+    align-items: center;
+}
+.ref-segment-input {
+    border: none;
+    outline: none;
+    padding: 6px 6px;
+    font-size: 13px;
+    font-family: monospace;
+    text-align: center;
+    background: transparent;
+    width: 3.5ch;
+}
+.ref-segment-nn {
+    width: 2.5ch;
+}
+.ref-segment-input:focus {
+    background: var(--color-surface);
+}
+.form-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+/* ---------- Overlay pesquisa de peças ---------- */
+.peca-search-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.peca-search-panel {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    width: min(720px, 95vw);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.peca-search-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+.peca-search-body {
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+    flex: 1;
+}
+.peca-search-input {
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 7px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    box-sizing: border-box;
+    outline: none;
+}
+.peca-search-input:focus {
+    border-color: var(--color-primary);
+}
+
+/* ---------- Overlay ver peça ---------- */
+.vpc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 24px;
+    margin-bottom: 1rem;
+}
+.vpc-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.vpc-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+}
+.vpc-value {
+    font-size: 13px;
+    color: var(--color-text);
+}
+.vpc-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-primary);
+    margin: 1rem 0 0.5rem;
 }

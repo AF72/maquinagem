@@ -6,126 +6,140 @@
  * -------------------------------------------------
  */
 
-let _chartCustos = null;
+
+function _valorOT(o) {
+    const orc = DB.orcamentos.find(oc => oc.pedidoId === o.pedidoId && oc.ativo && oc.estado === 'Aprovado')
+             || DB.orcamentos.find(oc => oc.pedidoId === o.pedidoId && oc.ativo);
+    return Number(orc?.valor || 0);
+}
 
 function renderCustos() {
-    const rows = DB.ordens.map((o) => {
-        const pd = getPedido(o.pedidoId);
-        const dp = getDadosPedido(pd.dadosPedidoId);
-        const cl = resolveCliente(pd.clienteTipo, pd.clienteId);
-        const total = o.moObra;
-        return { o, pd, dp, cl, total };
-    });
-
-    const totalGeral = rows.reduce((s, r) => s + r.total, 0);
-    const concluidas = DB.ordens.filter((o) => o.estado === 'Concluída').length;
-    const medioPorOrdem = rows.length
-        ? Math.round(totalGeral / rows.length)
-        : 0;
+    const aFaturar = DB.ordens
+        .filter((o) => o.estado === 'Faturar')
+        .reduce((s, o) => s + _valorOT(o), 0);
+    const totalFaturado = DB.ordens
+        .filter((o) => o.estado === 'Concluída')
+        .reduce((s, o) => s + _valorOT(o), 0);
+    const totalOrcamentado = DB.orcamentos
+        .filter(o => o.ativo)
+        .reduce((s, o) => s + Number(o.valor || 0), 0);
+    const totalAprovados = DB.orcamentos
+        .filter(o => o.estado === 'Aprovado')
+        .reduce((s, o) => s + Number(o.valor || 0), 0);
 
     document.getElementById('page-custos').innerHTML = `
-    <div class="grid-metrics-3">
+    <div class="grid-metrics-4">
       <div class="metric-card">
-        <div class="metric-label">Custo total estimado</div>
-        <div class="metric-value">${totalGeral.toFixed(0)} €</div>
-        <div class="metric-sub">todas as ordens</div>
+        <div class="metric-label">Total orçamentado</div>
+        <div class="metric-value">${formatEuro(totalOrcamentado)}</div>
+        <div class="metric-sub">orçamentos ativos</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Custo médio por ordem</div>
-        <div class="metric-value">${medioPorOrdem} €</div>
-        <div class="metric-sub">mão de obra</div>
+        <div class="metric-label">Total Orc. Aprovados</div>
+        <div class="metric-value">${formatEuro(totalAprovados)}</div>
+        <div class="metric-sub">orçamentos aprovados</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Ordens concluídas</div>
-        <div class="metric-value">${concluidas}</div>
-        <div class="metric-sub">de ${DB.ordens.length} total</div>
+        <div class="metric-label">Total OT a faturar</div>
+        <div class="metric-value">${formatEuro(aFaturar)}</div>
+        <div class="metric-sub">ordens com estado "Faturar"</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Total faturado</div>
+        <div class="metric-value">${formatEuro(totalFaturado)}</div>
+        <div class="metric-sub">ordens concluídas</div>
       </div>
     </div>
 
     <div class="full-card">
-      <div class="card-title">Detalhe de custos por ordem de trabalho</div>
+      <div class="card-title">Resumo por cliente</div>
       <table class="table">
         <thead>
           <tr>
-            <th>OT Nº</th><th>Equipamento</th><th>Cliente</th><th>Tipo</th>
-            <th>Total €</th><th>Estado</th>
+            <th>Cliente</th>
+            <th style="text-align:center;">Nº Pedidos</th>
+            <th style="text-align:center;">Nº Ordens</th>
+            <th style="text-align:right;">Total Orçamentado (€)</th>
           </tr>
         </thead>
-        <tbody>${_custosRows(rows)}</tbody>
+        <tbody>${_resumoClientesRows()}</tbody>
       </table>
     </div>
 
-    <div class="card" style="margin-top:1rem">
-      <div class="card-title">Custo acumulado por equipamento</div>
-      <div style="position:relative;height:220px">
-        <canvas id="chart-custos"></canvas>
-      </div>
-    </div>`;
+    <div class="full-card">
+      <div class="card-title">Ordens de trabalho a faturar</div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>OT Nº</th><th>Cliente</th><th>Empresa</th><th>Tipo</th>
+            <th>Data Entrega</th><th>GT Nº</th><th>Valor (€)</th><th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>${_faturarRows()}</tbody>
+      </table>
+    </div>
 
-    _drawCustosChart();
+    `;
 }
 
-function _custosRows(rows) {
-    if (!rows.length) {
-        return `<tr><td colspan="10" style="text-align:center;color:var(--color-text-muted);padding:2rem">
-      Sem dados de custo disponíveis.</td></tr>`;
+function _resumoClientesRows() {
+    const stats = {};
+
+    DB.pedidos.forEach(p => {
+        let key, nome;
+        if (p.clienteTipo === 'particular') {
+            const part = getParticular(p.clienteId);
+            key = `particular_${p.clienteId}`;
+            nome = part?.nome || '—';
+        } else {
+            const colab = getColab(p.clienteId);
+            const emp = getEmpresa(colab?.empresaId);
+            key = `empresa_${colab?.empresaId}`;
+            nome = emp?.nome || '—';
+        }
+
+        if (!stats[key]) stats[key] = { nome, pedidos: 0, ordens: 0, valorTotal: 0 };
+        stats[key].pedidos++;
+
+        const ordensP = DB.ordens.filter(o => o.pedidoId === p.id);
+        stats[key].ordens += ordensP.length;
+        ordensP.forEach(o => { stats[key].valorTotal += _valorOT(o); });
+    });
+
+    const linhas = Object.values(stats).sort((a, b) => b.valorTotal - a.valorTotal);
+
+    if (!linhas.length) {
+        return `<tr><td colspan="4" style="text-align:center;color:var(--color-text-muted);padding:2rem;">Sem dados.</td></tr>`;
     }
-    return rows
-        .map(
-            (r) => `
-    <tr>
-      <td><strong>${r.o.num}</strong></td>
-      <td>${r.dp.equipamento || '—'}</td>
-      <td>${r.cl.nome}</td>
-      <td>${tipoBadge(r.pd.clienteTipo)}</td>
-      <td><strong>${r.total.toFixed(0)} €</strong></td>
-      <td>${estadoBadge(r.o.estado)}</td>
-    </tr>`,
-        )
-        .join('');
+
+    return linhas.map(r => `<tr>
+        <td>${r.nome}</td>
+        <td style="text-align:center;">${r.pedidos}</td>
+        <td style="text-align:center;">${r.ordens}</td>
+        <td style="text-align:right;"><strong>${formatEuro(r.valorTotal)}</strong></td>
+    </tr>`).join('');
 }
 
-function _drawCustosChart() {
-    if (_chartCustos) {
-        _chartCustos.destroy();
-        _chartCustos = null;
+function _faturarRows() {
+    const ordens = DB.ordens.filter(o => o.estado === 'Faturar');
+    if (!ordens.length) {
+        return `<tr><td colspan="8" style="text-align:center;color:var(--color-text-muted);padding:2rem;">
+            Sem ordens de trabalho a faturar.</td></tr>`;
     }
-
-    const mc = {};
-    DB.ordens.forEach((o) => {
+    return ordens.map(o => {
         const pd = getPedido(o.pedidoId);
-        const dp = getDadosPedido(pd.dadosPedidoId);
-        mc[dp.equipamento || 'Outro'] =
-            (mc[dp.equipamento || 'Outro'] || 0) + o.moObra;
-    });
-
-    _chartCustos = new Chart(document.getElementById('chart-custos'), {
-        type: 'bar',
-        data: {
-            labels: Object.keys(mc),
-            datasets: [
-                {
-                    data: Object.values(mc),
-                    backgroundColor: [
-                        '#185FA5',
-                        '#639922',
-                        '#BA7517',
-                        '#1D9E75',
-                        '#8B5CF6',
-                    ],
-                    borderRadius: 5,
-                    borderWidth: 0,
-                },
-            ],
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { grid: { display: false } },
-                y: { grid: { color: 'rgba(128,128,128,0.1)' } },
-            },
-        },
-    });
+        const cl = resolveCliente(pd.clienteTipo, pd.clienteId);
+        const valor = _valorOT(o);
+        return `<tr>
+            <td><strong>${o.num}</strong></td>
+            <td>${cl.nome}</td>
+            <td>${cl.subtexto || '—'}</td>
+            <td>${tipoBadge(pd.clienteTipo)}</td>
+            <td>${o.dataLimiteEntrega || '—'}</td>
+            <td>${o.n_gt || '—'}</td>
+            <td><strong>${formatEuro(valor)}</strong></td>
+            <td>${estadoBadge(o.estado)}</td>
+        </tr>`;
+    }).join('');
 }
+

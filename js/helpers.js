@@ -87,12 +87,15 @@ function initials(name) {
 
 function estadoBadge(estado) {
     const map = {
-        'Produção': 'badge-blue',
-        'Pendente': 'badge-amber',
+        'Produção':   'badge-blue',
+        'Pendente':   'badge-amber',
         'Orçamentar': 'badge-gray',
-        'Faturar': 'badge-red',
-        'Concluido': 'badge-green',
-        'Cancelado': 'badge-black',
+        'Faturar':    'badge-red',
+        'Concluido':  'badge-green',
+        'Cancelado':  'badge-black',
+        'Em curso':   'badge-blue',
+        'Falta OC':   'badge-orange',
+        'Concluída':  'badge-green',
     };
     return `<span class="badge ${map[estado] || 'badge-gray'}">${estado}</span>`;
 }
@@ -112,6 +115,10 @@ function inlineFlex(avatarHtml, label) {
 }
 
 /* ---------- Date ---------- */
+
+function formatEuro(value) {
+    return Number(value ?? 0).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
 
 function today() {
     return new Date().toISOString().slice(0, 10);

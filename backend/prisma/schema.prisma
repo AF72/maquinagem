@@ -1,0 +1,300 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model MateriaPrima {
+  id        Int      @id @default(autoincrement())
+  ref_wnr   String?  @db.VarChar(20)
+  peso_esp  Decimal? @db.Decimal(6, 3)
+  ref_din   String?  @db.VarChar(50)
+  ref_bs    String?  @db.VarChar(50)
+  ref_afnor String?  @db.VarChar(50)
+  ref_une   String?  @db.VarChar(50)
+  ref_aisi  String?  @db.VarChar(50)
+  ref_jis   String?  @db.VarChar(50)
+  tipo_tt   String?  @db.VarChar(150)
+  pecas     Peca[]
+
+  @@map("materia_prima")
+}
+
+model Empresa {
+  id            Int           @id @default(autoincrement())
+  nome          String        @db.VarChar(150)
+  nif           String?       @unique @db.VarChar(20)
+  morada        String?       @db.VarChar(255)
+  codigo_postal String?       @db.VarChar(20)
+  localidade    String?       @db.VarChar(100)
+  email         String?       @db.VarChar(150)
+  tel           String?       @db.VarChar(30)
+  criado_em     DateTime      @default(now())
+  colaboradores Colaborador[]
+
+  @@map("empresas")
+}
+
+model Particular {
+  id            Int      @id @default(autoincrement())
+  nome          String   @db.VarChar(150)
+  cc            String?  @unique @db.VarChar(20)
+  morada        String?  @db.VarChar(255)
+  codigo_postal String?  @db.VarChar(20)
+  localidade    String?  @db.VarChar(100)
+  email         String?  @db.VarChar(150)
+  tel           String?  @db.VarChar(30)
+  criado_em     DateTime @default(now())
+  pedidos       Pedido[]
+
+  @@map("particulares")
+}
+
+model DadosPedido {
+  id              Int       @id @default(autoincrement())
+  ref             String?   @db.VarChar(50)
+  equipamento     String?   @db.VarChar(100)
+  orgao           String?   @db.VarChar(100)
+  parte           String?   @db.VarChar(100)
+  breve_descricao String?   @db.VarChar(255)
+  imagem          String?   @db.Text
+  tipo_contacto   String?   @db.VarChar(50)
+  ordem_compra    String?   @db.VarChar(50)
+  data_rececao_oc DateTime? @db.Date
+  criado_em       DateTime  @default(now())
+  pedidos         Pedido[]
+
+  @@map("dados_pedido")
+}
+
+model Servico {
+  id              Int             @id @default(autoincrement())
+  ref             String          @unique @db.VarChar(50)
+  tipo_servico    String          @db.VarChar(100)
+  descricao       String?
+  unidade         String?         @default("und") @db.VarChar(20)
+  criado_em       DateTime        @default(now())
+  orcamento_itens OrcamentoItem[]
+  servicos_pedidos ServicoPedido[]
+
+  @@map("servicos")
+}
+
+model ServicoPedido {
+  id            Int        @id @default(autoincrement())
+  servico_id    Int
+  pedido_id     Int
+  fornecedor_id Int?
+  quantidade    Decimal    @default(1) @db.Decimal(10, 2)
+  preco_unitario Decimal   @default(0) @db.Decimal(12, 2)
+  criado_em     DateTime   @default(now())
+  servico       Servico    @relation(fields: [servico_id], references: [id], onDelete: Cascade)
+  pedido        Pedido     @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+  fornecedor    Fornecedor? @relation(fields: [fornecedor_id], references: [id])
+
+  @@map("servicos_pedidos")
+}
+
+model ColaboradorDm {
+  id        Int          @id @default(autoincrement())
+  nome      String       @db.VarChar(150)
+  funcao    String?      @db.VarChar(100)
+  contacto  String?      @db.VarChar(150)
+  estado    String       @default("ativo") @db.VarChar(10)
+  criado_em DateTime     @default(now())
+  notas     NotaPedido[]
+
+  @@map("colaboradores_dm")
+}
+
+model Colaborador {
+  id         Int      @id @default(autoincrement())
+  empresa_id Int
+  nome       String   @db.VarChar(150)
+  cargo      String?  @db.VarChar(100)
+  email      String?  @db.VarChar(150)
+  tel        String?  @db.VarChar(30)
+  ativo      Boolean  @default(true)
+  criado_em  DateTime @default(now())
+  empresa    Empresa  @relation(fields: [empresa_id], references: [id], onDelete: Cascade)
+  pedidos    Pedido[]
+
+  @@map("colaboradores")
+}
+
+model Peca {
+  id               Int             @id @default(autoincrement())
+  ref              String          @unique @db.VarChar(50)
+  plano            String?         @db.VarChar(100)
+  denominacao      String          @db.VarChar(150)
+  orgao            String?         @db.VarChar(100)
+  parte            String?         @db.VarChar(100)
+  materia_prima_id Int?
+  forma            String?         @db.VarChar(20)
+  comprimento      Decimal?        @db.Decimal(10, 2)
+  largura          Decimal?        @db.Decimal(10, 2)
+  altura           Decimal?        @db.Decimal(10, 2)
+  diametro_ext     Decimal?        @db.Decimal(10, 2)
+  diametro_int     Decimal?        @db.Decimal(10, 2)
+  nota_descritiva  String?
+  imagem           String?
+  criado_em        DateTime        @default(now())
+  orcamento_itens  OrcamentoItem[]
+  materia_prima    MateriaPrima?   @relation(fields: [materia_prima_id], references: [id])
+  pecas_pedidos    PecaPedido[]
+  historico_precos HistoricoPreco[]
+
+  @@map("pecas")
+}
+
+model Pedido {
+  id              Int             @id @default(autoincrement())
+  ref             String          @unique @db.VarChar(20)
+  cliente_tipo    String          @db.VarChar(20)
+  colaborador_id  Int?
+  particular_id   Int?
+  dados_pedido_id Int
+  estado_pedido   String          @default("Orçamentar") @db.VarChar(30)
+  data_pedido     DateTime        @default(now()) @db.Date
+  observacoes     String?
+  custo_liquido   Decimal?        @db.Decimal(10, 2)
+  criado_em       DateTime        @default(now())
+  notas                NotaPedido[]
+  orcamentos           Orcamento[]
+  ordens               OrdemTrabalho[]
+  pecas_pedidos        PecaPedido[]
+  pedidos_fornecedores PedidoFornecedor[]
+  historico_precos     HistoricoPreco[]
+  servicos_pedidos     ServicoPedido[]
+  colaborador     Colaborador?    @relation(fields: [colaborador_id], references: [id])
+  dados_pedido    DadosPedido     @relation(fields: [dados_pedido_id], references: [id])
+  particular      Particular?     @relation(fields: [particular_id], references: [id])
+
+  @@map("pedidos")
+}
+
+model OrdemTrabalho {
+  id                  Int       @id @default(autoincrement())
+  num                 String    @unique @db.VarChar(20)
+  pedido_id           Int
+  estado              String    @default("Em curso") @db.VarChar(30)
+  mo_obra             Decimal?  @default(0) @db.Decimal(10, 2)
+  notas               String?
+  criado_em           DateTime  @default(now())
+  concluido_em        DateTime?
+  data_limite_entrega DateTime? @db.Date
+  n_ft                String?   @db.VarChar(50)
+  n_gt                String?   @db.VarChar(50)
+  observacoes         String?
+  prazo               Int?
+  pedido              Pedido    @relation(fields: [pedido_id], references: [id])
+
+  @@map("ordens_trabalho")
+}
+
+model PecaPedido {
+  id        Int    @id @default(autoincrement())
+  peca_id   Int
+  pedido_id Int
+  peca      Peca   @relation(fields: [peca_id], references: [id], onDelete: Cascade)
+  pedido    Pedido @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+
+  @@unique([peca_id, pedido_id])
+  @@map("pecas_pedidos")
+}
+
+model Orcamento {
+  id            Int             @id @default(autoincrement())
+  pedido_id     Int
+  ref           String          @unique @db.VarChar(30)
+  data_emissao  DateTime?       @default(now()) @db.Date
+  data_validade DateTime?       @db.Date
+  estado        String?         @default("Pendente") @db.VarChar(20)
+  ativo         Boolean?        @default(false)
+  total_liquido Decimal?        @default(0) @db.Decimal(12, 2)
+  observacoes   String?
+  notas         String?
+  criado_em     DateTime        @default(now())
+  itens         OrcamentoItem[]
+  pedido        Pedido          @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+
+  @@map("orcamentos")
+}
+
+model OrcamentoItem {
+  id             Int       @id @default(autoincrement())
+  orcamento_id   Int
+  item_tipo      String    @db.VarChar(20)
+  peca_id        Int?
+  servico_id     Int?
+  quantidade     Decimal   @default(1) @db.Decimal(10, 2)
+  valor_unitario Decimal   @default(0) @db.Decimal(12, 2)
+  unidade        String?   @db.VarChar(20)
+  orcamento      Orcamento @relation(fields: [orcamento_id], references: [id], onDelete: Cascade)
+  peca           Peca?     @relation(fields: [peca_id], references: [id])
+  servico        Servico?  @relation(fields: [servico_id], references: [id])
+
+  @@map("orcamento_itens")
+}
+
+model Fornecedor {
+  id               Int                @id @default(autoincrement())
+  nome             String             @db.VarChar(150)
+  nif              String?            @unique @db.VarChar(20)
+  morada           String?            @db.VarChar(255)
+  codigo_postal    String?            @db.VarChar(20)
+  localidade       String?            @db.VarChar(100)
+  pessoa_contacto  String?            @db.VarChar(150)
+  email            String?            @db.VarChar(150)
+  telf             String?            @db.VarChar(30)
+  criado_em        DateTime           @default(now())
+  pedidos          PedidoFornecedor[]
+  historico_precos HistoricoPreco[]
+  servicos_pedidos ServicoPedido[]
+
+  @@map("fornecedores")
+}
+
+model HistoricoPreco {
+  id            Int        @id @default(autoincrement())
+  peca_id       Int
+  pedido_id     Int
+  fornecedor_id Int?
+  preco_compra  Decimal?   @db.Decimal(12, 2)
+  preco_venda   Decimal?   @db.Decimal(12, 2)
+  data          DateTime   @default(now())
+  peca          Peca       @relation(fields: [peca_id], references: [id], onDelete: Cascade)
+  pedido        Pedido     @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+  fornecedor    Fornecedor? @relation(fields: [fornecedor_id], references: [id])
+
+  @@unique([peca_id, pedido_id])
+  @@map("historico_precos")
+}
+
+model PedidoFornecedor {
+  id            Int        @id @default(autoincrement())
+  pedido_id     Int
+  fornecedor_id Int
+  pedido        Pedido     @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+  fornecedor    Fornecedor @relation(fields: [fornecedor_id], references: [id], onDelete: Cascade)
+
+  @@unique([pedido_id, fornecedor_id])
+  @@map("pedidos_fornecedores")
+}
+
+model NotaPedido {
+  id                Int           @id @default(autoincrement())
+  pedido_id         Int
+  colaborador_dm_id Int
+  data              DateTime      @default(now()) @db.Date
+  nota              String
+  criado_em         DateTime      @default(now())
+  colaborador_dm    ColaboradorDm @relation(fields: [colaborador_dm_id], references: [id])
+  pedido            Pedido        @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+
+  @@map("notas_pedido")
+}
