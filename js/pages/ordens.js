@@ -322,6 +322,35 @@ function renderOrdemDetalhe() {
                       .map((item) => {
                           const pc = DB.pecas.find((p) => p.id === item.pecaId);
                           if (!pc) return '';
+                          const plano = DB.pecas_processos
+                              .filter(pp => pp.pecaId === pc.id)
+                              .sort((a, b) => a.ordem - b.ordem);
+                          const subTabela = plano.length === 0
+                              ? `<tr><td colspan="8" style="padding:0.4rem 1rem 0.75rem;"><span style="font-size:11px;color:var(--color-text-muted);font-style:italic;">Sem plano de processos definido para esta peça.</span></td></tr>`
+                              : `<tr><td colspan="8" style="padding:0.4rem 1rem 0.75rem;background:var(--color-surface-alt,#f8f8f6);">
+                                  <table style="width:100%;font-size:11px;border-collapse:collapse;">
+                                    <thead><tr style="color:var(--color-text-muted);">
+                                      <th style="padding:2px 8px;text-align:center;width:40px;">Ord.</th>
+                                      <th style="padding:2px 8px;width:70px;">Ref.</th>
+                                      <th style="padding:2px 8px;">Processo</th>
+                                      <th style="padding:2px 8px;">Tipo</th>
+                                      <th style="padding:2px 8px;width:100px;">Tempo Est.</th>
+                                      <th style="padding:2px 8px;width:100px;text-align:right;">Custo Est.</th>
+                                    </tr></thead>
+                                    <tbody>${plano.map(pp => {
+                                        const proc = DB.processos.find(p => p.id === pp.processoId) || pp.processo || {};
+                                        const custoEst = _calcCustoEstimado(pp, proc);
+                                        return `<tr>
+                                          <td style="padding:3px 8px;text-align:center;">${pp.ordem + 1}</td>
+                                          <td style="padding:3px 8px;font-weight:600;">${proc.ref || '—'}</td>
+                                          <td style="padding:3px 8px;">${proc.descricao || '—'}</td>
+                                          <td style="padding:3px 8px;">${proc.tipo || '—'}</td>
+                                          <td style="padding:3px 8px;">${pp.tempoEstimado != null ? pp.tempoEstimado + ' ' + pp.unidade_tempo : '—'}</td>
+                                          <td style="padding:3px 8px;text-align:right;">${custoEst != null ? formatEuro(custoEst) : '—'}</td>
+                                        </tr>`;
+                                    }).join('')}</tbody>
+                                  </table>
+                                </td></tr>`;
                           return `<tr>
                       <td><a href="#" onclick="verPecaOverlay(${pc.id});return false;" style="font-weight:600;color:var(--color-primary);text-decoration:underline;">${pc.ref || '—'}</a></td>
                       <td>${pc.denominacao || '—'}</td>
@@ -331,7 +360,7 @@ function renderOrdemDetalhe() {
                       <td>${(() => { const mp = DB.materia_prima.find(m => m.id === pc.materiaPrimaId); const p = _calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mp?.peso_esp); return p ? p + ' kg' : '—'; })()}</td>
                       <td style="text-align:center;">${item.quantidade}</td>
                       <td style="text-align:right;">${formatEuro(item.precoUnitario)}</td>
-                    </tr>`;
+                    </tr>${subTabela}`;
                       })
                       .join('')}
                 </tbody>

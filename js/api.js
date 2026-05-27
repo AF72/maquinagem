@@ -1,4 +1,6 @@
-const API_BASE = 'https://maquinagem-production.up.railway.app/api';
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:3000/api'
+    : 'https://maquinagem-production.up.railway.app/api';
 
 async function apiFetch(path) {
     const res = await fetch(API_BASE + path);
@@ -131,6 +133,13 @@ async function carregarDados() {
             return { ...n, pedidoId: n.pedido_id, criadoPorId: n.colaborador_dm_id, dataHora: `${data} ${hora}` };
         }) },
         { key: 'servicos',         path: '/servicos',          map: v => v },
+        { key: 'processos',        path: '/processos',         map: v => v },
+        { key: 'pecas_processos',  path: '/pecas-processos',   map: v => v.map(pp => ({
+            ...pp,
+            pecaId:     pp.peca_id,
+            processoId: pp.processo_id,
+            tempoEstimado: pp.tempo_estimado ? Number(pp.tempo_estimado) : null,
+        })) },
         { key: 'servicos_pedidos', path: '/servicos-pedidos',  map: v => v.map(s => ({
             ...s,
             servicoId:    s.servico_id,

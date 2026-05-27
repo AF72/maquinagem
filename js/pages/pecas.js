@@ -390,7 +390,191 @@ function renderPecaDetalhe() {
     <div class="full-card" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
       ${formHtml}
     </div>
+    ${!isNew ? _pecaPlanoProcessosHtml(pc.id) : ''}
   `;
+}
+
+/* ---------------------------------------------------------------
+   Plano de Processos da Peça
+--------------------------------------------------------------- */
+
+function _calcCustoEstimado(pp, proc) {
+    if (pp.tempoEstimado == null || !proc.custo_hora) return null;
+    const horas = pp.unidade_tempo === 'min' ? pp.tempoEstimado / 60 : pp.tempoEstimado;
+    return horas * Number(proc.custo_hora);
+}
+
+function _pecaPlanoProcessosHtml(pecaId) {
+    const plano = DB.pecas_processos
+        .filter(pp => pp.pecaId === pecaId)
+        .sort((a, b) => a.ordem - b.ordem);
+
+    const processosAtivos = DB.processos.filter(p => p.ativo);
+    const optsProcesso = processosAtivos.map(p =>
+        `<option value="${p.id}">${p.ref} — ${p.descricao}</option>`
+    ).join('');
+
+    const linhas = plano.length === 0
+        ? `<tr><td colspan="7" style="text-align:center;color:var(--color-text-muted);padding:1.5rem;">
+            Sem processos definidos. Adiciona o primeiro processo abaixo.</td></tr>`
+        : plano.map((pp, idx) => {
+            const proc = DB.processos.find(p => p.id === pp.processoId) || pp.processo || {};
+            const custoEst = _calcCustoEstimado(pp, proc);
+            return `<tr>
+              <td style="text-align:center;color:var(--color-text-muted);">${pp.ordem + 1}</td>
+              <td><strong>${proc.ref || '—'}</strong></td>
+              <td>${proc.descricao || '—'}</td>
+              <td>${proc.tipo || '—'}</td>
+              <td>${pp.tempoEstimado != null ? pp.tempoEstimado + ' ' + pp.unidade_tempo : '—'}</td>
+              <td style="text-align:right;">${custoEst != null ? formatEuro(custoEst) : '—'}</td>
+              <td style="display:flex;gap:4px;">
+                ${idx > 0 ? `<button class="btn btn-ghost btn-sm" title="Mover para cima" onclick="_moverProcessoPeca(${pp.id},-1)">↑</button>` : '<span style="width:32px"></span>'}
+                ${idx < plano.length - 1 ? `<button class="btn btn-ghost btn-sm" title="Mover para baixo" onclick="_moverProcessoPeca(${pp.id},1)">↓</button>` : '<span style="width:32px"></span>'}
+                <button class="btn btn-ghost btn-sm" title="Remover" style="color:var(--color-danger,#c00);" onclick="_removerProcessoPeca(${pp.id})">✕</button>
+              </td>
+            </tr>`;
+        }).join('');
+
+    const totalCusto = plano.reduce((sum, pp) => {
+        const proc = DB.processos.find(p => p.id === pp.processoId) || {};
+        const c = _calcCustoEstimado(pp, proc);
+        return sum + (c ?? 0);
+    }, 0);
+
+    return `
+    <div class="full-card" style="max-width:800px;margin:1rem auto;padding:2rem;">
+      <h4 style="margin:0 0 0.25rem;color:var(--color-primary);">Plano de Processos</h4>
+      <hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 1rem;">
+      <table class="table" style="font-size:12px;margin-bottom:1.25rem;">
+        <thead><tr>
+          <th style="width:50px;text-align:center;">Ord.</th>
+          <th style="width:80px;">Ref.</th>
+          <th>Processo</th>
+          <th>Tipo</th>
+          <th style="width:110px;">Tempo Est.</th>
+          <th style="width:110px;text-align:right;">Custo Est.</th>
+          <th style="width:90px;">Ações</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+        ${plano.length > 0 ? `<tfoot><tr>
+          <td colspan="5" style="text-align:right;font-size:11px;color:var(--color-text-muted);padding:6px 8px;">Total estimado:</td>
+          <td style="text-align:right;font-weight:700;padding:6px 8px;">${formatEuro(totalCusto)}</td>
+          <td></td>
+        </tr></tfoot>` : ''}
+      </table>
+      <details style="margin-top:0.5rem;">
+        <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--color-primary);list-style:none;display:flex;align-items:center;gap:6px;">
+          <span>▸</span> Adicionar processo
+        </summary>
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:0.75rem;">
+          <div style="flex:2;min-width:220px;">
+            <label class="form-label">Processo</label>
+            <select id="pp-select-processo" style="width:100%;">
+              <option value="">Selecionar...</option>${optsProcesso}
+            </select>
+          </div>
+          <div style="flex:0 0 90px;">
+            <label class="form-label">Tempo Est.</label>
+            <input id="pp-tempo" type="number" min="0" step="0.5" placeholder="0.0" style="width:100%;">
+          </div>
+          <div style="flex:0 0 70px;">
+            <label class="form-label">Unidade</label>
+            <select id="pp-unidade" style="width:100%;">
+              <option value="h">h</option>
+              <option value="min">min</option>
+            </select>
+          </div>
+          <div style="flex:2;min-width:160px;">
+            <label class="form-label">Notas</label>
+            <input id="pp-notas" placeholder="Opcional" style="width:100%;">
+          </div>
+          <button class="btn btn-primary" style="height:34px;" onclick="_adicionarProcessoPeca(${pecaId})">Adicionar</button>
+        </div>
+      </details>
+    </div>`;
+}
+
+async function _adicionarProcessoPeca(pecaId) {
+    const processoId = Number(document.getElementById('pp-select-processo').value);
+    if (!processoId) { _erroToast('Seleciona um processo.'); return; }
+
+    const tempoRaw = document.getElementById('pp-tempo').value;
+    const unidade  = document.getElementById('pp-unidade').value;
+    const notas    = document.getElementById('pp-notas').value.trim() || null;
+
+    const ordemAtual = DB.pecas_processos.filter(pp => pp.pecaId === pecaId).length;
+
+    const dados = {
+        peca_id:        pecaId,
+        processo_id:    processoId,
+        ordem:          ordemAtual,
+        tempo_estimado: tempoRaw !== '' ? Number(tempoRaw) : null,
+        unidade_tempo:  unidade,
+        notas,
+    };
+
+    try {
+        const novo = await apiPost('/pecas-processos', dados);
+        DB.pecas_processos.push({
+            ...novo,
+            pecaId:       novo.peca_id,
+            processoId:   novo.processo_id,
+            tempoEstimado: novo.tempo_estimado ? Number(novo.tempo_estimado) : null,
+        });
+        renderPecaDetalhe();
+        _successToast('Processo adicionado.');
+    } catch (err) {
+        _erroToast('Erro ao adicionar processo: ' + err.message);
+    }
+}
+
+async function _removerProcessoPeca(ppId) {
+    try {
+        await apiDelete(`/pecas-processos/${ppId}`);
+        const idx = DB.pecas_processos.findIndex(pp => pp.id === ppId);
+        if (idx !== -1) DB.pecas_processos.splice(idx, 1);
+        _reordenarPlanoLocal(_currentPecaId);
+        renderPecaDetalhe();
+        _successToast('Processo removido.');
+    } catch (err) {
+        _erroToast('Erro ao remover processo: ' + err.message);
+    }
+}
+
+async function _moverProcessoPeca(ppId, delta) {
+    const pecaId = _currentPecaId;
+    const plano = DB.pecas_processos
+        .filter(pp => pp.pecaId === pecaId)
+        .sort((a, b) => a.ordem - b.ordem);
+
+    const idx = plano.findIndex(pp => pp.id === ppId);
+    const idxAlvo = idx + delta;
+    if (idxAlvo < 0 || idxAlvo >= plano.length) return;
+
+    // Trocar ordens
+    const ordemA = plano[idx].ordem;
+    const ordemB = plano[idxAlvo].ordem;
+
+    try {
+        await Promise.all([
+            apiPut(`/pecas-processos/${plano[idx].id}`,    { ordem: ordemB }),
+            apiPut(`/pecas-processos/${plano[idxAlvo].id}`, { ordem: ordemA }),
+        ]);
+        const entA = DB.pecas_processos.find(pp => pp.id === plano[idx].id);
+        const entB = DB.pecas_processos.find(pp => pp.id === plano[idxAlvo].id);
+        if (entA) entA.ordem = ordemB;
+        if (entB) entB.ordem = ordemA;
+        renderPecaDetalhe();
+    } catch (err) {
+        _erroToast('Erro ao reordenar: ' + err.message);
+    }
+}
+
+function _reordenarPlanoLocal(pecaId) {
+    DB.pecas_processos
+        .filter(pp => pp.pecaId === pecaId)
+        .sort((a, b) => a.ordem - b.ordem)
+        .forEach((pp, i) => { pp.ordem = i; });
 }
 
 /*

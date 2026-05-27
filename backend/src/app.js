@@ -19,6 +19,8 @@ const fornecedoresRoutes = require('./routes/fornecedores');
 const historicoPrecosRoutes = require('./routes/historicoPrecos');
 const servicosRoutes = require('./routes/servicos');
 const servicosPedidosRoutes = require('./routes/servicosPedidos');
+const processosRoutes = require('./routes/processos');
+const pecasProcessosRoutes = require('./routes/pecasProcessos');
 
 const app = express();
 
@@ -42,6 +44,8 @@ app.use('/api/fornecedores', fornecedoresRoutes);
 app.use('/api/historico-precos', historicoPrecosRoutes);
 app.use('/api/servicos', servicosRoutes);
 app.use('/api/servicos-pedidos', servicosPedidosRoutes);
+app.use('/api/processos', processosRoutes);
+app.use('/api/pecas-processos', pecasProcessosRoutes);
 
 app.use(errorHandler);
 

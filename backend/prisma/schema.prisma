@@ -147,6 +147,7 @@ model Peca {
   materia_prima    MateriaPrima?   @relation(fields: [materia_prima_id], references: [id])
   pecas_pedidos    PecaPedido[]
   historico_precos HistoricoPreco[]
+  pecas_processos  PecaProcesso[]
 
   @@map("pecas")
 }
@@ -205,6 +206,34 @@ model PecaPedido {
 
   @@unique([peca_id, pedido_id])
   @@map("pecas_pedidos")
+}
+
+model Processo {
+  id              Int            @id @default(autoincrement())
+  ref             String         @unique @db.VarChar(50)
+  descricao       String         @db.VarChar(150)
+  tipo            String         @db.VarChar(50)
+  custo_hora      Decimal        @db.Decimal(10, 2)
+  ativo           Boolean        @default(true)
+  criado_em       DateTime       @default(now())
+  pecas_processos PecaProcesso[]
+
+  @@map("processos")
+}
+
+model PecaProcesso {
+  id             Int      @id @default(autoincrement())
+  peca_id        Int
+  processo_id    Int
+  ordem          Int
+  tempo_estimado Decimal? @db.Decimal(8, 2)
+  unidade_tempo  String   @default("h") @db.VarChar(5)
+  notas          String?
+
+  peca     Peca     @relation(fields: [peca_id], references: [id], onDelete: Cascade)
+  processo Processo @relation(fields: [processo_id], references: [id])
+
+  @@map("pecas_processos")
 }
 
 model Orcamento {
