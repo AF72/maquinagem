@@ -4,12 +4,13 @@ const { z } = require('zod');
 const prisma = new PrismaClient();
 
 const schema = z.object({
-  peca_id:        z.number().int().positive(),
-  processo_id:    z.number().int().positive(),
-  ordem:          z.number().int().nonnegative(),
-  tempo_estimado: z.coerce.number().nonnegative().nullable().optional(),
-  unidade_tempo:  z.enum(['h', 'min']).optional().default('h'),
-  notas:          z.string().nullable().optional(),
+  peca_id:             z.number().int().positive(),
+  processo_id:         z.number().int().positive(),
+  ordem:               z.number().int().nonnegative(),
+  tempo_estimado:      z.coerce.number().nonnegative().nullable().optional(),
+  unidade_tempo:       z.enum(['h', 'min']).optional().default('h'),
+  notas:               z.string().nullable().optional(),
+  custo_hora_snapshot: z.coerce.number().nonnegative().nullable().optional(),
 });
 
 async function listar(req, res, next) {
@@ -25,6 +26,10 @@ async function listar(req, res, next) {
 async function criar(req, res, next) {
   try {
     const dados = schema.parse(req.body);
+    if (dados.custo_hora_snapshot == null) {
+      const proc = await prisma.processo.findUnique({ where: { id: dados.processo_id }, select: { custo_hora: true } });
+      if (proc) dados.custo_hora_snapshot = Number(proc.custo_hora);
+    }
     const registo = await prisma.pecaProcesso.create({
       data: dados,
       include: { processo: true },

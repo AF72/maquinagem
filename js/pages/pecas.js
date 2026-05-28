@@ -399,9 +399,11 @@ function renderPecaDetalhe() {
 --------------------------------------------------------------- */
 
 function _calcCustoEstimado(pp, proc) {
-    if (pp.tempoEstimado == null || !proc.custo_hora) return null;
+    if (pp.tempoEstimado == null) return null;
+    const taxa = pp.custoHoraSnapshot ?? Number(proc.custo_hora);
+    if (!taxa) return null;
     const horas = pp.unidade_tempo === 'min' ? pp.tempoEstimado / 60 : pp.tempoEstimado;
-    return horas * Number(proc.custo_hora);
+    return horas * taxa;
 }
 
 function _pecaPlanoProcessosHtml(pecaId) {
@@ -420,13 +422,21 @@ function _pecaPlanoProcessosHtml(pecaId) {
         : plano.map((pp, idx) => {
             const proc = DB.processos.find(p => p.id === pp.processoId) || pp.processo || {};
             const custoEst = _calcCustoEstimado(pp, proc);
+            const custoAtual = Number(proc.custo_hora);
+            const snapshot = pp.custoHoraSnapshot;
+            const precoAlterado = snapshot != null && custoAtual !== snapshot;
+            const custoCell = custoEst != null
+                ? `${formatEuro(custoEst)}${precoAlterado
+                    ? ` <span title="Custo/h quando adicionado: ${snapshot.toFixed(2)} €/h · atual: ${custoAtual.toFixed(2)} €/h" style="cursor:help;color:var(--color-warning,#b45309);font-size:10px;">⚠</span>`
+                    : ''}`
+                : '—';
             return `<tr>
               <td style="text-align:center;color:var(--color-text-muted);">${pp.ordem + 1}</td>
               <td><strong>${proc.ref || '—'}</strong></td>
               <td>${proc.descricao || '—'}</td>
               <td>${proc.tipo || '—'}</td>
               <td>${pp.tempoEstimado != null ? pp.tempoEstimado + ' ' + pp.unidade_tempo : '—'}</td>
-              <td style="text-align:right;">${custoEst != null ? formatEuro(custoEst) : '—'}</td>
+              <td style="text-align:right;">${custoCell}</td>
               <td style="display:flex;gap:4px;">
                 ${idx > 0 ? `<button class="btn btn-ghost btn-sm" title="Mover para cima" onclick="_moverProcessoPeca(${pp.id},-1)">↑</button>` : '<span style="width:32px"></span>'}
                 ${idx < plano.length - 1 ? `<button class="btn btn-ghost btn-sm" title="Mover para baixo" onclick="_moverProcessoPeca(${pp.id},1)">↓</button>` : '<span style="width:32px"></span>'}
@@ -517,9 +527,10 @@ async function _adicionarProcessoPeca(pecaId) {
         const novo = await apiPost('/pecas-processos', dados);
         DB.pecas_processos.push({
             ...novo,
-            pecaId:       novo.peca_id,
-            processoId:   novo.processo_id,
-            tempoEstimado: novo.tempo_estimado ? Number(novo.tempo_estimado) : null,
+            pecaId:            novo.peca_id,
+            processoId:        novo.processo_id,
+            tempoEstimado:     novo.tempo_estimado      != null ? Number(novo.tempo_estimado)      : null,
+            custoHoraSnapshot: novo.custo_hora_snapshot != null ? Number(novo.custo_hora_snapshot) : null,
         });
         renderPecaDetalhe();
         _successToast('Processo adicionado.');

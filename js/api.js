@@ -138,7 +138,8 @@ async function carregarDados() {
             ...pp,
             pecaId:     pp.peca_id,
             processoId: pp.processo_id,
-            tempoEstimado: pp.tempo_estimado ? Number(pp.tempo_estimado) : null,
+            tempoEstimado:     pp.tempo_estimado      != null ? Number(pp.tempo_estimado)      : null,
+            custoHoraSnapshot: pp.custo_hora_snapshot != null ? Number(pp.custo_hora_snapshot) : null,
         })) },
         { key: 'servicos_pedidos', path: '/servicos-pedidos',  map: v => v.map(s => ({
             ...s,

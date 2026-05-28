@@ -222,13 +222,14 @@ model Processo {
 }
 
 model PecaProcesso {
-  id             Int      @id @default(autoincrement())
-  peca_id        Int
-  processo_id    Int
-  ordem          Int
-  tempo_estimado Decimal? @db.Decimal(8, 2)
-  unidade_tempo  String   @default("h") @db.VarChar(5)
-  notas          String?
+  id                 Int      @id @default(autoincrement())
+  peca_id            Int
+  processo_id        Int
+  ordem              Int
+  tempo_estimado     Decimal? @db.Decimal(8, 2)
+  unidade_tempo      String   @default("h") @db.VarChar(5)
+  notas              String?
+  custo_hora_snapshot Decimal? @db.Decimal(10, 2)
 
   peca     Peca     @relation(fields: [peca_id], references: [id], onDelete: Cascade)
   processo Processo @relation(fields: [processo_id], references: [id])
