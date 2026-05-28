@@ -122,7 +122,11 @@ async function carregarDados() {
             return v.map(mapOrcamento);
         }},
         { key: 'materia_prima', path: '/materia-prima',  map: v => v },
-        { key: 'pecas',            path: '/pecas',            map: v => v.map(p => ({ ...p, materiaPrimaId: p.materia_prima_id })) },
+        { key: 'pecas',            path: '/pecas',            map: v => v.map(p => ({
+            ...p,
+            materiaPrimaId:   p.materia_prima_id,
+            precoMpSnapshot:  p.preco_mp_snapshot != null ? Number(p.preco_mp_snapshot) : null,
+        })) },
         { key: 'colaboradores_dm', path: '/colaboradores-dm', map: v => v },
         { key: 'fornecedores',    path: '/fornecedores',     map: v => v },
         { key: 'pecas_pedidos',    path: '/pecas-pedidos',    map: v => v.map(j => ({ ...j, pecaId: j.peca_id, pedidoId: j.pedido_id })) },
@@ -140,6 +144,12 @@ async function carregarDados() {
             processoId: pp.processo_id,
             tempoEstimado:     pp.tempo_estimado      != null ? Number(pp.tempo_estimado)      : null,
             custoHoraSnapshot: pp.custo_hora_snapshot != null ? Number(pp.custo_hora_snapshot) : null,
+        })) },
+        { key: 'historico_precos_mp', path: '/historico-precos-mp', map: v => v.map(h => ({
+            ...h,
+            materiaPrimaId: h.materia_prima_id,
+            precoKg:        Number(h.preco_kg),
+            data:           h.data?.slice(0, 10) ?? '',
         })) },
         { key: 'servicos_pedidos', path: '/servicos-pedidos',  map: v => v.map(s => ({
             ...s,

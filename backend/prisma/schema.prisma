@@ -9,19 +9,32 @@ datasource db {
 }
 
 model MateriaPrima {
-  id        Int      @id @default(autoincrement())
-  ref_wnr   String?  @db.VarChar(20)
-  peso_esp  Decimal? @db.Decimal(6, 3)
-  ref_din   String?  @db.VarChar(50)
-  ref_bs    String?  @db.VarChar(50)
-  ref_afnor String?  @db.VarChar(50)
-  ref_une   String?  @db.VarChar(50)
-  ref_aisi  String?  @db.VarChar(50)
-  ref_jis   String?  @db.VarChar(50)
-  tipo_tt   String?  @db.VarChar(150)
-  pecas     Peca[]
+  id               Int                    @id @default(autoincrement())
+  ref_wnr          String?                @db.VarChar(20)
+  peso_esp         Decimal?               @db.Decimal(6, 3)
+  ref_din          String?                @db.VarChar(50)
+  ref_bs           String?                @db.VarChar(50)
+  ref_afnor        String?                @db.VarChar(50)
+  ref_une          String?                @db.VarChar(50)
+  ref_aisi         String?                @db.VarChar(50)
+  ref_jis          String?                @db.VarChar(50)
+  tipo_tt          String?                @db.VarChar(150)
+  pecas            Peca[]
+  historico_precos HistoricoPrecoMp[]
 
   @@map("materia_prima")
+}
+
+model HistoricoPrecoMp {
+  id               Int          @id @default(autoincrement())
+  materia_prima_id Int
+  preco_kg         Decimal      @db.Decimal(10, 2)
+  data             DateTime     @default(now()) @db.Date
+  notas            String?
+  criado_em        DateTime     @default(now())
+  materia_prima    MateriaPrima @relation(fields: [materia_prima_id], references: [id], onDelete: Cascade)
+
+  @@map("historico_precos_mp")
 }
 
 model Empresa {
@@ -127,27 +140,28 @@ model Colaborador {
 }
 
 model Peca {
-  id               Int             @id @default(autoincrement())
-  ref              String          @unique @db.VarChar(50)
-  plano            String?         @db.VarChar(100)
-  denominacao      String          @db.VarChar(150)
-  orgao            String?         @db.VarChar(100)
-  parte            String?         @db.VarChar(100)
-  materia_prima_id Int?
-  forma            String?         @db.VarChar(20)
-  comprimento      Decimal?        @db.Decimal(10, 2)
-  largura          Decimal?        @db.Decimal(10, 2)
-  altura           Decimal?        @db.Decimal(10, 2)
-  diametro_ext     Decimal?        @db.Decimal(10, 2)
-  diametro_int     Decimal?        @db.Decimal(10, 2)
-  nota_descritiva  String?
-  imagem           String?
-  criado_em        DateTime        @default(now())
-  orcamento_itens  OrcamentoItem[]
-  materia_prima    MateriaPrima?   @relation(fields: [materia_prima_id], references: [id])
-  pecas_pedidos    PecaPedido[]
-  historico_precos HistoricoPreco[]
-  pecas_processos  PecaProcesso[]
+  id                  Int             @id @default(autoincrement())
+  ref                 String          @unique @db.VarChar(50)
+  plano               String?         @db.VarChar(100)
+  denominacao         String          @db.VarChar(150)
+  orgao               String?         @db.VarChar(100)
+  parte               String?         @db.VarChar(100)
+  materia_prima_id    Int?
+  forma               String?         @db.VarChar(20)
+  comprimento         Decimal?        @db.Decimal(10, 2)
+  largura             Decimal?        @db.Decimal(10, 2)
+  altura              Decimal?        @db.Decimal(10, 2)
+  diametro_ext        Decimal?        @db.Decimal(10, 2)
+  diametro_int        Decimal?        @db.Decimal(10, 2)
+  nota_descritiva     String?
+  imagem              String?
+  preco_mp_snapshot   Decimal?        @db.Decimal(10, 2)
+  criado_em           DateTime        @default(now())
+  orcamento_itens     OrcamentoItem[]
+  materia_prima       MateriaPrima?   @relation(fields: [materia_prima_id], references: [id])
+  pecas_pedidos       PecaPedido[]
+  historico_precos    HistoricoPreco[]
+  pecas_processos     PecaProcesso[]
 
   @@map("pecas")
 }

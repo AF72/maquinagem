@@ -314,6 +314,7 @@ function renderOrdemDetalhe() {
                   <th>Material</th>
                   <th>Dimensões (mm)</th>
                   <th>Peso (kg)</th>
+                  <th style="text-align:right;">Custo stock (€)</th>
                   <th style="text-align:center;">Qtd.</th>
                   <th style="text-align:right;">Custo und (€)</th>
                 </tr></thead>
@@ -322,11 +323,14 @@ function renderOrdemDetalhe() {
                       .map((item) => {
                           const pc = DB.pecas.find((p) => p.id === item.pecaId);
                           if (!pc) return '';
+                          const mp = DB.materia_prima.find(m => m.id === pc.materiaPrimaId);
+                          const pesoKg = parseFloat(_calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mp?.peso_esp)) || 0;
+                          const custoStock = (pesoKg && pc.precoMpSnapshot) ? pesoKg * pc.precoMpSnapshot : null;
                           const plano = DB.pecas_processos
                               .filter(pp => pp.pecaId === pc.id)
                               .sort((a, b) => a.ordem - b.ordem);
                           const subTabela = plano.length === 0
-                              ? `<tr><td colspan="8" style="padding:0.4rem 1rem 0.75rem;"><span style="font-size:11px;color:var(--color-text-muted);font-style:italic;">Sem plano de processos definido para esta peça.</span></td></tr>`
+                              ? `<tr><td colspan="9" style="padding:0.4rem 1rem 0.75rem;"><span style="font-size:11px;color:var(--color-text-muted);font-style:italic;">Sem plano de processos definido para esta peça.</span></td></tr>`
                               : (() => {
                                   const linhasProc = plano.map(pp => {
                                       const proc = DB.processos.find(p => p.id === pp.processoId) || pp.processo || {};
@@ -335,7 +339,7 @@ function renderOrdemDetalhe() {
                                   });
                                   const totalCustoPeca = linhasProc.reduce((s, { custoEst }) => s + (custoEst ?? 0), 0);
                                   const temCusto = linhasProc.some(({ custoEst }) => custoEst != null);
-                                  return `<tr><td colspan="8" style="padding:0.4rem 1rem 0.75rem;background:var(--color-surface-alt,#f8f8f6);">
+                                  return `<tr><td colspan="9" style="padding:0.4rem 1rem 0.75rem;background:var(--color-surface-alt,#f8f8f6);">
                                   <table style="width:100%;font-size:11px;border-collapse:collapse;">
                                     <thead><tr style="color:var(--color-text-muted);">
                                       <th style="padding:2px 8px;text-align:center;width:40px;">Ord.</th>
@@ -366,7 +370,10 @@ function renderOrdemDetalhe() {
                       <td>${pc.plano || '—'}</td>
                       <td>${_resolverMaterial(pc.materiaPrimaId)}</td>
                       <td>${_dimPeca(pc)}</td>
-                      <td>${(() => { const mp = DB.materia_prima.find(m => m.id === pc.materiaPrimaId); const p = _calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mp?.peso_esp); return p ? p + ' kg' : '—'; })()}</td>
+                      <td>${pesoKg ? pesoKg.toFixed(4) + ' kg' : '—'}</td>
+                      <td style="text-align:right;${custoStock != null ? 'font-weight:600;' : 'color:var(--color-text-muted);'}">
+                        ${custoStock != null ? formatEuro(custoStock) : '—'}
+                      </td>
                       <td style="text-align:center;">${item.quantidade}</td>
                       <td style="text-align:right;">${formatEuro(item.precoUnitario)}</td>
                     </tr>${subTabela}`;

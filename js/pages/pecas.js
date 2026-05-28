@@ -347,10 +347,24 @@ function renderPecaDetalhe() {
     <div class="form-group"><label class="form-label">Altura (mm)</label><input id="f-pc-altura" type="number" step="0.01" value="${pc.altura || ''}" ${campoDisabled('altura')} oninput="calcPecaPeso()"></div>
     <div class="form-group"><label class="form-label">Diâmetro Ext. (mm)</label><input id="f-pc-diametro_ext" type="number" step="0.01" value="${pc.diametro_ext || ''}" ${campoDisabled('diametro_ext')} oninput="calcPecaPeso()"></div>
     <div class="form-group"><label class="form-label">Diâmetro Int. (mm)</label><input id="f-pc-diametro_int" type="number" step="0.01" value="${pc.diametro_int || ''}" ${campoDisabled('diametro_int')} oninput="calcPecaPeso()"></div>
-    <div class="form-group full">
+    <div class="form-group">
       <label class="form-label">Peso da Peça (kg)</label>
       <input id="f-pc-peso" value="${(() => { const p = _calcPeso(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial); return p !== '' ? p + ' kg' : ''; })()}" readonly style="background:#ddedda; cursor:not-allowed;">
       <small id="f-pc-peso-hint" style="color:#c0392b;margin-top:4px;display:block;">${(() => { const p = _calcPeso(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial); return p !== '' ? '' : _mensagemPesoPendente(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial); })()}</small>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Custo de Stock (€)</label>
+      ${(() => {
+        const pesoKg = parseFloat(_calcPeso(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial));
+        const snapshot = pc.precoMpSnapshot;
+        if (pesoKg && snapshot) {
+            return `<input value="${formatEuro(pesoKg * snapshot)}" readonly style="background:#ddedda; cursor:not-allowed;">
+                    <small style="color:var(--color-text-muted);margin-top:4px;display:block;">Peso × ${snapshot.toFixed(2)} €/kg (preço MP na criação)</small>`;
+        }
+        const motivo = !snapshot ? 'Sem preço de MP registado na criação da peça' : 'Peso não calculável (faltam dimensões ou material)';
+        return `<input value="—" readonly style="background:#ddedda; cursor:not-allowed;">
+                <small style="color:var(--color-text-muted);margin-top:4px;display:block;">${motivo}</small>`;
+      })()}
     </div>
 
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Notas e Imagem</h4></div>
@@ -445,11 +459,21 @@ function _pecaPlanoProcessosHtml(pecaId) {
             </tr>`;
         }).join('');
 
-    const totalCusto = plano.reduce((sum, pp) => {
+    const totalProcessos = plano.reduce((sum, pp) => {
         const proc = DB.processos.find(p => p.id === pp.processoId) || {};
         const c = _calcCustoEstimado(pp, proc);
         return sum + (c ?? 0);
     }, 0);
+
+    const pc = DB.pecas.find(p => p.id === pecaId);
+    const mp = DB.materia_prima.find(m => m.id === pc?.materiaPrimaId);
+    const pesoKg = parseFloat(_calcPeso(pc?.forma, pc?.comprimento, pc?.largura, pc?.altura, pc?.diametro_ext, pc?.diametro_int, mp?.peso_esp)) || 0;
+    const custoStock = (pesoKg && pc?.precoMpSnapshot) ? pesoKg * pc.precoMpSnapshot : null;
+    const custoTotal = (custoStock ?? 0) + totalProcessos;
+    const temCustoTotal = custoStock != null || plano.some(pp => {
+        const proc = DB.processos.find(p => p.id === pp.processoId) || {};
+        return _calcCustoEstimado(pp, proc) != null;
+    });
 
     return `
     <div class="full-card" style="max-width:800px;margin:1rem auto;padding:2rem;">
@@ -467,8 +491,8 @@ function _pecaPlanoProcessosHtml(pecaId) {
         </tr></thead>
         <tbody>${linhas}</tbody>
         ${plano.length > 0 ? `<tfoot><tr>
-          <td colspan="5" style="text-align:right;font-size:11px;color:var(--color-text-muted);padding:6px 8px;">Total estimado:</td>
-          <td style="text-align:right;font-weight:700;padding:6px 8px;">${formatEuro(totalCusto)}</td>
+          <td colspan="5" style="text-align:right;font-size:11px;color:var(--color-text-muted);padding:6px 8px;">Total processos:</td>
+          <td style="text-align:right;font-weight:700;padding:6px 8px;">${formatEuro(totalProcessos)}</td>
           <td></td>
         </tr></tfoot>` : ''}
       </table>
@@ -501,7 +525,26 @@ function _pecaPlanoProcessosHtml(pecaId) {
           <button class="btn btn-primary" style="height:34px;" onclick="_adicionarProcessoPeca(${pecaId})">Adicionar</button>
         </div>
       </details>
-    </div>`;
+    </div>
+    ${temCustoTotal ? `
+    <div class="full-card" style="max-width:800px;margin:1rem auto;padding:2rem;">
+      <h4 style="margin:0 0 0.25rem;color:var(--color-primary);">Resumo de Custos</h4>
+      <hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 1rem;">
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--color-border);">
+          <span style="color:var(--color-text-muted);">Custo de stock</span>
+          <span>${custoStock != null ? formatEuro(custoStock) : '<span style="color:var(--color-text-muted);font-size:12px;">sem preço MP registado</span>'}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--color-border);">
+          <span style="color:var(--color-text-muted);">Custo de processos</span>
+          <span>${formatEuro(totalProcessos)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:700;font-size:15px;">
+          <span>Custo estimado</span>
+          <span style="color:var(--color-primary);">${formatEuro(custoTotal)}</span>
+        </div>
+      </div>
+    </div>` : ''}`;
 }
 
 async function _adicionarProcessoPeca(pecaId) {
