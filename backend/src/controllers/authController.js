@@ -5,6 +5,8 @@ const { z } = require('zod');
 
 const prisma = new PrismaClient();
 
+const JWT_SECRET = process.env.JWT_SECRET || 'maquinagest_drawmech_2026_secret';
+
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
@@ -36,7 +38,7 @@ async function login(req, res, next) {
 
     const token = jwt.sign(
       { id: utilizador.id, role: utilizador.role, nome: utilizador.nome },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
 
