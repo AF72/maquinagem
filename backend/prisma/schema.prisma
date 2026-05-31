@@ -113,13 +113,17 @@ model ServicoPedido {
 }
 
 model ColaboradorDm {
-  id        Int          @id @default(autoincrement())
-  nome      String       @db.VarChar(150)
-  funcao    String?      @db.VarChar(100)
-  contacto  String?      @db.VarChar(150)
-  estado    String       @default("ativo") @db.VarChar(10)
-  criado_em DateTime     @default(now())
-  notas     NotaPedido[]
+  id             Int          @id @default(autoincrement())
+  nome           String       @db.VarChar(150)
+  funcao         String?      @db.VarChar(100)
+  contacto       String?      @db.VarChar(150)
+  email          String?      @unique @db.VarChar(150)
+  password_hash  String?      @db.VarChar(255)
+  role           String       @default("operador") @db.VarChar(20)
+  primeiro_login Boolean      @default(true)
+  estado         String       @default("ativo") @db.VarChar(10)
+  criado_em      DateTime     @default(now())
+  notas          NotaPedido[]
 
   @@map("colaboradores_dm")
 }

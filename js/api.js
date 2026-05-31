@@ -2,8 +2,27 @@ const API_BASE = (location.hostname === 'localhost' || location.hostname === '12
     ? 'http://localhost:3000/api'
     : 'https://maquinagem-production.up.railway.app/api';
 
+function _authHeaders(withContentType = true) {
+    const token = typeof Auth !== 'undefined' ? Auth.getToken() : null;
+    return {
+        ...(withContentType ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    };
+}
+
+function _handle401(res) {
+    if (res.status === 401 && typeof Auth !== 'undefined') {
+        Auth.clear();
+        mostrarEcraLogin();
+        throw new Error('Sessão expirada. Por favor faz login novamente.');
+    }
+}
+
 async function apiFetch(path) {
-    const res = await fetch(API_BASE + path);
+    const res = await fetch(API_BASE + path, {
+        headers: _authHeaders(false),
+    });
+    _handle401(res);
     if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
     return res.json();
 }
@@ -11,9 +30,10 @@ async function apiFetch(path) {
 async function apiPost(path, body) {
     const res = await fetch(API_BASE + path, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _authHeaders(true),
         body: JSON.stringify(body),
     });
+    _handle401(res);
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.erro || `POST ${path} → ${res.status}`);
@@ -24,9 +44,10 @@ async function apiPost(path, body) {
 async function apiPut(path, body) {
     const res = await fetch(API_BASE + path, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _authHeaders(true),
         body: JSON.stringify(body),
     });
+    _handle401(res);
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.erro || `PUT ${path} → ${res.status}`);
@@ -37,9 +58,10 @@ async function apiPut(path, body) {
 async function apiPatch(path, body) {
     const res = await fetch(API_BASE + path, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _authHeaders(true),
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
+    _handle401(res);
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.erro || `PATCH ${path} → ${res.status}`);
@@ -49,7 +71,11 @@ async function apiPatch(path, body) {
 }
 
 async function apiDelete(path) {
-    const res = await fetch(API_BASE + path, { method: 'DELETE' });
+    const res = await fetch(API_BASE + path, {
+        method: 'DELETE',
+        headers: _authHeaders(false),
+    });
+    _handle401(res);
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.erro || `DELETE ${path} → ${res.status}`);
@@ -170,8 +196,11 @@ async function carregarDados() {
         if (r.status === 'fulfilled') {
             DB[endpoints[i].key] = endpoints[i].map(r.value);
         } else {
-            erros++;
-            console.warn(`Endpoint ${endpoints[i].path} falhou:`, r.reason?.message);
+            // Se foi 401 o apiFetch já redirecionou para login — ignorar silenciosamente
+            if (!r.reason?.message?.includes('Sessão expirada')) {
+                erros++;
+                console.warn(`Endpoint ${endpoints[i].path} falhou:`, r.reason?.message);
+            }
         }
     });
 

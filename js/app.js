@@ -159,4 +159,10 @@ document.querySelectorAll('.nav-item[data-page]').forEach((el) => {
 /* ---------- Init ---------- */
 
 _restoreNavGroups();
-carregarDados().then(() => showPage('dashboard'));
+
+if (Auth.isLoggedIn()) {
+    mostrarApp();
+    carregarDados().then(() => showPage('dashboard'));
+} else {
+    mostrarEcraLogin();
+}

@@ -8,8 +8,99 @@
         <link rel="stylesheet" href="css/layout.css" />
         <link rel="stylesheet" href="css/components.css" />
         <link rel="stylesheet" href="css/modal.css" />
+        <style>
+            /* Ecrã de login */
+            #login-screen {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: var(--color-bg, #f5f5f5);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+            }
+            .login-card {
+                background: var(--color-surface, #fff);
+                border-radius: var(--radius-lg, 12px);
+                box-shadow: 0 8px 32px rgba(0,0,0,.12);
+                padding: 2.5rem 2rem;
+                width: 100%;
+                max-width: 380px;
+            }
+            .login-card h1 {
+                font-size: 22px;
+                font-weight: 700;
+                margin: 0 0 .25rem;
+                color: var(--color-text);
+            }
+            .login-card .login-sub {
+                font-size: 13px;
+                color: var(--color-text-muted);
+                margin-bottom: 1.75rem;
+            }
+            .login-erro {
+                font-size: 13px;
+                color: var(--color-danger, #e53e3e);
+                margin-bottom: .75rem;
+                min-height: 1.2em;
+            }
+            /* Botão de logout na sidebar */
+            .sidebar-logout {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: .5rem 1rem;
+                margin: .25rem .5rem 0;
+                border-radius: var(--radius-md, 8px);
+                font-size: 13px;
+                color: var(--color-text-muted);
+                cursor: pointer;
+                border: none;
+                background: none;
+                width: calc(100% - 1rem);
+                text-align: left;
+            }
+            .sidebar-logout:hover { background: var(--color-hover); color: var(--color-danger, #e53e3e); }
+            .sidebar-user {
+                padding: .4rem 1rem .1rem;
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--color-text);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .sidebar-user-role {
+                padding: 0 1rem .5rem;
+                font-size: 11px;
+                color: var(--color-text-muted);
+                text-transform: capitalize;
+            }
+        </style>
     </head>
     <body>
+        <!-- ECRÃ DE LOGIN -->
+        <div id="login-screen" style="display:flex;">
+            <div class="login-card">
+                <h1>MaquinaGest</h1>
+                <p class="login-sub">Gestão de Produção</p>
+                <form onsubmit="submitLogin(event)">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input id="login-email" type="email" autocomplete="email" placeholder="utilizador@empresa.pt" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••" required />
+                    </div>
+                    <div id="login-erro" class="login-erro"></div>
+                    <button id="login-btn" type="submit" class="btn btn-primary" style="width:100%;">Entrar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- APP PRINCIPAL -->
+        <div id="app-wrapper" style="display:none; flex:1; overflow:hidden; height:100vh;">
         <div class="app">
             <!-- SIDEBAR -->
             <aside class="sidebar">
@@ -183,31 +274,24 @@
                         </div>
                     </div>
                 </nav>
-                <div
-                    id="sidebar-clock"
-                    style="
-                        margin-top: auto;
-                        padding: 0.75rem 1rem;
-                        border-top: 1px solid var(--color-border);
-                        font-size: 12px;
-                        color: var(--color-text-muted);
-                        line-height: 1.6;
-                        text-align: center;
-                    "
-                >
-                    <div
-                        id="clock-time"
-                        style="
-                            font-size: 20px;
-                            font-weight: 600;
-                            color: var(--color-text);
-                            letter-spacing: 1px;
-                        "
-                    ></div>
-                    <div
-                        id="clock-date"
-                        style="font-size: 17px; text-transform: capitalize"
-                    ></div>
+
+                <!-- Utilizador logado + logout -->
+                <div style="margin-top:auto; border-top:1px solid var(--color-border);">
+                    <div id="sidebar-clock" style="padding:.75rem 1rem .25rem; font-size:12px; color:var(--color-text-muted); line-height:1.6; text-align:center;">
+                        <div id="clock-time" style="font-size:20px; font-weight:600; color:var(--color-text); letter-spacing:1px;"></div>
+                        <div id="clock-date" style="font-size:17px; text-transform:capitalize;"></div>
+                    </div>
+                    <div id="sidebar-user-nome" class="sidebar-user"></div>
+                    <div id="sidebar-user-role" class="sidebar-user-role"></div>
+                    <button class="sidebar-logout" onclick="Auth.logout(); return false;" title="Terminar sessão">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M10 11l3-3-3-3M13 8H6"/>
+                        </svg>
+                        Terminar sessão
+                    </button>
+                    <div style="padding:.5rem 1rem; font-size:11px; color:var(--color-text-muted); text-align:center; cursor:pointer;" onclick="abrirModalAlterarPassword(false)" title="Alterar password">
+                        Alterar password
+                    </div>
                 </div>
             </aside>
 
@@ -216,9 +300,7 @@
                 <header class="topbar">
                     <div class="topbar-brand">
                         <span class="topbar-logo" id="page-logo"></span>
-                        <span class="topbar-title" id="page-title"
-                            >Dashboard</span
-                        >
+                        <span class="topbar-title" id="page-title">Dashboard</span>
                     </div>
                 </header>
 
@@ -242,12 +324,42 @@
                 </div>
             </div>
         </div>
+        </div><!-- /app-wrapper -->
 
-        <!-- MODAL -->
+        <!-- MODAL principal -->
         <div class="modal-wrap" id="modal-wrap">
             <div class="modal">
                 <div class="modal-title" id="modal-title"></div>
                 <div id="modal-body"></div>
+            </div>
+        </div>
+
+        <!-- MODAL: alterar password -->
+        <div id="alterar-password-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; align-items:center; justify-content:center;">
+            <div style="background:var(--color-surface); border-radius:var(--radius-lg); padding:1.5rem; width:100%; max-width:400px; box-shadow:0 8px 32px rgba(0,0,0,.2);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <h3 style="margin:0; font-size:15px; font-weight:600;">Alterar Password</h3>
+                    <button id="ap-cancelar" class="btn btn-ghost" onclick="fecharModalAlterarPassword()">✕</button>
+                </div>
+                <div class="form-grid" style="grid-template-columns:1fr;">
+                    <div class="form-group">
+                        <label class="form-label">Password atual</label>
+                        <input id="ap-atual" type="password" placeholder="••••••••" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nova password</label>
+                        <input id="ap-nova" type="password" placeholder="Mínimo 8 caracteres" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirmar nova password</label>
+                        <input id="ap-confirmar" type="password" placeholder="Repita a nova password" />
+                    </div>
+                </div>
+                <div id="ap-erro" style="font-size:13px; color:var(--color-danger,#e53e3e); min-height:1.2em; margin:.5rem 0;"></div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:.5rem;">
+                    <button id="ap-cancelar-btn" class="btn" onclick="fecharModalAlterarPassword()">Cancelar</button>
+                    <button id="ap-btn-save" class="btn btn-primary" onclick="submitAlterarPassword()">Guardar</button>
+                </div>
             </div>
         </div>
 
@@ -257,6 +369,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
         <!-- App modules -->
+        <script src="js/auth.js"></script>
         <script src="js/data.js"></script>
         <script src="js/helpers.js"></script>
         <script src="js/modal.js"></script>
@@ -278,31 +391,13 @@
                 const now = new Date();
                 const hh = String(now.getHours()).padStart(2, '0');
                 const mm = String(now.getMinutes()).padStart(2, '0');
-                const meses = [
-                    'Jan',
-                    'Fev',
-                    'Mar',
-                    'Abr',
-                    'Mai',
-                    'Jun',
-                    'Jul',
-                    'Ago',
-                    'Set',
-                    'Out',
-                    'Nov',
-                    'Dez',
-                ];
+                const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
                 const dd = String(now.getDate()).padStart(2, '0');
                 const mes = meses[now.getMonth()];
                 const yy = String(now.getFullYear()).slice(-2);
-                document.getElementById('clock-time').textContent =
-                    hh + ':' + mm;
-                document.getElementById('clock-date').textContent =
-                    dd + ' ' + mes + ' ' + yy;
-                setTimeout(
-                    updateClock,
-                    60000 - (now.getSeconds() * 1000 + now.getMilliseconds()),
-                );
+                document.getElementById('clock-time').textContent = hh + ':' + mm;
+                document.getElementById('clock-date').textContent = dd + ' ' + mes + ' ' + yy;
+                setTimeout(updateClock, 60000 - (now.getSeconds() * 1000 + now.getMilliseconds()));
             })();
         </script>
     </body>
