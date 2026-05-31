@@ -73,4 +73,32 @@ async function alterarPassword(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { login, alterarPassword };
+const setupSchema = z.object({
+  nome:     z.string().min(1),
+  email:    z.string().email(),
+  password: z.string().min(8, 'A password deve ter pelo menos 8 caracteres'),
+});
+
+// Endpoint de arranque único — só funciona se não existir nenhum admin
+async function setup(req, res, next) {
+  try {
+    const adminExistente = await prisma.colaboradorDm.findFirst({
+      where: { role: 'admin' },
+    });
+    if (adminExistente) {
+      return res.status(403).json({ erro: 'Setup já foi realizado. Este endpoint está desativado.' });
+    }
+
+    const { nome, email, password } = setupSchema.parse(req.body);
+    const hash = await bcrypt.hash(password, 12);
+
+    const admin = await prisma.colaboradorDm.create({
+      data: { nome, email, password_hash: hash, role: 'admin', primeiro_login: false, estado: 'ativo' },
+      select: { id: true, nome: true, email: true, role: true },
+    });
+
+    res.status(201).json({ mensagem: 'Admin criado com sucesso.', utilizador: admin });
+  } catch (err) { next(err); }
+}
+
+module.exports = { login, alterarPassword, setup };
