@@ -36,7 +36,7 @@ const Auth = (() => {
   }
 
   async function login(email, password) {
-    const res = await fetch('http://localhost:3000/api/auth/login', {
+    const res = await fetch(API_BASE + '/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -140,7 +140,7 @@ async function submitAlterarPassword() {
 
   btnEl.disabled = true;
   try {
-    const res = await fetch('http://localhost:3000/api/auth/alterar-password', {
+    const res = await fetch(API_BASE + '/auth/alterar-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
