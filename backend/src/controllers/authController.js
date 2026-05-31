@@ -116,4 +116,63 @@ async function setup(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { login, alterarPassword, setup };
+async function migrate(req, res, next) {
+  try {
+    const sql = [
+      // pecas — coluna preco_mp_snapshot
+      `ALTER TABLE pecas ADD COLUMN IF NOT EXISTS preco_mp_snapshot DECIMAL(10,2)`,
+
+      // processos
+      `CREATE TABLE IF NOT EXISTS processos (
+        id         SERIAL PRIMARY KEY,
+        ref        VARCHAR(50) NOT NULL UNIQUE,
+        descricao  VARCHAR(150) NOT NULL,
+        tipo       VARCHAR(50) NOT NULL,
+        custo_hora DECIMAL(10,2) NOT NULL,
+        ativo      BOOLEAN NOT NULL DEFAULT true,
+        criado_em  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
+
+      // pecas_processos
+      `CREATE TABLE IF NOT EXISTS pecas_processos (
+        id                  SERIAL PRIMARY KEY,
+        peca_id             INTEGER NOT NULL REFERENCES pecas(id) ON DELETE CASCADE,
+        processo_id         INTEGER NOT NULL REFERENCES processos(id),
+        ordem               INTEGER NOT NULL,
+        tempo_estimado      DECIMAL(8,2),
+        unidade_tempo       VARCHAR(5) NOT NULL DEFAULT 'h',
+        notas               TEXT,
+        custo_hora_snapshot DECIMAL(10,2)
+      )`,
+
+      // historico_precos_mp
+      `CREATE TABLE IF NOT EXISTS historico_precos_mp (
+        id               SERIAL PRIMARY KEY,
+        materia_prima_id INTEGER NOT NULL REFERENCES materia_prima(id) ON DELETE CASCADE,
+        preco_kg         DECIMAL(10,2) NOT NULL,
+        data             DATE NOT NULL DEFAULT CURRENT_DATE,
+        notas            TEXT,
+        criado_em        TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
+
+      // servicos_pedidos
+      `CREATE TABLE IF NOT EXISTS servicos_pedidos (
+        id             SERIAL PRIMARY KEY,
+        servico_id     INTEGER NOT NULL REFERENCES servicos(id) ON DELETE CASCADE,
+        pedido_id      INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+        fornecedor_id  INTEGER REFERENCES fornecedores(id),
+        quantidade     DECIMAL(10,2) NOT NULL DEFAULT 1,
+        preco_unitario DECIMAL(12,2) NOT NULL DEFAULT 0,
+        criado_em      TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
+    ];
+
+    for (const stmt of sql) {
+      await prisma.$executeRawUnsafe(stmt);
+    }
+
+    res.json({ mensagem: 'Migração aplicada com sucesso.' });
+  } catch (err) { next(err); }
+}
+
+module.exports = { login, alterarPassword, setup, migrate };
