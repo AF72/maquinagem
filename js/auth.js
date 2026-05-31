@@ -68,7 +68,7 @@ function mostrarEcraLogin() {
 
 function mostrarApp() {
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app-wrapper').style.display = 'flex';
+  document.getElementById('app-wrapper').style.display = 'block';
   const u = Auth.getUtilizador();
   const nomeEl = document.getElementById('sidebar-user-nome');
   const roleEl = document.getElementById('sidebar-user-role');
