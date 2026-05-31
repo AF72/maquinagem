@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 
 const errorHandler = require('./middleware/errorHandler');
+const auth = require('./middleware/auth');
+const authRoutes = require('./routes/auth');
 const empresasRoutes = require('./routes/empresas');
 const colaboradoresRoutes = require('./routes/colaboradores');
 const dadosPedidoRoutes = require('./routes/dadosPedido');
@@ -19,12 +21,21 @@ const fornecedoresRoutes = require('./routes/fornecedores');
 const historicoPrecosRoutes = require('./routes/historicoPrecos');
 const servicosRoutes = require('./routes/servicos');
 const servicosPedidosRoutes = require('./routes/servicosPedidos');
+const processosRoutes = require('./routes/processos');
+const pecasProcessosRoutes = require('./routes/pecasProcessos');
+const historicoPrecosMateriaPrimaRoutes = require('./routes/historicoPrecosMateriaPrima');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
+
+// Rota pública — sem autenticação
+app.use('/api/auth', authRoutes);
+
+// Todas as rotas seguintes exigem token JWT válido
+app.use(auth);
 
 app.use('/api/empresas', empresasRoutes);
 app.use('/api/colaboradores', colaboradoresRoutes);
@@ -42,6 +53,9 @@ app.use('/api/fornecedores', fornecedoresRoutes);
 app.use('/api/historico-precos', historicoPrecosRoutes);
 app.use('/api/servicos', servicosRoutes);
 app.use('/api/servicos-pedidos', servicosPedidosRoutes);
+app.use('/api/processos', processosRoutes);
+app.use('/api/pecas-processos', pecasProcessosRoutes);
+app.use('/api/historico-precos-mp', historicoPrecosMateriaPrimaRoutes);
 
 app.use(errorHandler);
 

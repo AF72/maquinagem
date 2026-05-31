@@ -68,6 +68,50 @@
     flex-shrink: 0;
 }
 
+/* Nav group (collapsible section) */
+.nav-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 1rem;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    border-left: 2px solid transparent;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s, color 0.1s;
+}
+.nav-group-header:hover {
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+}
+.nav-group-header.open {
+    color: var(--color-text);
+    font-weight: 500;
+}
+.nav-group-arrow {
+    margin-left: auto;
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+}
+.nav-group-header.open .nav-group-arrow {
+    transform: rotate(90deg);
+}
+.nav-group-items {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.2s ease;
+}
+.nav-group-items.open {
+    max-height: 300px;
+}
+.nav-sub-item {
+    padding-left: 2rem;
+    font-size: 12px;
+}
+
 /* ---------- Main area ---------- */
 .main {
     flex: 1;

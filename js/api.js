@@ -1,7 +1,28 @@
-const API_BASE = 'https://maquinagem-production.up.railway.app/api';
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:3000/api'
+    : 'https://maquinagem-production.up.railway.app/api';
+
+function _authHeaders(withContentType = true) {
+    const token = typeof Auth !== 'undefined' ? Auth.getToken() : null;
+    return {
+        ...(withContentType ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    };
+}
+
+function _handle401(res) {
+    if (res.status === 401 && typeof Auth !== 'undefined') {
+        Auth.clear();
+        mostrarEcraLogin();
+        throw new Error('Sessão expirada. Por favor faz login novamente.');
+    }
+}
 
 async function apiFetch(path) {
-    const res = await fetch(API_BASE + path);
+    const res = await fetch(API_BASE + path, {
+        headers: _authHeaders(false),
+    });
+    _handle401(res);
     if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
     return res.json();
 }
@@ -9,9 +30,10 @@ async function apiFetch(path) {
 async function apiPost(path, body) {
     const res = await fetch(API_BASE + path, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _authHeaders(true),
         body: JSON.stringify(body),
     });
+    _handle401(res);
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.erro || `POST ${path} → ${res.status}`);
@@ -22,9 +44,10 @@ async function apiPost(path, body) {
 async function apiPut(path, body) {
     const res = await fetch(API_BASE + path, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _authHeaders(true),
         body: JSON.stringify(body),
     });
+    _handle401(res);
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.erro || `PUT ${path} → ${res.status}`);
@@ -35,9 +58,10 @@ async function apiPut(path, body) {
 async function apiPatch(path, body) {
     const res = await fetch(API_BASE + path, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _authHeaders(true),
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
+    _handle401(res);
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.erro || `PATCH ${path} → ${res.status}`);
@@ -47,7 +71,11 @@ async function apiPatch(path, body) {
 }
 
 async function apiDelete(path) {
-    const res = await fetch(API_BASE + path, { method: 'DELETE' });
+    const res = await fetch(API_BASE + path, {
+        method: 'DELETE',
+        headers: _authHeaders(false),
+    });
+    _handle401(res);
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.erro || `DELETE ${path} → ${res.status}`);
@@ -120,7 +148,11 @@ async function carregarDados() {
             return v.map(mapOrcamento);
         }},
         { key: 'materia_prima', path: '/materia-prima',  map: v => v },
-        { key: 'pecas',            path: '/pecas',            map: v => v.map(p => ({ ...p, materiaPrimaId: p.materia_prima_id })) },
+        { key: 'pecas',            path: '/pecas',            map: v => v.map(p => ({
+            ...p,
+            materiaPrimaId:   p.materia_prima_id,
+            precoMpSnapshot:  p.preco_mp_snapshot != null ? Number(p.preco_mp_snapshot) : null,
+        })) },
         { key: 'colaboradores_dm', path: '/colaboradores-dm', map: v => v },
         { key: 'fornecedores',    path: '/fornecedores',     map: v => v },
         { key: 'pecas_pedidos',    path: '/pecas-pedidos',    map: v => v.map(j => ({ ...j, pecaId: j.peca_id, pedidoId: j.pedido_id })) },
@@ -131,6 +163,20 @@ async function carregarDados() {
             return { ...n, pedidoId: n.pedido_id, criadoPorId: n.colaborador_dm_id, dataHora: `${data} ${hora}` };
         }) },
         { key: 'servicos',         path: '/servicos',          map: v => v },
+        { key: 'processos',        path: '/processos',         map: v => v },
+        { key: 'pecas_processos',  path: '/pecas-processos',   map: v => v.map(pp => ({
+            ...pp,
+            pecaId:     pp.peca_id,
+            processoId: pp.processo_id,
+            tempoEstimado:     pp.tempo_estimado      != null ? Number(pp.tempo_estimado)      : null,
+            custoHoraSnapshot: pp.custo_hora_snapshot != null ? Number(pp.custo_hora_snapshot) : null,
+        })) },
+        { key: 'historico_precos_mp', path: '/historico-precos-mp', map: v => v.map(h => ({
+            ...h,
+            materiaPrimaId: h.materia_prima_id,
+            precoKg:        Number(h.preco_kg),
+            data:           h.data?.slice(0, 10) ?? '',
+        })) },
         { key: 'servicos_pedidos', path: '/servicos-pedidos',  map: v => v.map(s => ({
             ...s,
             servicoId:    s.servico_id,
@@ -150,8 +196,11 @@ async function carregarDados() {
         if (r.status === 'fulfilled') {
             DB[endpoints[i].key] = endpoints[i].map(r.value);
         } else {
-            erros++;
-            console.warn(`Endpoint ${endpoints[i].path} falhou:`, r.reason?.message);
+            // Se foi 401 o apiFetch já redirecionou para login — ignorar silenciosamente
+            if (!r.reason?.message?.includes('Sessão expirada')) {
+                erros++;
+                console.warn(`Endpoint ${endpoints[i].path} falhou:`, r.reason?.message);
+            }
         }
     });
 

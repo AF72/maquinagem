@@ -24,6 +24,7 @@ const PAGE_TITLES = {
     materia_prima_detalhe: 'Detalhe de Matéria Prima',
     colaboradores_dm: 'Colaboradores DM',
     fornecedores:     'Fornecedores',
+    processos:        'Processos',
 };
 
 /*As seguintes constantes definem os icons*/
@@ -41,6 +42,7 @@ const PAGE_LOGOS = {
     materia_prima_detalhe: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="8" cy="4" rx="6" ry="2"/><path d="M2 4v3c0 1.1 2.7 2 6 2s6-.9 6-2V4"/><path d="M2 7v3c0 1.1 2.7 2 6 2s6-.9 6-2V7"/></svg>`,
     colaboradores_dm: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="5" r="2.5"/><path d="M1 13c0-2.2 1.8-4 4-4s4 1.8 4 4"/><circle cx="12" cy="5" r="2.5"/><path d="M10 13c0-2.2 1.8-4 4-4"/></svg>`,
     fornecedores:     `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="5" width="9" height="9" rx="1"/><path d="M4 5V3a2 2 0 0 1 4 0v2"/><path d="M10 8h4l1 6H9"/></svg>`,
+    processos:        `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4"/></svg>`,
 };
 
 const PAGE_RENDERERS = {
@@ -59,6 +61,7 @@ const PAGE_RENDERERS = {
     materia_prima_detalhe: renderMateriaPrimaDetalhe,
     colaboradores_dm: renderColaboradoresDM,
     fornecedores:     renderFornecedores,
+    processos:        renderProcessos,
 };
 
 let _currentPage = 'dashboard';
@@ -95,6 +98,9 @@ function showPage(page) {
         pageLogo.setAttribute('aria-label', PAGE_TITLES[page] || page);
     }
 
+    /* Expande o grupo se a página pertencer a um */
+    _expandGroupForPage(page);
+
     /* Renderiza o conteúdo da página */
     PAGE_RENDERERS[page]();
 }
@@ -111,6 +117,39 @@ function renderAll() {
     }
 }
 
+/* ---------- Nav groups ---------- */
+
+const NAV_GROUPS = {
+    config: ['colaboradores_dm', 'materia_prima', 'processos'],
+};
+
+function toggleNavGroup(id) {
+    const header = document.getElementById(`nav-group-${id}-header`);
+    const items  = document.getElementById(`nav-group-${id}`);
+    const open   = items.classList.toggle('open');
+    header.classList.toggle('open', open);
+    localStorage.setItem(`nav-group-${id}`, open ? '1' : '0');
+}
+
+function _restoreNavGroups() {
+    Object.keys(NAV_GROUPS).forEach(id => {
+        const saved = localStorage.getItem(`nav-group-${id}`);
+        if (saved === '1') {
+            document.getElementById(`nav-group-${id}`).classList.add('open');
+            document.getElementById(`nav-group-${id}-header`).classList.add('open');
+        }
+    });
+}
+
+function _expandGroupForPage(page) {
+    Object.entries(NAV_GROUPS).forEach(([id, pages]) => {
+        if (pages.includes(page)) {
+            document.getElementById(`nav-group-${id}`).classList.add('open');
+            document.getElementById(`nav-group-${id}-header`).classList.add('open');
+        }
+    });
+}
+
 /* ---------- Sidebar listeners ---------- */
 
 document.querySelectorAll('.nav-item[data-page]').forEach((el) => {
@@ -119,4 +158,11 @@ document.querySelectorAll('.nav-item[data-page]').forEach((el) => {
 
 /* ---------- Init ---------- */
 
-carregarDados().then(() => showPage('dashboard'));
+_restoreNavGroups();
+
+if (Auth.isLoggedIn()) {
+    mostrarApp();
+    carregarDados().then(() => showPage('dashboard'));
+} else {
+    mostrarEcraLogin();
+}

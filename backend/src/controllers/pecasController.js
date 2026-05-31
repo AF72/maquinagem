@@ -40,10 +40,22 @@ async function obter(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function _snapshotPrecoMp(materia_prima_id) {
+  if (!materia_prima_id) return undefined;
+  const ultimo = await prisma.historicoPrecoMp.findFirst({
+    where: { materia_prima_id },
+    orderBy: [{ data: 'desc' }, { criado_em: 'desc' }],
+    select: { preco_kg: true },
+  });
+  return ultimo ? Number(ultimo.preco_kg) : undefined;
+}
+
 async function criar(req, res, next) {
   try {
     const { pedido_id, ...body } = req.body;
     const dados = schema.parse(body);
+    const snapshot = await _snapshotPrecoMp(dados.materia_prima_id);
+    if (snapshot != null) dados.preco_mp_snapshot = snapshot;
     const peca = await prisma.peca.create({ data: dados });
     if (pedido_id) {
       await prisma.pecaPedido.upsert({
@@ -60,6 +72,10 @@ async function atualizar(req, res, next) {
   try {
     const { pedido_id, ...body } = req.body;
     const dados = schema.partial().parse(body);
+    if (dados.materia_prima_id != null) {
+      const snapshot = await _snapshotPrecoMp(dados.materia_prima_id);
+      if (snapshot != null) dados.preco_mp_snapshot = snapshot;
+    }
     const peca = await prisma.peca.update({
       where: { id: Number(req.params.id) },
       data: dados,

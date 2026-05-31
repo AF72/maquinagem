@@ -347,10 +347,24 @@ function renderPecaDetalhe() {
     <div class="form-group"><label class="form-label">Altura (mm)</label><input id="f-pc-altura" type="number" step="0.01" value="${pc.altura || ''}" ${campoDisabled('altura')} oninput="calcPecaPeso()"></div>
     <div class="form-group"><label class="form-label">Diâmetro Ext. (mm)</label><input id="f-pc-diametro_ext" type="number" step="0.01" value="${pc.diametro_ext || ''}" ${campoDisabled('diametro_ext')} oninput="calcPecaPeso()"></div>
     <div class="form-group"><label class="form-label">Diâmetro Int. (mm)</label><input id="f-pc-diametro_int" type="number" step="0.01" value="${pc.diametro_int || ''}" ${campoDisabled('diametro_int')} oninput="calcPecaPeso()"></div>
-    <div class="form-group full">
+    <div class="form-group">
       <label class="form-label">Peso da Peça (kg)</label>
       <input id="f-pc-peso" value="${(() => { const p = _calcPeso(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial); return p !== '' ? p + ' kg' : ''; })()}" readonly style="background:#ddedda; cursor:not-allowed;">
       <small id="f-pc-peso-hint" style="color:#c0392b;margin-top:4px;display:block;">${(() => { const p = _calcPeso(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial); return p !== '' ? '' : _mensagemPesoPendente(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial); })()}</small>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Custo de Stock (€)</label>
+      ${(() => {
+        const pesoKg = parseFloat(_calcPeso(formaAtiva, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, pesoEspInicial));
+        const snapshot = pc.precoMpSnapshot;
+        if (pesoKg && snapshot) {
+            return `<input value="${formatEuro(pesoKg * snapshot)}" readonly style="background:#ddedda; cursor:not-allowed;">
+                    <small style="color:var(--color-text-muted);margin-top:4px;display:block;">Peso × ${snapshot.toFixed(2)} €/kg (preço MP na criação)</small>`;
+        }
+        const motivo = !snapshot ? 'Sem preço de MP registado na criação da peça' : 'Peso não calculável (faltam dimensões ou material)';
+        return `<input value="—" readonly style="background:#ddedda; cursor:not-allowed;">
+                <small style="color:var(--color-text-muted);margin-top:4px;display:block;">${motivo}</small>`;
+      })()}
     </div>
 
     <div class="form-group full"><h4 style="margin: 1.5rem 0 0.5rem; color: var(--color-primary);">Notas e Imagem</h4></div>
@@ -390,7 +404,231 @@ function renderPecaDetalhe() {
     <div class="full-card" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
       ${formHtml}
     </div>
+    ${!isNew ? _pecaPlanoProcessosHtml(pc.id) : ''}
   `;
+}
+
+/* ---------------------------------------------------------------
+   Plano de Processos da Peça
+--------------------------------------------------------------- */
+
+function _calcCustoEstimado(pp, proc) {
+    if (pp.tempoEstimado == null) return null;
+    const taxa = pp.custoHoraSnapshot ?? Number(proc.custo_hora);
+    if (!taxa) return null;
+    const horas = pp.unidade_tempo === 'min' ? pp.tempoEstimado / 60 : pp.tempoEstimado;
+    return horas * taxa;
+}
+
+function _pecaPlanoProcessosHtml(pecaId) {
+    const plano = DB.pecas_processos
+        .filter(pp => pp.pecaId === pecaId)
+        .sort((a, b) => a.ordem - b.ordem);
+
+    const processosAtivos = DB.processos.filter(p => p.ativo);
+    const optsProcesso = processosAtivos.map(p =>
+        `<option value="${p.id}">${p.ref} — ${p.descricao}</option>`
+    ).join('');
+
+    const linhas = plano.length === 0
+        ? `<tr><td colspan="7" style="text-align:center;color:var(--color-text-muted);padding:1.5rem;">
+            Sem processos definidos. Adiciona o primeiro processo abaixo.</td></tr>`
+        : plano.map((pp, idx) => {
+            const proc = DB.processos.find(p => p.id === pp.processoId) || pp.processo || {};
+            const custoEst = _calcCustoEstimado(pp, proc);
+            const custoAtual = Number(proc.custo_hora);
+            const snapshot = pp.custoHoraSnapshot;
+            const precoAlterado = snapshot != null && custoAtual !== snapshot;
+            const custoCell = custoEst != null
+                ? `${formatEuro(custoEst)}${precoAlterado
+                    ? ` <span title="Custo/h quando adicionado: ${snapshot.toFixed(2)} €/h · atual: ${custoAtual.toFixed(2)} €/h" style="cursor:help;color:var(--color-warning,#b45309);font-size:10px;">⚠</span>`
+                    : ''}`
+                : '—';
+            return `<tr>
+              <td style="text-align:center;color:var(--color-text-muted);">${pp.ordem + 1}</td>
+              <td><strong>${proc.ref || '—'}</strong></td>
+              <td>${proc.descricao || '—'}</td>
+              <td>${proc.tipo || '—'}</td>
+              <td>${pp.tempoEstimado != null ? pp.tempoEstimado + ' ' + pp.unidade_tempo : '—'}</td>
+              <td style="text-align:right;">${custoCell}</td>
+              <td style="display:flex;gap:4px;">
+                ${idx > 0 ? `<button class="btn btn-ghost btn-sm" title="Mover para cima" onclick="_moverProcessoPeca(${pp.id},-1)">↑</button>` : '<span style="width:32px"></span>'}
+                ${idx < plano.length - 1 ? `<button class="btn btn-ghost btn-sm" title="Mover para baixo" onclick="_moverProcessoPeca(${pp.id},1)">↓</button>` : '<span style="width:32px"></span>'}
+                <button class="btn btn-ghost btn-sm" title="Remover" style="color:var(--color-danger,#c00);" onclick="_removerProcessoPeca(${pp.id})">✕</button>
+              </td>
+            </tr>`;
+        }).join('');
+
+    const totalProcessos = plano.reduce((sum, pp) => {
+        const proc = DB.processos.find(p => p.id === pp.processoId) || {};
+        const c = _calcCustoEstimado(pp, proc);
+        return sum + (c ?? 0);
+    }, 0);
+
+    const pc = DB.pecas.find(p => p.id === pecaId);
+    const mp = DB.materia_prima.find(m => m.id === pc?.materiaPrimaId);
+    const pesoKg = parseFloat(_calcPeso(pc?.forma, pc?.comprimento, pc?.largura, pc?.altura, pc?.diametro_ext, pc?.diametro_int, mp?.peso_esp)) || 0;
+    const custoStock = (pesoKg && pc?.precoMpSnapshot) ? pesoKg * pc.precoMpSnapshot : null;
+    const custoTotal = (custoStock ?? 0) + totalProcessos;
+    const temCustoTotal = custoStock != null || plano.some(pp => {
+        const proc = DB.processos.find(p => p.id === pp.processoId) || {};
+        return _calcCustoEstimado(pp, proc) != null;
+    });
+
+    return `
+    <div class="full-card" style="max-width:800px;margin:1rem auto;padding:2rem;">
+      <h4 style="margin:0 0 0.25rem;color:var(--color-primary);">Plano de Processos</h4>
+      <hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 1rem;">
+      <table class="table" style="font-size:12px;margin-bottom:1.25rem;">
+        <thead><tr>
+          <th style="width:50px;text-align:center;">Ord.</th>
+          <th style="width:80px;">Ref.</th>
+          <th>Processo</th>
+          <th>Tipo</th>
+          <th style="width:110px;">Tempo Est.</th>
+          <th style="width:110px;text-align:right;">Custo Est.</th>
+          <th style="width:90px;">Ações</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+        ${plano.length > 0 ? `<tfoot><tr>
+          <td colspan="5" style="text-align:right;font-size:11px;color:var(--color-text-muted);padding:6px 8px;">Total processos:</td>
+          <td style="text-align:right;font-weight:700;padding:6px 8px;">${formatEuro(totalProcessos)}</td>
+          <td></td>
+        </tr></tfoot>` : ''}
+      </table>
+      <details style="margin-top:0.5rem;">
+        <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--color-primary);list-style:none;display:flex;align-items:center;gap:6px;">
+          <span>▸</span> Adicionar processo
+        </summary>
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:0.75rem;">
+          <div style="flex:2;min-width:220px;">
+            <label class="form-label">Processo</label>
+            <select id="pp-select-processo" style="width:100%;">
+              <option value="">Selecionar...</option>${optsProcesso}
+            </select>
+          </div>
+          <div style="flex:0 0 90px;">
+            <label class="form-label">Tempo Est.</label>
+            <input id="pp-tempo" type="number" min="0" step="0.5" placeholder="0.0" style="width:100%;">
+          </div>
+          <div style="flex:0 0 70px;">
+            <label class="form-label">Unidade</label>
+            <select id="pp-unidade" style="width:100%;">
+              <option value="h">h</option>
+              <option value="min">min</option>
+            </select>
+          </div>
+          <div style="flex:2;min-width:160px;">
+            <label class="form-label">Notas</label>
+            <input id="pp-notas" placeholder="Opcional" style="width:100%;">
+          </div>
+          <button class="btn btn-primary" style="height:34px;" onclick="_adicionarProcessoPeca(${pecaId})">Adicionar</button>
+        </div>
+      </details>
+    </div>
+    ${temCustoTotal ? `
+    <div class="full-card" style="max-width:800px;margin:1rem auto;padding:2rem;">
+      <h4 style="margin:0 0 0.25rem;color:var(--color-primary);">Resumo de Custos</h4>
+      <hr style="border:none;border-top:2px solid var(--color-primary);margin:0 0 1rem;">
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--color-border);">
+          <span style="color:var(--color-text-muted);">Custo de stock</span>
+          <span>${custoStock != null ? formatEuro(custoStock) : '<span style="color:var(--color-text-muted);font-size:12px;">sem preço MP registado</span>'}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--color-border);">
+          <span style="color:var(--color-text-muted);">Custo de processos</span>
+          <span>${formatEuro(totalProcessos)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:700;font-size:15px;">
+          <span>Custo estimado</span>
+          <span style="color:var(--color-primary);">${formatEuro(custoTotal)}</span>
+        </div>
+      </div>
+    </div>` : ''}`;
+}
+
+async function _adicionarProcessoPeca(pecaId) {
+    const processoId = Number(document.getElementById('pp-select-processo').value);
+    if (!processoId) { _erroToast('Seleciona um processo.'); return; }
+
+    const tempoRaw = document.getElementById('pp-tempo').value;
+    const unidade  = document.getElementById('pp-unidade').value;
+    const notas    = document.getElementById('pp-notas').value.trim() || null;
+
+    const ordemAtual = DB.pecas_processos.filter(pp => pp.pecaId === pecaId).length;
+
+    const dados = {
+        peca_id:        pecaId,
+        processo_id:    processoId,
+        ordem:          ordemAtual,
+        tempo_estimado: tempoRaw !== '' ? Number(tempoRaw) : null,
+        unidade_tempo:  unidade,
+        notas,
+    };
+
+    try {
+        const novo = await apiPost('/pecas-processos', dados);
+        DB.pecas_processos.push({
+            ...novo,
+            pecaId:            novo.peca_id,
+            processoId:        novo.processo_id,
+            tempoEstimado:     novo.tempo_estimado      != null ? Number(novo.tempo_estimado)      : null,
+            custoHoraSnapshot: novo.custo_hora_snapshot != null ? Number(novo.custo_hora_snapshot) : null,
+        });
+        renderPecaDetalhe();
+        _successToast('Processo adicionado.');
+    } catch (err) {
+        _erroToast('Erro ao adicionar processo: ' + err.message);
+    }
+}
+
+async function _removerProcessoPeca(ppId) {
+    try {
+        await apiDelete(`/pecas-processos/${ppId}`);
+        const idx = DB.pecas_processos.findIndex(pp => pp.id === ppId);
+        if (idx !== -1) DB.pecas_processos.splice(idx, 1);
+        _reordenarPlanoLocal(_currentPecaId);
+        renderPecaDetalhe();
+        _successToast('Processo removido.');
+    } catch (err) {
+        _erroToast('Erro ao remover processo: ' + err.message);
+    }
+}
+
+async function _moverProcessoPeca(ppId, delta) {
+    const pecaId = _currentPecaId;
+    const plano = DB.pecas_processos
+        .filter(pp => pp.pecaId === pecaId)
+        .sort((a, b) => a.ordem - b.ordem);
+
+    const idx = plano.findIndex(pp => pp.id === ppId);
+    const idxAlvo = idx + delta;
+    if (idxAlvo < 0 || idxAlvo >= plano.length) return;
+
+    // Trocar ordens
+    const ordemA = plano[idx].ordem;
+    const ordemB = plano[idxAlvo].ordem;
+
+    try {
+        await Promise.all([
+            apiPut(`/pecas-processos/${plano[idx].id}`,    { ordem: ordemB }),
+            apiPut(`/pecas-processos/${plano[idxAlvo].id}`, { ordem: ordemA }),
+        ]);
+        const entA = DB.pecas_processos.find(pp => pp.id === plano[idx].id);
+        const entB = DB.pecas_processos.find(pp => pp.id === plano[idxAlvo].id);
+        if (entA) entA.ordem = ordemB;
+        if (entB) entB.ordem = ordemA;
+        renderPecaDetalhe();
+    } catch (err) {
+        _erroToast('Erro ao reordenar: ' + err.message);
+    }
+}
+
+function _reordenarPlanoLocal(pecaId) {
+    DB.pecas_processos
+        .filter(pp => pp.pecaId === pecaId)
+        .sort((a, b) => a.ordem - b.ordem)
+        .forEach((pp, i) => { pp.ordem = i; });
 }
 
 /*
