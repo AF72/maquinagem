@@ -79,25 +79,38 @@ const setupSchema = z.object({
   password: z.string().min(8, 'A password deve ter pelo menos 8 caracteres'),
 });
 
-// Endpoint de arranque único — só funciona se não existir nenhum admin
+// Endpoint de arranque único — aplica colunas em falta e cria o primeiro admin
 async function setup(req, res, next) {
   try {
-    const adminExistente = await prisma.colaboradorDm.findFirst({
-      where: { role: 'admin' },
-    });
-    if (adminExistente) {
+    // Garante que as colunas de autenticação existem na BD
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE colaboradores_dm
+        ADD COLUMN IF NOT EXISTS email VARCHAR(150),
+        ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'operador',
+        ADD COLUMN IF NOT EXISTS primeiro_login BOOLEAN NOT NULL DEFAULT true
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS colaboradores_dm_email_key ON colaboradores_dm(email)
+    `);
+
+    const adminExistente = await prisma.$queryRaw`
+      SELECT id FROM colaboradores_dm WHERE role = 'admin' LIMIT 1
+    `;
+    if (adminExistente.length > 0) {
       return res.status(403).json({ erro: 'Setup já foi realizado. Este endpoint está desativado.' });
     }
 
     const { nome, email, password } = setupSchema.parse(req.body);
     const hash = await bcrypt.hash(password, 12);
 
-    const admin = await prisma.colaboradorDm.create({
-      data: { nome, email, password_hash: hash, role: 'admin', primeiro_login: false, estado: 'ativo' },
-      select: { id: true, nome: true, email: true, role: true },
-    });
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO colaboradores_dm (nome, email, password_hash, role, primeiro_login, estado)
+       VALUES ($1, $2, $3, 'admin', false, 'ativo')`,
+      nome, email, hash
+    );
 
-    res.status(201).json({ mensagem: 'Admin criado com sucesso.', utilizador: admin });
+    res.status(201).json({ mensagem: 'Colunas criadas e admin configurado com sucesso.' });
   } catch (err) { next(err); }
 }
 
