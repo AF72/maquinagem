@@ -175,4 +175,33 @@ async function migrate(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { login, alterarPassword, setup, migrate };
+const resetAdminSchema = z.object({
+  reset_key:    z.string().min(1),
+  email:        z.string().email(),
+  password_nova: z.string().min(8),
+});
+
+async function resetAdmin(req, res, next) {
+  try {
+    const { reset_key, email, password_nova } = resetAdminSchema.parse(req.body);
+
+    if (reset_key !== JWT_SECRET) {
+      return res.status(403).json({ erro: 'Chave de reset inválida.' });
+    }
+
+    const utilizador = await prisma.colaboradorDm.findUnique({ where: { email } });
+    if (!utilizador) {
+      return res.status(404).json({ erro: 'Utilizador não encontrado.' });
+    }
+
+    const hash = await bcrypt.hash(password_nova, 12);
+    await prisma.colaboradorDm.update({
+      where: { email },
+      data: { password_hash: hash, primeiro_login: false },
+    });
+
+    res.json({ mensagem: 'Password redefinida com sucesso.' });
+  } catch (err) { next(err); }
+}
+
+module.exports = { login, alterarPassword, setup, migrate, resetAdmin };
