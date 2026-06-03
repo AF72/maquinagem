@@ -127,6 +127,7 @@ function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel, podeEliminar = fals
     if (pecas.length === 0) {
         return `<p style="color:var(--color-text-muted);text-align:center;padding:1.5rem 0;">Sem peças associadas a este pedido.</p>`;
     }
+    const nCols = podeEliminar ? 8 : 7;
     const rows = pecas.map(pc => {
         const item = orcamentoId
             ? DB.orcamento_itens.find(i => i.orcamentoId === orcamentoId && i.pecaId === pc.id)
@@ -149,6 +150,69 @@ function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel, podeEliminar = fals
             ? `<td>${item ? `<button class="btn btn-ghost btn-sm" title="Eliminar peça do orçamento" onclick="eliminarItemOrcamento(${orcamentoId}, ${item.id})">✕</button>` : ''}</td>`
             : '';
 
+        // Stock e processos
+        const mp = DB.materia_prima.find(m => m.id === pc.materiaPrimaId);
+        const pesoKg = parseFloat(_calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mp?.peso_esp)) || 0;
+        const snapshot = pc.precoMpSnapshot;
+        const custoStock = (pesoKg && snapshot) ? pesoKg * snapshot : null;
+
+        const plano = (DB.pecas_processos || [])
+            .filter(pp => pp.pecaId === pc.id)
+            .sort((a, b) => a.ordem - b.ordem);
+
+        // Sub-linha: custo de stock
+        const matLabel = mp
+            ? ((mp.ref_wnr && mp.ref_wnr !== '-') ? `${mp.ref_wnr} – ${mp.ref_din}` : mp.ref_din)
+            : '—';
+        const stockRow = `<tr style="background:var(--color-surface-alt,#f8f8f6);">
+            <td colspan="${nCols}" style="padding:0.3rem 1rem 0.3rem 1.5rem;font-size:11px;color:var(--color-text-muted);border-top:none;">
+                <strong>Material:</strong> ${matLabel}
+                &nbsp;|&nbsp; <strong>Peso:</strong> ${pesoKg ? pesoKg.toFixed(4) + ' kg' : '—'}
+                &nbsp;|&nbsp; <strong>Preço MP:</strong> ${snapshot ? parseFloat(snapshot).toFixed(2) + ' €/kg' : '—'}
+                &nbsp;|&nbsp; <strong>Custo stock:</strong> ${custoStock != null ? `<span style="font-weight:700;color:var(--color-text);">${formatEuro(custoStock)}</span>` : '—'}
+            </td>
+        </tr>`;
+
+        // Sub-tabela: processos
+        let processosRow;
+        if (plano.length === 0) {
+            processosRow = `<tr><td colspan="${nCols}" style="padding:0.4rem 1rem 0.75rem;">
+                <span style="font-size:11px;color:var(--color-text-muted);font-style:italic;">Sem plano de processos definido para esta peça.</span>
+            </td></tr>`;
+        } else {
+            const linhasProc = plano.map(pp => {
+                const proc = DB.processos.find(p => p.id === pp.processoId) || pp.processo || {};
+                const custoEst = _calcCustoEstimado(pp, proc);
+                return { pp, proc, custoEst };
+            });
+            const totalCustoPeca = linhasProc.reduce((s, { custoEst }) => s + (custoEst ?? 0), 0);
+            const temCusto = linhasProc.some(({ custoEst }) => custoEst != null);
+            processosRow = `<tr><td colspan="${nCols}" style="padding:0.4rem 1rem 0.75rem;background:var(--color-surface-alt,#f8f8f6);">
+                <table style="width:100%;font-size:11px;border-collapse:collapse;">
+                    <thead><tr style="color:var(--color-text-muted);">
+                        <th style="padding:2px 8px;text-align:center;width:40px;">Ord.</th>
+                        <th style="padding:2px 8px;width:70px;">Ref.</th>
+                        <th style="padding:2px 8px;">Processo</th>
+                        <th style="padding:2px 8px;">Tipo</th>
+                        <th style="padding:2px 8px;width:100px;">Tempo Est.</th>
+                        <th style="padding:2px 8px;width:100px;text-align:right;">Custo Est.</th>
+                    </tr></thead>
+                    <tbody>${linhasProc.map(({ pp, proc, custoEst }) => `<tr>
+                        <td style="padding:3px 8px;text-align:center;">${pp.ordem + 1}</td>
+                        <td style="padding:3px 8px;font-weight:600;">${proc.ref || '—'}</td>
+                        <td style="padding:3px 8px;">${proc.descricao || '—'}</td>
+                        <td style="padding:3px 8px;">${proc.tipo || '—'}</td>
+                        <td style="padding:3px 8px;">${pp.tempoEstimado != null ? pp.tempoEstimado + ' ' + pp.unidade_tempo : '—'}</td>
+                        <td style="padding:3px 8px;text-align:right;">${custoEst != null ? formatEuro(custoEst) : '—'}</td>
+                    </tr>`).join('')}</tbody>
+                    ${temCusto ? `<tfoot><tr>
+                        <td colspan="5" style="padding:4px 8px;text-align:right;font-size:10px;color:var(--color-text-muted);border-top:1px solid var(--color-border);">Custo total por peça:</td>
+                        <td style="padding:4px 8px;text-align:right;font-weight:700;border-top:1px solid var(--color-border);">${formatEuro(totalCustoPeca)}</td>
+                    </tr></tfoot>` : ''}
+                </table>
+            </td></tr>`;
+        }
+
         return `<tr>
             <td><strong>${pc.ref}</strong></td>
             <td>${pc.plano || '—'}</td>
@@ -158,7 +222,7 @@ function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel, podeEliminar = fals
             <td>${precoCell}</td>
             <td class="orc-item-subtotal" style="font-weight:600;">${subtotalDisplay}</td>
             ${eliminarCell}
-        </tr>`;
+        </tr>${stockRow}${processosRow}`;
     }).join('');
     const acoesHeader = podeEliminar ? '<th></th>' : '';
     return `<table class="table">

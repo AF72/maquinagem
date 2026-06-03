@@ -9,26 +9,66 @@
 let _currentPecaId = null;
 let _isPecaEditMode = false;
 let _preSelectedPecaPedidoId = null;
+let _pecasPage = 1;
+const _PECAS_PER_PAGE = 15;
 
 /*
  * Renderiza a lista de peças
  */
 function renderPecas() {
+    const total = DB.pecas.length;
+    const totalPages = Math.max(1, Math.ceil(total / _PECAS_PER_PAGE));
+    if (_pecasPage > totalPages) _pecasPage = totalPages;
+
+    const inicio = (_pecasPage - 1) * _PECAS_PER_PAGE;
+    const paginadas = DB.pecas.slice().reverse().slice(inicio, inicio + _PECAS_PER_PAGE);
+
     document.getElementById('page-pecas').innerHTML = `
     <div class="section-header">
-      <span class="section-count">${DB.pecas.length} peças</span>
+      <span class="section-count">${total} peças</span>
+      ${totalPages > 1 ? _pecasPaginacao(totalPages) : ''}
       <button class="btn btn-primary" onclick="showPecaDetalhe(null)">+ Nova Peça</button>
     </div>
     <div class="full-card">
       <table class="table">
         <thead>
           <tr>
-            <th style="width:120px;">Ref.</th><th style="width:120px;">Plano</th><th style="width:160px;">Denominação</th><th style="width:100px;">Órgão</th><th style="width:100px;">Parte</th><th style="width:160px;">Material</th><th style="width:160px;">Dimensões (mm)</th><th style="width:80px;">Peso (kg)</th><th style="width:80px;">Ação</th>
+            <th style="width:120px;">Ref.</th><th style="width:120px;">Plano</th><th style="width:160px;">Denominação</th><th style="width:100px;">Órgão</th><th style="width:100px;">Parte</th><th style="width:160px;">Material</th><th style="width:80px;">Ação</th>
           </tr>
         </thead>
-        <tbody>${_pecasRows()}</tbody>
+        <tbody>${_pecasRows(paginadas)}</tbody>
       </table>
     </div>`;
+}
+
+function _pecasPaginacao(totalPages) {
+    const prev = `<button class="btn btn-ghost btn-sm" ${_pecasPage === 1 ? 'disabled' : ''} onclick="_setPecasPage(${_pecasPage - 1})">&#8249;</button>`;
+    const next = `<button class="btn btn-ghost btn-sm" ${_pecasPage === totalPages ? 'disabled' : ''} onclick="_setPecasPage(${_pecasPage + 1})">&#8250;</button>`;
+
+    let paginas = '';
+    for (let i = 1; i <= totalPages; i++) {
+        if (
+            totalPages <= 7 ||
+            i === 1 || i === totalPages ||
+            Math.abs(i - _pecasPage) <= 1
+        ) {
+            const active = i === _pecasPage ? 'btn-primary' : 'btn-ghost';
+            paginas += `<button class="btn ${active} btn-sm" onclick="_setPecasPage(${i})">${i}</button>`;
+        } else if (i === 2 && _pecasPage > 4) {
+            paginas += `<span style="padding:0 4px;color:var(--color-text-muted);">…</span>`;
+        } else if (i === totalPages - 1 && _pecasPage < totalPages - 3) {
+            paginas += `<span style="padding:0 4px;color:var(--color-text-muted);">…</span>`;
+        }
+    }
+
+    return `<div style="display:flex;justify-content:center;align-items:center;gap:4px;padding:12px 0 4px;">
+        ${prev}${paginas}${next}
+    </div>`;
+}
+
+function _setPecasPage(n) {
+    _pecasPage = n;
+    renderPecas();
 }
 
 /*
@@ -41,21 +81,13 @@ function _resolverMaterial(materiaPrimaId) {
     return mp.ref_wnr && mp.ref_wnr !== '-' ? `${mp.ref_wnr} – ${mp.ref_din}` : mp.ref_din;
 }
 
-function _pecasRows() {
-    if (DB.pecas.length === 0) {
-        return `<tr><td colspan="8" style="text-align:center;color:var(--color-text-muted);padding:2rem;">
+function _pecasRows(pecas) {
+    if (pecas.length === 0) {
+        return `<tr><td colspan="7" style="text-align:center;color:var(--color-text-muted);padding:2rem;">
       Sem peças registadas.</td></tr>`;
     }
-    return DB.pecas
+    return pecas
         .map((pc) => {
-            const dimParts = [];
-            if (pc.comprimento)  dimParts.push(`C:${pc.comprimento}`);
-            if (pc.largura)      dimParts.push(`L:${pc.largura}`);
-            if (pc.diametro_ext) dimParts.push(`∅ext:${pc.diametro_ext}`);
-            if (pc.diametro_int) dimParts.push(`∅int:${pc.diametro_int}`);
-            const dim = dimParts.join(' · ') || '—';
-            const mp = DB.materia_prima.find(m => m.id === pc.materiaPrimaId);
-            const peso = _calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mp?.peso_esp);
             return `<tr>
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.ref}</td>
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.plano || '-'}</td>
@@ -63,8 +95,6 @@ function _pecasRows() {
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.orgao || '-'}</td>
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.parte || '-'}</td>
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_resolverMaterial(pc.materiaPrimaId)}</td>
-      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${dim}</td>
-      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${peso || '—'}</td>
       <td style="display:flex;gap:4px;align-items:center;">
         <button class="btn btn-ghost btn-sm" title="Ver peça" onclick="verPecaOverlay(${pc.id})">${ICON_VIEW}</button>
         <button class="btn btn-ghost btn-sm" title="Editar peça" onclick="showPecaDetalhe(${pc.id})">${ICON_ORCAMENTO_EDIT}</button>
