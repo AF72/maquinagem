@@ -165,6 +165,16 @@ async function migrate(req, res, next) {
         preco_unitario DECIMAL(12,2) NOT NULL DEFAULT 0,
         criado_em      TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`,
+
+      // historico_precos_processos
+      `CREATE TABLE IF NOT EXISTS historico_precos_processos (
+        id          SERIAL PRIMARY KEY,
+        processo_id INTEGER NOT NULL REFERENCES processos(id) ON DELETE CASCADE,
+        custo_hora  DECIMAL(10,2) NOT NULL,
+        data        DATE NOT NULL DEFAULT CURRENT_DATE,
+        notas       TEXT,
+        criado_em   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
     ];
 
     for (const stmt of sql) {
