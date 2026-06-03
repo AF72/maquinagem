@@ -1,6 +1,6 @@
 [build]
-buildCommand = "npm install && npx prisma generate && npx prisma db push --accept-data-loss"
+buildCommand = "npm install && npx prisma generate"
 
 [deploy]
-startCommand = "npm start"
+startCommand = "npx prisma db push --accept-data-loss && npm start"
 restartPolicyType = "on_failure"
