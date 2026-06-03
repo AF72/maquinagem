@@ -177,6 +177,12 @@ async function carregarDados() {
             precoKg:        Number(h.preco_kg),
             data:           h.data?.slice(0, 10) ?? '',
         })) },
+        { key: 'historico_precos_processos', path: '/historico-precos-processos', map: v => v.map(h => ({
+            ...h,
+            processoId: h.processo_id,
+            custoHora:  Number(h.custo_hora),
+            data:       h.data?.slice(0, 10) ?? '',
+        })) },
         { key: 'servicos_pedidos', path: '/servicos-pedidos',  map: v => v.map(s => ({
             ...s,
             servicoId:    s.servico_id,

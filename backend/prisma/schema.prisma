@@ -227,16 +227,29 @@ model PecaPedido {
 }
 
 model Processo {
-  id              Int            @id @default(autoincrement())
-  ref             String         @unique @db.VarChar(50)
-  descricao       String         @db.VarChar(150)
-  tipo            String         @db.VarChar(50)
-  custo_hora      Decimal        @db.Decimal(10, 2)
-  ativo           Boolean        @default(true)
-  criado_em       DateTime       @default(now())
-  pecas_processos PecaProcesso[]
+  id               Int                     @id @default(autoincrement())
+  ref              String                  @unique @db.VarChar(50)
+  descricao        String                  @db.VarChar(150)
+  tipo             String                  @db.VarChar(50)
+  custo_hora       Decimal                 @db.Decimal(10, 2)
+  ativo            Boolean                 @default(true)
+  criado_em        DateTime                @default(now())
+  pecas_processos  PecaProcesso[]
+  historico_precos HistoricoPrecoProcesso[]
 
   @@map("processos")
+}
+
+model HistoricoPrecoProcesso {
+  id          Int      @id @default(autoincrement())
+  processo_id Int
+  custo_hora  Decimal  @db.Decimal(10, 2)
+  data        DateTime @default(now()) @db.Date
+  notas       String?
+  criado_em   DateTime @default(now())
+  processo    Processo @relation(fields: [processo_id], references: [id], onDelete: Cascade)
+
+  @@map("historico_precos_processos")
 }
 
 model PecaProcesso {

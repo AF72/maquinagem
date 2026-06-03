@@ -33,7 +33,7 @@ function renderPecas() {
       <table class="table">
         <thead>
           <tr>
-            <th style="width:120px;">Ref.</th><th style="width:120px;">Plano</th><th style="width:160px;">Denominação</th><th style="width:100px;">Órgão</th><th style="width:100px;">Parte</th><th style="width:160px;">Material</th><th style="width:80px;">Ação</th>
+            <th style="width:120px;">Ref.</th><th style="width:120px;">Plano</th><th style="width:160px;">Denominação</th><th style="width:160px;">Material</th><th style="width:60px;">Imagem</th><th style="width:80px;">Ação</th>
           </tr>
         </thead>
         <tbody>${_pecasRows(paginadas)}</tbody>
@@ -83,19 +83,26 @@ function _resolverMaterial(materiaPrimaId) {
 
 function _pecasRows(pecas) {
     if (pecas.length === 0) {
-        return `<tr><td colspan="7" style="text-align:center;color:var(--color-text-muted);padding:2rem;">
+        return `<tr><td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:2rem;">
       Sem peças registadas.</td></tr>`;
     }
     return pecas
         .map((pc) => {
-            return `<tr>
+            const thumbCell = pc.imagem
+                ? `<td style="text-align:center;">
+                     <img src="${pc.imagem}" alt="${pc.ref}"
+                       style="width:44px;height:44px;object-fit:contain;cursor:zoom-in;border-radius:4px;border:1px solid var(--color-border);display:block;margin:0 auto;"
+                       onclick="_abrirImagemOverlay('${pc.ref}', this.src)" title="Clique para ampliar">
+                   </td>`
+                : `<td style="text-align:center;color:var(--color-text-muted);font-size:11px;">—</td>`;
+
+            return `<tr style="height:60px;">
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.ref}</td>
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.plano || '-'}</td>
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.denominacao || '-'}</td>
-      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.orgao || '-'}</td>
-      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.parte || '-'}</td>
       <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_resolverMaterial(pc.materiaPrimaId)}</td>
-      <td style="display:flex;gap:4px;align-items:center;">
+      ${thumbCell}
+      <td style="display:flex;gap:4px;align-items:center;height:60px;">
         <button class="btn btn-ghost btn-sm" title="Ver peça" onclick="verPecaOverlay(${pc.id})">${ICON_VIEW}</button>
         <button class="btn btn-ghost btn-sm" title="Editar peça" onclick="showPecaDetalhe(${pc.id})">${ICON_ORCAMENTO_EDIT}</button>
       </td>
@@ -471,7 +478,7 @@ function _pecaPlanoProcessosHtml(pecaId) {
             const precoAlterado = snapshot != null && custoAtual !== snapshot;
             const custoCell = custoEst != null
                 ? `${formatEuro(custoEst)}${precoAlterado
-                    ? ` <span title="Custo/h quando adicionado: ${snapshot.toFixed(2)} €/h · atual: ${custoAtual.toFixed(2)} €/h" style="cursor:help;color:var(--color-warning,#b45309);font-size:10px;">⚠</span>`
+                    ? ` <span title="Custo/h quando adicionado: ${snapshot.toFixed(2)} €/h · atual: ${custoAtual.toFixed(2)} €/h" style="cursor:help;color:var(--color-warning,#b45309);font-size:16px;">⚠</span>`
                     : ''}`
                 : '—';
             return `<tr>
@@ -750,4 +757,22 @@ async function savePecaDetalhe(id) {
     } catch (err) {
         _erroToast('Erro ao guardar peça: ' + err.message);
     }
+}
+
+/* ---------- Lightbox de imagem ---------- */
+
+function _abrirImagemOverlay(ref, src) {
+    let overlay = document.getElementById('peca-img-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'peca-img-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:zoom-out;';
+        overlay.onclick = () => overlay.remove();
+        document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = `
+        <p style="color:#fff;font-size:13px;font-weight:600;margin:0 0 12px;">${ref}</p>
+        <img src="${src}" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.6);">
+        <p style="color:rgba(255,255,255,.5);font-size:11px;margin:12px 0 0;">Clique em qualquer lugar para fechar</p>`;
+    overlay.style.display = 'flex';
 }

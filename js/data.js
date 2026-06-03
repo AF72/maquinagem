@@ -18,7 +18,8 @@ const DB = {
     servicos_pedidos:[],
     processos:           [],
     pecas_processos:     [],
-    historico_precos_mp: [],
+    historico_precos_mp:        [],
+    historico_precos_processos: [],
 
     /** UI state */
     expanded:      {},

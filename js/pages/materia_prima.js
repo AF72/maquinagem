@@ -197,20 +197,20 @@ function _mpHistoricoPrecos(mpId) {
         </tr></thead>
         <tbody>${linhas}</tbody>
       </table>
-      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
-        <div style="flex:0 0 120px;">
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div style="flex:0 0 100px;">
           <label class="form-label">Preço (€/kg) *</label>
-          <input id="mp-preco-kg" type="number" min="0.01" step="0.01" placeholder="0.00" style="width:100%;">
+          <input id="mp-preco-kg" type="number" min="0.01" step="0.01" placeholder="0.00" style="width:100%;height:34px;box-sizing:border-box;">
         </div>
-        <div style="flex:0 0 140px;">
+        <div style="flex:0 0 auto;">
           <label class="form-label">Data</label>
-          <input id="mp-preco-data" type="date" value="${today()}" style="width:100%;">
+          <input id="mp-preco-data" type="date" value="${today()}" style="width:auto;height:34px;box-sizing:border-box;">
         </div>
-        <div style="flex:2;min-width:160px;">
+        <div style="flex:1;min-width:0;">
           <label class="form-label">Notas</label>
-          <input id="mp-preco-notas" placeholder="Opcional (ex: fornecedor, lote...)" style="width:100%;">
+          <input id="mp-preco-notas" placeholder="Opcional (ex: fornecedor, lote...)" style="width:100%;height:34px;box-sizing:border-box;">
         </div>
-        <button class="btn btn-primary" style="height:34px;white-space:nowrap;" onclick="_registarPrecoMp(${mpId})">Registar preço</button>
+        <button class="btn btn-primary" style="white-space:nowrap;flex-shrink:0;height:34px;" onclick="_registarPrecoMp(${mpId})">Registar preço</button>
       </div>
     </div>`;
 }
