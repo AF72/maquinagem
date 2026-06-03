@@ -77,8 +77,8 @@ function _tiposOptions(selected) {
 }
 
 function _processoFormOverlay() {
-    return `<div id="proc-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:center; justify-content:center;">
-      <div style="background:var(--color-surface); border-radius:var(--radius-lg); padding:1.5rem; width:100%; max-width:480px; box-shadow:0 8px 32px rgba(0,0,0,.2);">
+    return `<div id="proc-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:center; justify-content:center; overflow-y:auto; padding:1rem 0;">
+      <div style="background:var(--color-surface); border-radius:var(--radius-lg); padding:1.5rem; width:100%; max-width:600px; box-shadow:0 8px 32px rgba(0,0,0,.2);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
           <h3 id="proc-form-title" style="margin:0; font-size:15px; font-weight:600;"></h3>
           <button class="btn btn-ghost" onclick="fecharFormProcesso()">✕</button>
@@ -88,7 +88,7 @@ function _processoFormOverlay() {
             <select id="proc-tipo"><option value="">Selecionar tipo...</option>${_tiposOptions('')}</select>
           </div>
           <div class="form-group full"><label class="form-label">Descrição *</label><input id="proc-descricao" placeholder="Descrição do processo"></div>
-          <div class="form-group"><label class="form-label">Custo por hora (€) *</label><input id="proc-custo_hora" type="number" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="form-group"><label class="form-label">Custo por hora (€)</label><input id="proc-custo_hora" readonly style="background:var(--color-surface-alt);color:var(--color-text-muted);cursor:not-allowed;" placeholder="—"></div>
           <div class="form-group" style="display:flex; align-items:center; gap:8px; padding-top:1.6rem;">
             <input id="proc-ativo" type="checkbox" style="width:16px;height:16px;">
             <label for="proc-ativo" class="form-label" style="margin:0; cursor:pointer;">Processo ativo</label>
@@ -98,6 +98,7 @@ function _processoFormOverlay() {
           <button class="btn" onclick="fecharFormProcesso()">Cancelar</button>
           <button class="btn btn-primary" onclick="saveProcesso()">Guardar</button>
         </div>
+        <div id="proc-historico-section"></div>
       </div>
     </div>`;
 }
@@ -112,9 +113,24 @@ function abrirFormProcesso(id) {
     document.getElementById('proc-form-title').textContent = id ? 'Editar Processo' : 'Novo Processo';
     document.getElementById('proc-descricao').value  = p ? p.descricao  : '';
     document.getElementById('proc-tipo').value       = p ? p.tipo       : '';
-    document.getElementById('proc-custo_hora').value = p ? Number(p.custo_hora).toFixed(2) : '';
     document.getElementById('proc-ativo').checked    = p ? p.ativo      : true;
+
+    const custoEl = document.getElementById('proc-custo_hora');
+    if (id) {
+        // Modo edição: só leitura, mostrar valor atual
+        custoEl.value    = Number(p.custo_hora).toFixed(2);
+        custoEl.readOnly = true;
+        custoEl.style.cssText = 'background:var(--color-surface-alt);color:var(--color-text-muted);cursor:not-allowed;';
+    } else {
+        // Modo criação: editável e obrigatório
+        custoEl.value    = '';
+        custoEl.readOnly = false;
+        custoEl.style.cssText = '';
+        custoEl.placeholder = '0.00';
+    }
+
     document.getElementById('proc-overlay').style.display = 'flex';
+    if (id) _renderHistoricoProcesso(id);
 }
 
 function fecharFormProcesso() {
@@ -125,20 +141,29 @@ function fecharFormProcesso() {
 async function saveProcesso() {
     const descricao = document.getElementById('proc-descricao').value.trim();
     const tipo      = document.getElementById('proc-tipo').value;
-    const custoRaw  = document.getElementById('proc-custo_hora').value;
     const ativo     = document.getElementById('proc-ativo').checked;
 
-    if (!descricao) { _erroToast('A descrição é obrigatória.');     return; }
-    if (!tipo)      { _erroToast('Seleciona o tipo de processo.');  return; }
-    if (custoRaw === '' || isNaN(Number(custoRaw))) { _erroToast('Custo por hora inválido.'); return; }
+    if (!descricao) { _erroToast('A descrição é obrigatória.');    return; }
+    if (!tipo)      { _erroToast('Seleciona o tipo de processo.'); return; }
 
-    const dados = { descricao, tipo, custo_hora: Number(custoRaw), ativo };
+    const dados = { descricao, tipo, ativo };
+
+    if (!_currentProcessoId) {
+        const custoRaw = document.getElementById('proc-custo_hora').value;
+        if (custoRaw === '' || isNaN(Number(custoRaw))) { _erroToast('Custo por hora inválido.'); return; }
+        dados.custo_hora = Number(custoRaw);
+    }
 
     try {
         if (_currentProcessoId) {
             const atualizado = await apiPut(`/processos/${_currentProcessoId}`, dados);
             const idx = DB.processos.findIndex(x => x.id === _currentProcessoId);
             if (idx !== -1) DB.processos[idx] = atualizado;
+            // Recarregar histórico do DB
+            const hList = await apiFetch(`/historico-precos-processos?processo_id=${_currentProcessoId}`);
+            DB.historico_precos_processos = DB.historico_precos_processos.filter(h => h.processoId !== _currentProcessoId);
+            hList.forEach(h => DB.historico_precos_processos.push({ ...h, processoId: h.processo_id, custoHora: Number(h.custo_hora), data: h.data?.slice(0, 10) ?? '' }));
+            _renderHistoricoProcesso(_currentProcessoId);
         } else {
             const novo = await apiPost('/processos', dados);
             DB.processos.push(novo);
@@ -148,5 +173,110 @@ async function saveProcesso() {
         _successToast('Processo gravado com sucesso.');
     } catch (err) {
         _erroToast('Erro ao guardar processo: ' + err.message);
+    }
+}
+
+/* ---------- Histórico de Preços dos Processos ---------- */
+
+function _renderHistoricoProcesso(processoId) {
+    const el = document.getElementById('proc-historico-section');
+    if (!el) return;
+    el.innerHTML = _processoHistoricoHtml(processoId);
+}
+
+function _processoHistoricoHtml(processoId) {
+    const historico = DB.historico_precos_processos
+        .filter(h => h.processoId === processoId)
+        .sort((a, b) => b.data.localeCompare(a.data) || b.id - a.id);
+
+    const linhas = historico.length === 0
+        ? `<tr><td colspan="4" style="text-align:center;color:var(--color-text-muted);padding:1rem;font-size:12px;">
+            Sem histórico registado. O histórico é criado automaticamente ao alterar o custo/hora.</td></tr>`
+        : historico.map(h => `<tr>
+            <td style="font-size:12px;">${h.data}</td>
+            <td style="font-size:12px;font-weight:${h === historico[0] ? '700' : '400'};">
+                ${Number(h.custoHora).toFixed(2)} €/h
+                ${h === historico[0] ? '<span style="font-size:10px;color:var(--color-success,#2e7d32);margin-left:4px;">atual</span>' : ''}
+            </td>
+            <td style="font-size:12px;color:var(--color-text-muted);">${h.notas || '—'}</td>
+            <td><button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c00);" title="Remover" onclick="_removerPrecoProcesso(${h.id}, ${processoId})">✕</button></td>
+          </tr>`).join('');
+
+    return `
+    <div style="border-top:1px solid var(--color-border);margin-top:1rem;padding-top:1rem;">
+      <h4 style="margin:0 0 0.75rem;font-size:13px;color:var(--color-primary);">Histórico de Preços (€/h)</h4>
+      <table class="table" style="font-size:12px;margin-bottom:1rem;">
+        <thead><tr>
+          <th style="width:110px;">Data</th>
+          <th style="width:130px;">Custo/hora</th>
+          <th>Notas</th>
+          <th style="width:40px;"></th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+      <div class="form-grid" style="align-items:end;">
+        <div class="form-group">
+          <label class="form-label">Novo custo/hora (€) *</label>
+          <input id="proc-hist-custo" type="number" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data</label>
+          <input id="proc-hist-data" type="date" value="${today()}">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Notas</label>
+          <input id="proc-hist-notas" placeholder="Opcional (ex: revisão anual, novo contrato...)">
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
+          <button class="btn btn-primary" onclick="_registarPrecoProcesso(${processoId})">Registar preço</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function _registarPrecoProcesso(processoId) {
+    const custoRaw = document.getElementById('proc-hist-custo').value;
+    const data     = document.getElementById('proc-hist-data').value;
+    const notas    = document.getElementById('proc-hist-notas').value.trim() || null;
+
+    if (!custoRaw || isNaN(Number(custoRaw)) || Number(custoRaw) < 0) {
+        _erroToast('Indica um custo/hora válido.'); return;
+    }
+
+    const dados = { processo_id: processoId, custo_hora: Number(custoRaw), notas };
+    if (data) dados.data = data;
+
+    try {
+        const novo = await apiPost('/historico-precos-processos', dados);
+        DB.historico_precos_processos.push({
+            ...novo,
+            processoId: novo.processo_id,
+            custoHora:  Number(novo.custo_hora),
+            data:       novo.data?.slice(0, 10) ?? '',
+        });
+
+        // Atualizar custo_hora no processo e refletir no campo só-leitura
+        const atualizado = await apiPut(`/processos/${processoId}`, { custo_hora: Number(custoRaw) });
+        const idx = DB.processos.findIndex(x => x.id === processoId);
+        if (idx !== -1) DB.processos[idx] = atualizado;
+        const custoEl = document.getElementById('proc-custo_hora');
+        if (custoEl) custoEl.value = Number(custoRaw).toFixed(2);
+
+        _renderHistoricoProcesso(processoId);
+        _successToast('Preço registado com sucesso.');
+    } catch (err) {
+        _erroToast('Erro ao registar preço: ' + err.message);
+    }
+}
+
+async function _removerPrecoProcesso(hId, processoId) {
+    try {
+        await apiDelete(`/historico-precos-processos/${hId}`);
+        const idx = DB.historico_precos_processos.findIndex(h => h.id === hId);
+        if (idx !== -1) DB.historico_precos_processos.splice(idx, 1);
+        _renderHistoricoProcesso(processoId);
+        _successToast('Registo removido.');
+    } catch (err) {
+        _erroToast('Erro ao remover: ' + err.message);
     }
 }

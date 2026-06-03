@@ -24,6 +24,7 @@ const servicosPedidosRoutes = require('./routes/servicosPedidos');
 const processosRoutes = require('./routes/processos');
 const pecasProcessosRoutes = require('./routes/pecasProcessos');
 const historicoPrecosMateriaPrimaRoutes = require('./routes/historicoPrecosMateriaPrima');
+const historicoPrecosProcessosRoutes = require('./routes/historicoPrecosProcessos');
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use('/api/servicos-pedidos', servicosPedidosRoutes);
 app.use('/api/processos', processosRoutes);
 app.use('/api/pecas-processos', pecasProcessosRoutes);
 app.use('/api/historico-precos-mp', historicoPrecosMateriaPrimaRoutes);
+app.use('/api/historico-precos-processos', historicoPrecosProcessosRoutes);
 
 app.use(errorHandler);
 
