@@ -20,31 +20,47 @@ function renderCustos() {
     const totalFaturado = DB.ordens
         .filter((o) => o.estado === 'Concluída')
         .reduce((s, o) => s + _valorOT(o), 0);
-    const totalOrcamentado = DB.orcamentos
-        .filter(o => o.ativo)
-        .reduce((s, o) => s + Number(o.valor || 0), 0);
+    const totalPendente = DB.pedidos
+        .filter(p => p.estado_pedido === 'Pendente')
+        .reduce((s, p) => {
+            const orc = DB.orcamentos.find(o => o.pedidoId === p.id && o.ativo && o.estado === 'Aprovado')
+                     || DB.orcamentos.find(o => o.pedidoId === p.id && o.ativo);
+            return s + Number(orc?.valor || 0);
+        }, 0);
     const totalAprovados = DB.orcamentos
         .filter(o => o.estado === 'Aprovado')
         .reduce((s, o) => s + Number(o.valor || 0), 0);
+    const emProducao = DB.pedidos
+        .filter(p => p.estado_pedido === 'Produção')
+        .reduce((s, p) => {
+            const orc = DB.orcamentos.find(o => o.pedidoId === p.id && o.ativo && o.estado === 'Aprovado')
+                     || DB.orcamentos.find(o => o.pedidoId === p.id && o.ativo);
+            return s + Number(orc?.valor || 0);
+        }, 0);
 
     document.getElementById('page-custos').innerHTML = `
-    <div class="grid-metrics-4">
-      <div class="metric-card">
-        <div class="metric-label">Total orçamentado</div>
-        <div class="metric-value">${formatEuro(totalOrcamentado)}</div>
-        <div class="metric-sub">orçamentos ativos</div>
-      </div>
+    <div class="grid-metrics-5">
       <div class="metric-card">
         <div class="metric-label">Total Orc. Aprovados</div>
         <div class="metric-value">${formatEuro(totalAprovados)}</div>
         <div class="metric-sub">orçamentos aprovados</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" style="background:var(--color-amber-bg);color:var(--color-amber-fg);">
+        <div class="metric-label">Pendente</div>
+        <div class="metric-value">${formatEuro(totalPendente)}</div>
+        <div class="metric-sub">pedidos pendentes</div>
+      </div>
+      <div class="metric-card" style="background:var(--color-blue-bg);color:var(--color-blue-fg);">
+        <div class="metric-label">Em Produção</div>
+        <div class="metric-value">${formatEuro(emProducao)}</div>
+        <div class="metric-sub">pedidos em produção</div>
+      </div>
+      <div class="metric-card" style="background:var(--color-red-bg);color:var(--color-red-fg);">
         <div class="metric-label">Total OT a faturar</div>
         <div class="metric-value">${formatEuro(aFaturar)}</div>
         <div class="metric-sub">ordens com estado "Faturar"</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" style="background:var(--color-green-bg);color:var(--color-green-fg);">
         <div class="metric-label">Total faturado</div>
         <div class="metric-value">${formatEuro(totalFaturado)}</div>
         <div class="metric-sub">ordens concluídas</div>
