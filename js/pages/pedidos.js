@@ -49,7 +49,7 @@ function renderPedidos() {
       <table class="table">
         <thead>
           <tr>
-            <th style="width:90px">Ref.</th><th>Cliente</th><th>Breve Descrição</th><th>Nº Orçamento</th><th>Custo Líquido</th><th>Ordem de Compra</th><th>Ação</th><th style="width:90px">Estado</th>
+            <th style="width:90px">Ref.</th><th>Cliente</th><th>Breve Descrição</th><th>Nº Orçamento</th><th>Custo Líquido</th><th style="width:140px;white-space:nowrap;">Ordem de Compra</th><th>Ação</th><th style="width:90px">Estado</th>
           </tr>
         </thead>
         <tbody>${_pedidosRows(paginados)}</tbody>
@@ -495,7 +495,7 @@ function renderPedidoDetalhe() {
                   const mpPc = DB.materia_prima.find(m => m.id === pc.materiaPrimaId);
                   const pesoPc = _calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mpPc?.peso_esp);
                   return `<tr>
-            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.ref}</td>
+            <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><a href="#" onclick="showPecaDetalhe(${pc.id});return false;">${pc.ref}</a></td>
             <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.plano || '-'}</td>
             <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pc.denominacao || '-'}</td>
             <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_resolverMaterial(pc.materiaPrimaId)}</td>

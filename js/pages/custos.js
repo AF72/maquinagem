@@ -131,7 +131,7 @@ function _faturarRows() {
         const cl = resolveCliente(pd.clienteTipo, pd.clienteId);
         const valor = _valorOT(o);
         return `<tr>
-            <td><strong>${o.num}</strong></td>
+            <td><a href="#" onclick="verDetalheOT(${o.id});return false;" style="font-weight:600;">${o.num}</a></td>
             <td>${cl.nome}</td>
             <td>${cl.subtexto || '—'}</td>
             <td>${tipoBadge(pd.clienteTipo)}</td>
