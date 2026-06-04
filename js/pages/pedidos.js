@@ -82,16 +82,16 @@ function renderPedidos() {
       <table class="table">
         <thead>
           <tr>
-            <th style="width:90px">Ref.</th><th>Cliente</th><th>Breve Descrição</th><th>Nº Orçamento</th><th>Custo Líquido</th><th style="width:140px;white-space:nowrap;">Ordem de Compra</th><th>Ação</th><th style="width:90px">Estado</th>
+            <th style="width:90px">Ref.</th><th style="width:90px">Estado</th><th>Cliente</th><th>Breve Descrição</th><th>Nº Orçamento</th><th>Custo Líquido</th><th style="width:140px;white-space:nowrap;">Ordem de Compra</th><th>Ação</th>
           </tr>
           <tr>
             <th><input type="text" value="${_pedidosFiltros.ref}" placeholder="filtrar…" oninput="_aplicarFiltro('ref',this.value)" style="${iStyle}"></th>
+            <th></th>
             <th></th>
             <th><input type="text" value="${_pedidosFiltros.descricao}" placeholder="filtrar…" oninput="_aplicarFiltro('descricao',this.value)" style="${iStyle}"></th>
             <th><input type="text" value="${_pedidosFiltros.orcamento}" placeholder="filtrar…" oninput="_aplicarFiltro('orcamento',this.value)" style="${iStyle}"></th>
             <th></th>
             <th><input type="text" value="${_pedidosFiltros.ordemCompra}" placeholder="filtrar…" oninput="_aplicarFiltro('ordemCompra',this.value)" style="${iStyle}"></th>
-            <th></th>
             <th></th>
           </tr>
         </thead>
@@ -153,8 +153,8 @@ function _pedidosRows(pedidos) {
 
             return `<tr>
       <td>${p.ref}</td>
+      <td>${estadoBadge(p.estado_pedido)}</td>
       <td>${inlineFlex(avatarHtml(cl.nome, cl.avClass, true), label)}</td>
-
       <td>${dp.breveDescricao || '-'}</td>
       <td>${orcAprovado ? orcAprovado.ref : '-'}</td>
       <td>${orcAprovado && orcAprovado.valor ? formatEuro(orcAprovado.valor) : '-'}</td>
@@ -162,10 +162,9 @@ function _pedidosRows(pedidos) {
       <td style="vertical-align: middle;">
         <div style="display: flex; align-items: center; gap: 4px;">
           <button class="btn btn-ghost btn-sm" title="Ver pedido" onclick="showPedidoDetalhe(${p.id})">${ICON_VIEW}</button>
-          ${ot ? `<a href="#" onclick="verDetalheOT(${ot.id});return false;" class="badge badge-blue" style="text-decoration:none;cursor:pointer;">${ot.num}</a>` : canOT ? `<button class="btn btn-ghost btn-sm" title="Criar OT" onclick="criarOT(${p.id})">${ICON_CREATE_OT}</button>` : ''}
+          ${ot ? `<a href="#" onclick="verDetalheOT(${ot.id});return false;" class="badge ${{ 'Em curso': 'badge-blue', 'Faturar': 'badge-red', 'Concluída': 'badge-green', 'Cancelada': 'badge-black' }[ot.estado] || 'badge-gray'}" style="text-decoration:none;cursor:pointer;">${ot.num}</a>` : canOT ? `<button class="btn btn-ghost btn-sm" title="Criar OT" onclick="criarOT(${p.id})">${ICON_CREATE_OT}</button>` : ''}
         </div>
       </td>
-      <td>${estadoBadge(p.estado_pedido)}</td>
     </tr>`;
         })
         .join('');
