@@ -55,7 +55,7 @@ model Empresa {
 model Particular {
   id            Int      @id @default(autoincrement())
   nome          String   @db.VarChar(150)
-  cc            String?  @unique @db.VarChar(20)
+  nif           String?  @unique @db.VarChar(20)
   morada        String?  @db.VarChar(255)
   codigo_postal String?  @db.VarChar(20)
   localidade    String?  @db.VarChar(100)

@@ -103,7 +103,7 @@ function formNovoCliente() {
   <div id="form-particular-fields" style="display:none">
     <div class="form-grid">
       <div class="form-group"><label class="form-label">Nome completo</label><input id="f-nome-p" placeholder="Nome e apelido"></div>
-      <div class="form-group"><label class="form-label">Nº Cartão Cidadão</label><input id="f-cc" placeholder="XXXXXXXX"></div>
+      <div class="form-group"><label class="form-label">NIF</label><input id="f-nif" placeholder="XXXXXXXX"></div>
       <div class="form-group"><label class="form-label">Telefone</label><input id="f-tel-p" placeholder="9XX XXX XXX"></div>
       <div class="form-group"><label class="form-label">Email</label><input id="f-email-p" placeholder="nome@email.com"></div>
       <div class="form-group full"><label class="form-label">Morada</label><input id="f-morada-p" placeholder="Rua, nº"></div>
@@ -191,7 +191,7 @@ function formEditParticular(id) {
     return `
   <div class="form-grid">
     <div class="form-group"><label class="form-label">Nome completo</label><input id="f-nome-p" value="${p.nome}"></div>
-    <div class="form-group"><label class="form-label">Nº Cartão Cidadão</label><input id="f-cc" value="${p.cc}"></div>
+    <div class="form-group"><label class="form-label">NIF</label><input id="f-nif" value="${p.nif}"></div>
     <div class="form-group"><label class="form-label">Telefone</label><input id="f-tel-p" value="${p.tel}"></div>
     <div class="form-group"><label class="form-label">Email</label><input id="f-email-p" value="${p.email}"></div>
     <div class="form-group full"><label class="form-label">Morada</label><input id="f-morada-p" value="${p.morada}"></div>
@@ -420,7 +420,7 @@ function saveParticular() {
     _apiSave(async () => {
         await apiPost('/particulares', {
             nome,
-            cc:            document.getElementById('f-cc').value || undefined,
+            nif:           document.getElementById('f-nif').value || undefined,
             tel:           document.getElementById('f-tel-p').value || undefined,
             email:         document.getElementById('f-email-p').value || undefined,
             morada:        document.getElementById('f-morada-p').value || undefined,
@@ -473,7 +473,7 @@ function saveEditParticular(id) {
     _apiSave(async () => {
         await apiPut(`/particulares/${id}`, {
             nome:          document.getElementById('f-nome-p').value.trim(),
-            cc:            document.getElementById('f-cc').value,
+            nif:           document.getElementById('f-nif').value,
             tel:           document.getElementById('f-tel-p').value,
             email:         document.getElementById('f-email-p').value,
             morada:        document.getElementById('f-morada-p').value,
@@ -584,7 +584,7 @@ function formViewParticular(id) {
     return `
   <div class="form-grid">
     <div class="form-group"><label class="form-label">Nome completo</label><input value="${p.nome}" disabled></div>
-    <div class="form-group"><label class="form-label">Nº Cartão Cidadão</label><input value="${p.cc}" disabled></div>
+    <div class="form-group"><label class="form-label">NIF</label><input value="${p.nif}" disabled></div>
     <div class="form-group"><label class="form-label">Telefone</label><input value="${p.tel}" disabled></div>
     <div class="form-group"><label class="form-label">Email</label><input value="${p.email}" disabled></div>
     <div class="form-group full"><label class="form-label">Morada</label><input value="${p.morada}" disabled></div>

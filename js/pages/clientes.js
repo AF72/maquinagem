@@ -148,7 +148,7 @@ function _clientesRows() {
         <td><span class="badge badge-coral">Particular</span></td>
         <td>${p.tel || '—'}</td>
         <td>${p.email || '—'}</td>
-        <td>${p.cc || '—'}</td>
+        <td>${p.nif || '—'}</td>
         <td>${pedP}</td>
         <td>
           <button class="btn btn-ghost btn-sm" style="display:flex;align-items:center;gap:4px;" onclick="openModal('editParticular', ${p.id})">
