@@ -27,22 +27,55 @@ const ICON_CREATE_PRJ = `<svg id="Calculator_24" width="24" height="24" viewBox=
 
 let _pedidosPage = 1;
 const _PEDIDOS_PER_PAGE = 15;
+let _pedidosFiltros = { ref: '', descricao: '', orcamento: '', ordemCompra: '' };
+
+function _pedidosFiltrar(pedidos) {
+    const { ref, descricao, orcamento, ordemCompra } = _pedidosFiltros;
+    if (!ref && !descricao && !orcamento && !ordemCompra) return pedidos;
+    return pedidos.filter(p => {
+        const dp = getDadosPedido(p.dadosPedidoId);
+        const orc = DB.orcamentos.find(o => o.pedidoId === p.id && o.ativo && o.estado === 'Aprovado')
+                 || DB.orcamentos.find(o => o.pedidoId === p.id && o.ativo);
+        if (ref && !(p.ref || '').toLowerCase().includes(ref.toLowerCase())) return false;
+        if (descricao && !(dp?.breveDescricao || '').toLowerCase().includes(descricao.toLowerCase())) return false;
+        if (orcamento && !(orc?.ref || '').toLowerCase().includes(orcamento.toLowerCase())) return false;
+        if (ordemCompra && !(dp?.ordem_compra || '').toLowerCase().includes(ordemCompra.toLowerCase())) return false;
+        return true;
+    });
+}
+
+function _aplicarFiltro(campo, valor) {
+    _pedidosFiltros[campo] = valor;
+    _pedidosPage = 1;
+    const filtrados = _pedidosFiltrar(DB.pedidos);
+    const total = filtrados.length;
+    const totalPages = Math.max(1, Math.ceil(total / _PEDIDOS_PER_PAGE));
+    const paginados = filtrados.slice(0, _PEDIDOS_PER_PAGE);
+    const tbody = document.getElementById('pedidos-tbody');
+    if (tbody) tbody.innerHTML = _pedidosRows(paginados);
+    const countEl = document.querySelector('#page-pedidos .section-count');
+    if (countEl) countEl.textContent = `${total} pedidos`;
+    const paginacaoEl = document.getElementById('pedidos-paginacao');
+    if (paginacaoEl) paginacaoEl.innerHTML = totalPages > 1 ? _pedidosPaginacao(totalPages) : '';
+}
 
 /*
  * Renderiza a lista de pedidos
  */
 function renderPedidos() {
-    const total = DB.pedidos.length;
+    const filtrados = _pedidosFiltrar(DB.pedidos);
+    const total = filtrados.length;
     const totalPages = Math.max(1, Math.ceil(total / _PEDIDOS_PER_PAGE));
     if (_pedidosPage > totalPages) _pedidosPage = totalPages;
 
     const inicio = (_pedidosPage - 1) * _PEDIDOS_PER_PAGE;
-    const paginados = DB.pedidos.slice(inicio, inicio + _PEDIDOS_PER_PAGE);
+    const paginados = filtrados.slice(inicio, inicio + _PEDIDOS_PER_PAGE);
+    const iStyle = 'width:100%;box-sizing:border-box;font-size:12px;padding:5px 8px;border:1.5px solid var(--color-primary);border-radius:6px;background:#f0f5fa;color:var(--color-primary);outline:none;height:28px;';
 
     document.getElementById('page-pedidos').innerHTML = `
     <div class="section-header">
       <span class="section-count">${total} pedidos</span>
-      ${totalPages > 1 ? _pedidosPaginacao(totalPages) : ''}
+      <span id="pedidos-paginacao">${totalPages > 1 ? _pedidosPaginacao(totalPages) : ''}</span>
       <button class="btn btn-primary" onclick="showPedidoDetalhe(null)">+ Novo pedido</button>
     </div>
     <div class="full-card">
@@ -51,8 +84,18 @@ function renderPedidos() {
           <tr>
             <th style="width:90px">Ref.</th><th>Cliente</th><th>Breve Descrição</th><th>Nº Orçamento</th><th>Custo Líquido</th><th style="width:140px;white-space:nowrap;">Ordem de Compra</th><th>Ação</th><th style="width:90px">Estado</th>
           </tr>
+          <tr>
+            <th><input type="text" value="${_pedidosFiltros.ref}" placeholder="filtrar…" oninput="_aplicarFiltro('ref',this.value)" style="${iStyle}"></th>
+            <th></th>
+            <th><input type="text" value="${_pedidosFiltros.descricao}" placeholder="filtrar…" oninput="_aplicarFiltro('descricao',this.value)" style="${iStyle}"></th>
+            <th><input type="text" value="${_pedidosFiltros.orcamento}" placeholder="filtrar…" oninput="_aplicarFiltro('orcamento',this.value)" style="${iStyle}"></th>
+            <th></th>
+            <th><input type="text" value="${_pedidosFiltros.ordemCompra}" placeholder="filtrar…" oninput="_aplicarFiltro('ordemCompra',this.value)" style="${iStyle}"></th>
+            <th></th>
+            <th></th>
+          </tr>
         </thead>
-        <tbody>${_pedidosRows(paginados)}</tbody>
+        <tbody id="pedidos-tbody">${_pedidosRows(paginados)}</tbody>
       </table>
     </div>`;
 }
