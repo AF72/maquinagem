@@ -1,0 +1,442 @@
+/* ============================================================
+   components.css — Botões, cards, tabelas, badges, avatares
+   ============================================================ */
+
+/* ---------- Buttons ---------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px 14px;
+    font-size: 13px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background 0.1s;
+}
+.btn:hover {
+    background: var(--color-surface-alt);
+}
+.btn-primary {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+}
+.btn-primary:hover {
+    background: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+}
+.btn-sm {
+    padding: 3px 9px;
+    font-size: 11px;
+}
+.btn-ghost {
+    border-color: transparent;
+    background: transparent;
+}
+.btn-ghost-back {
+    border-color: #6c9251;
+    background: #6c9251;
+}
+.btn-ghost:hover {
+    background: var(--color-surface-alt);
+}
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: auto;
+}
+
+/* ---------- Metric cards ---------- */
+.metric-card {
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-md);
+    text-align: center;
+    padding: 1rem;
+}
+.metric-label {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-bottom: 4px;
+}
+.metric-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.1;
+}
+.metric-sub {
+    font-size: 11px;
+    color: var(--color-text-subtle);
+    margin-top: 3px;
+}
+
+/* ---------- Cards ---------- */
+.card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+}
+.full-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+}
+.card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* ---------- Tables ---------- */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.table th {
+    text-align: left;
+    padding: 6px 8px;
+    color: var(--color-primary-dark);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+}
+.table td {
+    padding: 8px 8px;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border-light);
+    vertical-align: middle;
+}
+.table tr:last-child td {
+    border-bottom: none;
+}
+.table tbody tr:hover td {
+    background: var(--color-surface-alt);
+}
+.table td input,
+.table td select {
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 11px;
+    width: 100%;
+    box-sizing: border-box;
+    color: var(--color-text);
+    font-family: inherit;
+}
+.table td input:not(:disabled):not([readonly]),
+.table td select:not(:disabled) {
+    border-color: var(--color-border);
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    padding: 3px 6px;
+}
+.table td input:disabled,
+.table td select:disabled {
+    cursor: default;
+    opacity: 1;
+    -webkit-text-fill-color: var(--color-text);
+}
+
+/* Row variants */
+.row-empresa {
+    background: var(--color-surface-alt);
+}
+.row-empresa td {
+    font-weight: 500;
+}
+.row-colab td:first-child {
+    padding-left: 24px;
+}
+
+/* ---------- Badges ---------- */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    width: 80px;
+    height: 20px;
+    text-align: center;
+    vertical-align: middle;
+}
+.badge-green {
+    background: var(--color-green-bg);
+    color: var(--color-green-fg);
+}
+.badge-amber {
+    background: var(--color-amber-bg);
+    color: var(--color-amber-fg);
+}
+.badge-red {
+    background: var(--color-red-bg);
+    color: var(--color-red-fg);
+}
+.badge-blue {
+    background: var(--color-blue-bg);
+    color: var(--color-blue-fg);
+}
+.badge-teal {
+    background: var(--color-teal-bg);
+    color: var(--color-teal-fg);
+}
+.badge-coral {
+    background: var(--color-coral-bg);
+    color: var(--color-coral-fg);
+}
+.badge-gray {
+    background: var(--color-gray-bg);
+    color: var(--color-gray-fg);
+}
+.badge-black {
+    background: var(--color-black-bg);
+    color: var(--color-black-fg);
+}
+.badge-orange {
+    background: #fde8c8;
+    color: #c05c00;
+}
+
+/* ---------- Avatars ---------- */
+.avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.av-empresa {
+    background: #c0dd97;
+    color: #27500a;
+}
+.av-colab {
+    background: #b5d4f4;
+    color: #0c447c;
+}
+.av-particular {
+    background: #f5c4b3;
+    color: #712b13;
+}
+.av-sm {
+    width: 20px;
+    height: 20px;
+    font-size: 9px;
+}
+
+/* ---------- Inline-flex helper ---------- */
+.inline-flex {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ---------- Filter tabs ---------- */
+.filter-tabs {
+    display: flex;
+    gap: 4px;
+}
+.tab {
+    padding: 5px 12px;
+    font-size: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition:
+        background 0.1s,
+        color 0.1s;
+}
+.tab:hover {
+    background: var(--color-surface-alt);
+}
+.tab.active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+}
+
+/* ---------- Expand button ---------- */
+.expand-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    padding: 0 4px;
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* ---------- Type toggle (modal) ---------- */
+.type-toggle {
+    display: flex;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+}
+.type-btn {
+    flex: 1;
+    padding: 8px;
+    font-size: 13px;
+    border: none;
+    background: var(--color-surface-alt);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition:
+        background 0.1s,
+        color 0.1s;
+}
+.type-btn.active {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+/* ---------- Referência de Peça ---------- */
+.ref-input-group {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+.ref-prefix-fixed {
+    padding: 6px 10px;
+    background: var(--color-surface-alt);
+    border-right: 1px solid var(--color-border);
+    font-family: monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+}
+.ref-sep-fixed {
+    padding: 0 4px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-family: monospace;
+    display: flex;
+    align-items: center;
+}
+.ref-segment-input {
+    border: none;
+    outline: none;
+    padding: 6px 6px;
+    font-size: 13px;
+    font-family: monospace;
+    text-align: center;
+    background: transparent;
+    width: 3.5ch;
+}
+.ref-segment-nn {
+    width: 2.5ch;
+}
+.ref-segment-input:focus {
+    background: var(--color-surface);
+}
+.form-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+/* ---------- Overlay pesquisa de peças ---------- */
+.peca-search-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.peca-search-panel {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    width: min(720px, 95vw);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.peca-search-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+.peca-search-body {
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+    flex: 1;
+}
+.peca-search-input {
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 7px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    box-sizing: border-box;
+    outline: none;
+}
+.peca-search-input:focus {
+    border-color: var(--color-primary);
+}
+
+/* ---------- Overlay ver peça ---------- */
+.vpc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 24px;
+    margin-bottom: 1rem;
+}
+.vpc-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.vpc-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+}
+.vpc-value {
+    font-size: 13px;
+    color: var(--color-text);
+}
+.vpc-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-primary);
+    margin: 1rem 0 0.5rem;
+}
