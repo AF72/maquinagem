@@ -41,7 +41,7 @@ export default function Login() {
         <h1 style={{ textAlign: 'center', fontSize: 22, fontWeight: 700, margin: '0 0 .25rem', color: 'var(--color-text)' }}>MaquinaGest</h1>
         <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-text-muted)', marginBottom: '1.75rem' }}>Gestão de Produção</p>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
             <label className="form-label">Email</label>
             <input
