@@ -1,8 +1,9 @@
 {
-  "name": "maquinagem-frontend",
+  "name": "maquinagest-frontend",
   "version": "1.0.0",
   "scripts": {
-    "start": "serve -l $PORT ."
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "start": "npx serve -s frontend/dist -l $PORT"
   },
   "dependencies": {
     "serve": "^14.2.0"

@@ -1,0 +1,6 @@
+[build]
+buildCommand = "npm --prefix frontend install && npm --prefix frontend run build"
+
+[deploy]
+startCommand = "npx serve -s frontend/dist -l $PORT"
+restartPolicyType = "on_failure"
