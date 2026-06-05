@@ -147,7 +147,10 @@ function _htmlPecasDoPedido(pedidoId, orcamentoId, editavel, podeEliminar = fals
         const subtotalDisplay = subtotal !== '' ? formatEuro(subtotal) : '—';
 
         const eliminarCell = podeEliminar
-            ? `<td>${item ? `<button class="btn btn-ghost btn-sm" title="Eliminar peça do orçamento" onclick="eliminarItemOrcamento(${orcamentoId}, ${item.id})">✕</button>` : ''}</td>`
+            ? `<td>${item?.id
+                ? `<button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" title="Eliminar peça do orçamento" onclick="eliminarItemOrcamento(${orcamentoId}, ${item.id})">✕</button>`
+                : `<button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" title="Remover peça" onclick="this.closest('tr').remove();_calcTotalOrcamento()">✕</button>`
+              }</td>`
             : '';
 
         // Stock e processos
@@ -259,9 +262,12 @@ function _htmlServicosDoPedido(orcamentoId, editavel, pedidoId, podeEliminar = f
         const precoCell = editavel
             ? `<input type="number" min="0" step="0.01" class="orc-sv-preco" data-servico-id="${sv.id}" value="${Number(item.precoUnitario).toFixed(2)}" oninput="calcOrcamentoServico(this)">`
             : formatEuro(item.precoUnitario);
-        const eliminarCell = podeEliminar && item.id
-            ? `<td><button class="btn btn-ghost btn-sm" title="Eliminar serviço do orçamento" onclick="eliminarItemOrcamento(${orcamentoId}, ${item.id})">✕</button></td>`
-            : (podeEliminar ? '<td></td>' : '');
+        const eliminarCell = podeEliminar
+            ? `<td>${item?.id
+                ? `<button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" title="Eliminar serviço do orçamento" onclick="eliminarItemOrcamento(${orcamentoId}, ${item.id})">✕</button>`
+                : `<button class="btn btn-ghost btn-sm" style="color:var(--color-danger,#c0392b);" title="Remover serviço" onclick="this.closest('tr').remove();_calcTotalOrcamento()">✕</button>`
+              }</td>`
+            : '';
         return `<tr data-servico-id="${sv.id}">
             <td><strong>${sv.ref}</strong></td>
             <td>${sv.tipo_servico}</td>
@@ -391,7 +397,7 @@ function renderOrcamentoDetalhe() {
         .join('');
 
     const bloqueado     = !isNew && !_isOrcamentoEditMode;
-    const podeEliminar  = !isNew && !orc.ativo && orc.estado === 'Pendente';
+    const podeEliminar  = isNew || (!bloqueado && !(orc?.ativo && orc?.estado === 'Aprovado'));
     const d          = bloqueado ? 'disabled' : '';
 
     const formHtml = `

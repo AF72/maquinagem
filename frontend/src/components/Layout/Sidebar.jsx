@@ -1,0 +1,137 @@
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+
+const NAV_MAIN = [
+  {
+    path: '/dashboard', label: 'Dashboard',
+    icon: <svg className="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="1" width="6" height="6" rx="1" fill="orange"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1" fill="orange"/></svg>,
+  },
+  {
+    path: '/clientes', label: 'Clientes',
+    icon: <svg className="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-2.8 2.2-5 5-5"/><circle cx="12" cy="10" r="3.5"/><path d="M12 8.5v3M10.5 10h3"/></svg>,
+  },
+  {
+    path: '/pedidos', label: 'Pedidos',
+    icon: <svg className="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 2h10l1 3H2L3 2z"/><rect x="1" y="5" width="14" height="9" rx="1"/><path d="M6 9h4M6 12h2"/></svg>,
+  },
+  {
+    path: '/orcamentos', label: 'Orçamentos',
+    icon: <svg className="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 3h12M2 8h12M2 13h8"/><rect x="1" y="1" width="14" height="14" rx="1"/></svg>,
+  },
+  {
+    path: '/ordens', label: 'Ordens de Trabalho',
+    icon: <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></svg>,
+  },
+  {
+    path: '/pecas', label: 'Peças',
+    icon: <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 10.27 7 3.34"/><path d="m11 13.73-4 6.93"/><path d="M12 22v-2"/><path d="M12 2v2"/><path d="M14 12h8"/><path d="m17 20.66-1-1.73"/><path d="m17 3.34-1 1.73"/><path d="M2 12h2"/><path d="m20.66 17-1.73-1"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m3.34 7 1.73 1"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="12" r="8"/></svg>,
+  },
+  {
+    path: '/custos', label: 'Custos',
+    icon: <svg className="nav-icon" viewBox="0 0 463 463" xmlns="http://www.w3.org/2000/svg"><path d="M395.195,67.805C351.471,24.08,293.336,0,231.5,0S111.529,24.08,67.805,67.805S0,169.664,0,231.5s24.08,119.971,67.805,163.695S169.664,463,231.5,463s119.971-24.08,163.695-67.805S463,293.336,463,231.5S438.92,111.529,395.195,67.805z M384.589,384.589C343.697,425.48,289.329,448,231.5,448s-112.197-22.52-153.089-63.411S15,289.329,15,231.5S37.52,119.303,78.411,78.411S173.671,15,231.5,15s112.197,22.52,153.089,63.411S448,173.671,448,231.5S425.48,343.697,384.589,384.589z"/><path d="m340.393,315.771c-3.14-2.699-7.875-2.346-10.577,0.794-23.749,27.604-57.917,43.435-93.745,43.435-61.154,0-112.19-45.329-122.968-105h190.397c4.143,0 7.5-3.357 7.5-7.5s-3.357-7.5-7.5-7.5h-192.219c-0.18-2.811-0.281-5.643-0.281-8.5s0.101-5.689 0.281-8.5h192.219c4.143,0 7.5-3.357 7.5-7.5s-3.357-7.5-7.5-7.5h-190.397c10.778-59.671 61.814-105 122.968-105 35.825,0 69.992,15.829 93.74,43.43 2.702,3.14 7.438,3.494 10.577,0.794 3.14-2.702 3.495-7.438 0.794-10.577-26.6-30.917-64.911-48.647-105.111-48.647-69.424,0-127.203,52.015-138.183,120h-10.388c-4.143,0-7.5,3.357-7.5,7.5s3.357,7.5 7.5,7.5h8.753c-0.161,2.813-0.253,5.646-0.253,8.5s0.091,5.687 0.253,8.5h-8.753c-4.143,0-7.5,3.357-7.5,7.5s3.357,7.5 7.5,7.5h10.389c10.979,67.985 68.759,120 138.183,120 40.201,0 78.515-17.732 105.115-48.651 2.701-3.141 2.345-7.876-0.794-10.578z"/></svg>,
+  },
+  {
+    path: '/fornecedores', label: 'Fornecedores',
+    icon: <svg className="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="5" width="9" height="9" rx="1"/><path d="M4 5V3a2 2 0 0 1 4 0v2"/><path d="M10 8h4l1 6H9"/></svg>,
+  },
+];
+
+const NAV_CONFIG = [
+  {
+    path: '/colaboradores-dm', label: 'Colaboradores DM',
+    icon: <svg className="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="5" cy="5" r="2.5"/><path d="M1 13c0-2.2 1.8-4 4-4s4 1.8 4 4"/><circle cx="12" cy="5" r="2.5"/><path d="M10 13c0-2.2 1.8-4 4-4"/></svg>,
+  },
+  {
+    path: '/materia-prima', label: 'Matéria Prima',
+    icon: <svg className="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><ellipse cx="8" cy="4" rx="6" ry="2"/><path d="M2 4v3c0 1.1 2.7 2 6 2s6-.9 6-2V4"/><path d="M2 7v3c0 1.1 2.7 2 6 2s6-.9 6-2V7"/></svg>,
+  },
+  {
+    path: '/processos', label: 'Processos',
+    icon: <svg className="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4"/></svg>,
+  },
+];
+
+function NavItem({ path, label, icon, sub = false }) {
+  return (
+    <NavLink
+      to={path}
+      className={({ isActive }) =>
+        `nav-item${sub ? ' nav-sub-item' : ''}${isActive ? ' active' : ''}`
+      }
+    >
+      {icon}
+      {label}
+    </NavLink>
+  );
+}
+
+export default function Sidebar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const [configOpen, setConfigOpen] = useState(
+    () => localStorage.getItem('nav-group-config') === '1'
+  );
+
+  function handleLogout() {
+    logout();
+    navigate('/login');
+  }
+
+  function toggleConfig() {
+    const next = !configOpen;
+    setConfigOpen(next);
+    localStorage.setItem('nav-group-config', next ? '1' : '0');
+  }
+
+  return (
+    <aside className="sidebar">
+      <div className="logo">
+        <div className="logo-title">
+          <img className="logo-img" src="/images/LOGO COR_A.png" alt="MaquinaGest" />
+        </div>
+        <div className="logo-sub">Gestão de Produção</div>
+      </div>
+
+      <nav>
+        {NAV_MAIN.map(item => (
+          <NavItem key={item.path} {...item} />
+        ))}
+
+        <div
+          className={`nav-group-header${configOpen ? ' open' : ''}`}
+          onClick={toggleConfig}
+        >
+          <svg className="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="8" cy="8" r="2.5"/>
+            <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.2 3.2l1 1M11.8 11.8l1 1M3.2 12.8l1-1M11.8 4.2l1-1"/>
+          </svg>
+          Configurações
+          <svg className="nav-group-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M6 4l4 4-4 4"/>
+          </svg>
+        </div>
+
+        <div className={`nav-group-items${configOpen ? ' open' : ''}`}>
+          {NAV_CONFIG.map(item => (
+            <NavItem key={item.path} {...item} sub />
+          ))}
+        </div>
+      </nav>
+
+      <div style={{ marginTop: 'auto' }}>
+        <div className="sidebar-user">{user?.nome || ''}</div>
+        <div className="sidebar-user-role">
+          {user?.role === 'admin' ? 'Administrador' : 'Operador'}
+        </div>
+        <button className="sidebar-logout" onClick={handleLogout}>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 16, height: 16 }}>
+            <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M10 11l4-4-4-4M14 8H6"/>
+          </svg>
+          Sair
+        </button>
+      </div>
+    </aside>
+  );
+}

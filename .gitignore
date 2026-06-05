@@ -1,1 +1,4 @@
 backup.sql
+frontend/dist/
+frontend/node_modules/
+.DS_Store
