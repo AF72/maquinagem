@@ -523,10 +523,10 @@ function PedidoDetalhe({ pedidoId: rawId }) {
   async function guardarHistoricoPreco(pecaId, campo, valor) {
     const hist = historico.find(h => h.peca_id === pecaId && h.pedido_id === pedidoId);
     const payload = {
-      peca_id: pecaId,
-      pedido_id: pedidoId,
-      fornecedor_id: hist?.fornecedor_id ?? null,
-      preco_compra:  hist?.preco_compra  ?? null,
+      peca_id:      pecaId,
+      pedido_id:    pedidoId,
+      fornecedor_id: hist?.fornecedor_id != null ? Number(hist.fornecedor_id) : null,
+      preco_compra:  hist?.preco_compra  != null ? parseFloat(hist.preco_compra) : null,
       [campo]: campo === 'fornecedor_id' ? (valor ? Number(valor) : null) : (parseFloat(valor) || null),
     };
     try {
