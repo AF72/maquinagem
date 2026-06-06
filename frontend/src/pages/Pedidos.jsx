@@ -519,6 +519,26 @@ function PedidoDetalhe({ pedidoId: rawId }) {
     } catch (err) { toast.error('Erro: ' + err.message); }
   }
 
+  async function guardarHistoricoPreco(pecaId, campo, valor) {
+    const hist = historico.find(h => h.peca_id === pecaId && h.pedido_id === pedidoId);
+    const payload = {
+      peca_id: pecaId,
+      pedido_id: pedidoId,
+      fornecedor_id: hist?.fornecedor_id ?? null,
+      preco_compra:  hist?.preco_compra  ?? null,
+      [campo]: campo === 'fornecedor_id' ? (valor ? Number(valor) : null) : (parseFloat(valor) || null),
+    };
+    try {
+      const updated = await apiPost('/historico-precos', payload);
+      setHistorico(prev => {
+        const existe = prev.find(h => h.peca_id === pecaId && h.pedido_id === pedidoId);
+        return existe
+          ? prev.map(h => (h.peca_id === pecaId && h.pedido_id === pedidoId) ? updated : h)
+          : [...prev, updated];
+      });
+    } catch (err) { toast.error('Erro ao guardar: ' + err.message); }
+  }
+
   async function adicionarNota() {
     if (!notaCriadoPor) { toast.error('Selecione quem cria a nota.'); return; }
     if (!notaTexto.trim()) { toast.error('Escreva o texto da nota.'); return; }
@@ -707,13 +727,13 @@ function PedidoDetalhe({ pedidoId: rawId }) {
                             <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dimParts.join(' · ') || '—'}</td>
                             <td>{peso || '—'}</td>
                             <td>
-                              <select style={{ fontSize: 11, width: '100%', boxSizing: 'border-box' }} disabled={!editMode} defaultValue={hist?.fornecedor_id || ''} onChange={e => guardarSpFornecedor(hist?.id, e.target.value)}>
+                              <select style={{ fontSize: 11, width: '100%', boxSizing: 'border-box' }} disabled={!editMode} defaultValue={hist?.fornecedor_id || ''} onChange={e => guardarHistoricoPreco(pc.id, 'fornecedor_id', e.target.value)}>
                                 <option value="">DM</option>
                                 {fornecedores.map(f => <option key={f.id} value={f.id}>{f.nome}</option>)}
                               </select>
                             </td>
                             <td>
-                              <input type="number" step="0.01" min="0" defaultValue={hist?.preco_compra != null ? Number(hist.preco_compra).toFixed(2) : ''} style={{ fontSize: 11, width: '100%', boxSizing: 'border-box' }} disabled={!editMode} onBlur={e => { if (hist) guardarSpCampo(hist.id, 'preco_compra', e.target.value); }} />
+                              <input type="number" step="0.01" min="0" defaultValue={hist?.preco_compra != null ? Number(hist.preco_compra).toFixed(2) : ''} style={{ fontSize: 11, width: '100%', boxSizing: 'border-box' }} disabled={!editMode} onBlur={e => { if (e.target.value !== '') guardarHistoricoPreco(pc.id, 'preco_compra', e.target.value); }} />
                             </td>
                             <td style={{ display: 'flex', gap: 4 }}>
                               <Link to={`/pecas/${pc.id}`} className="btn btn-ghost btn-sm" title="Ver peça"><IconView /></Link>
