@@ -354,6 +354,10 @@ function PecaDetalhe({ pecaId: rawId }) {
       if (isNew) {
         const novo = await apiPost('/pecas', dados);
         useStore.setState(s => ({ pecas: [...s.pecas, { ...novo, materiaPrimaId: novo.materia_prima_id, precoMpSnapshot: novo.preco_mp_snapshot != null ? Number(novo.preco_mp_snapshot) : null }] }));
+        if (fromPedidoId) {
+          const pps = await apiFetch('/pecas-pedidos');
+          useStore.setState({ pecas_pedidos: pps.map(j => ({ ...j, pecaId: j.peca_id, pedidoId: j.pedido_id })) });
+        }
         toast.success('Peça criada com sucesso.');
         if (fromPedidoId) navigate(`/pedidos/${fromPedidoId}`);
         else navigate('/pecas');

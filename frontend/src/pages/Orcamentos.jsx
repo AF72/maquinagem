@@ -185,19 +185,19 @@ function OrcamentosDetalhe({ orcId: rawId }) {
   }
 
   const total = useMemo(() => {
-    const tp = pecaItems.reduce((s, i) => s + i.quantidade * i.precoUnitario, 0);
-    const ts = svItems.reduce((s, i) => s + i.quantidade * i.precoUnitario, 0);
+    const tp = pecaItems.reduce((s, i) => s + (parseFloat(i.quantidade) || 0) * (parseFloat(i.precoUnitario) || 0), 0);
+    const ts = svItems.reduce((s, i) => s + (parseFloat(i.quantidade) || 0) * (parseFloat(i.precoUnitario) || 0), 0);
     return tp + ts;
   }, [pecaItems, svItems]);
 
   function setPecaItem(pecaId, field, value) {
-    setPecaItems(items => items.map(i => i.pecaId === pecaId ? { ...i, [field]: Number(value) || 0 } : i));
+    setPecaItems(items => items.map(i => i.pecaId === pecaId ? { ...i, [field]: value } : i));
   }
   function removePecaItem(pecaId) {
     setPecaItems(items => items.filter(i => i.pecaId !== pecaId));
   }
   function setSvItem(servicoId, field, value) {
-    setSvItems(items => items.map(i => i.servicoId === servicoId ? { ...i, [field]: Number(value) || 0 } : i));
+    setSvItems(items => items.map(i => i.servicoId === servicoId ? { ...i, [field]: value } : i));
   }
   function removeSvItem(servicoId) {
     setSvItems(items => items.filter(i => i.servicoId !== servicoId));
@@ -218,8 +218,8 @@ function OrcamentosDetalhe({ orcId: rawId }) {
       else       { savedOrc = await apiPut(`/orcamentos/${orcId}`, dados); }
 
       const itens = [
-        ...pecaItems.filter(i => i.precoUnitario > 0 || i.quantidade > 0).map(i => ({ item_tipo: 'peca', peca_id: i.pecaId, quantidade: i.quantidade || 1, valor_unitario: i.precoUnitario })),
-        ...svItems.map(i => ({ item_tipo: 'servico', servico_id: i.servicoId, quantidade: i.quantidade || 1, valor_unitario: i.precoUnitario })),
+        ...pecaItems.filter(i => (parseFloat(i.precoUnitario) || 0) > 0 || (parseFloat(i.quantidade) || 0) > 0).map(i => ({ item_tipo: 'peca', peca_id: i.pecaId, quantidade: parseFloat(i.quantidade) || 1, valor_unitario: parseFloat(i.precoUnitario) || 0 })),
+        ...svItems.map(i => ({ item_tipo: 'servico', servico_id: i.servicoId, quantidade: parseFloat(i.quantidade) || 1, valor_unitario: parseFloat(i.precoUnitario) || 0 })),
       ];
       await apiPost(`/orcamentos/${savedOrc.id}/itens`, itens);
 
@@ -348,7 +348,7 @@ function OrcamentosDetalhe({ orcId: rawId }) {
             <tbody>
               {pecasDoPedido.map(pc => {
                 const item = pecaItems.find(i => i.pecaId === pc.id) || { pecaId: pc.id, quantidade: 0, precoUnitario: 0 };
-                const subtotal = item.quantidade * item.precoUnitario;
+                const subtotal = (parseFloat(item.quantidade) || 0) * (parseFloat(item.precoUnitario) || 0);
                 const mp = materia_prima.find(m => m.id === pc.materiaPrimaId);
                 const pesoKg = parseFloat(calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mp?.peso_esp)) || 0;
                 const snap = pc.precoMpSnapshot;
@@ -435,14 +435,14 @@ function OrcamentosDetalhe({ orcId: rawId }) {
               {svItems.map(item => {
                 const sv = servicos.find(s => s.id === item.servicoId);
                 if (!sv) return null;
-                const subtotal = item.quantidade * item.precoUnitario;
+                const subtotal = (parseFloat(item.quantidade) || 0) * (parseFloat(item.precoUnitario) || 0);
                 return (
                   <tr key={item.servicoId}>
                     <td><strong>{sv.ref}</strong></td>
                     <td>{sv.tipo_servico}</td>
                     <td>{editMode ? <input type="number" min="0.01" step="0.01" value={item.quantidade} onChange={e => setSvItem(item.servicoId, 'quantidade', e.target.value)} style={{ width: 80 }} /> : item.quantidade}</td>
                     <td>{sv.unidade || '—'}</td>
-                    <td>{editMode ? <input type="number" min="0" step="0.01" value={Number(item.precoUnitario).toFixed(2)} onChange={e => setSvItem(item.servicoId, 'precoUnitario', e.target.value)} style={{ width: 90 }} /> : formatEuro(item.precoUnitario)}</td>
+                    <td>{editMode ? <input type="number" min="0" step="0.01" value={item.precoUnitario} onChange={e => setSvItem(item.servicoId, 'precoUnitario', e.target.value)} style={{ width: 90 }} /> : formatEuro(item.precoUnitario)}</td>
                     <td style={{ fontWeight: 600 }}>{formatEuro(subtotal)}</td>
                     {podeEliminar && <td><button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-danger,#c0392b)' }} onClick={() => removeSvItem(item.servicoId)}>✕</button></td>}
                   </tr>

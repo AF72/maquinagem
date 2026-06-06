@@ -671,8 +671,8 @@ function PedidoDetalhe({ pedidoId: rawId }) {
             <>
               <div className="form-group full"><h4 style={{ margin: '1.5rem 0 0.25rem', color: 'var(--color-primary)' }}>Peças</h4><hr style={{ border: 'none', borderTop: '2px solid var(--color-primary)', margin: '0 0 0.5rem' }} /></div>
               <div style={{ gridColumn: '1/-1', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                <button className="btn btn-primary" disabled={isCancelado || ro} onClick={() => navigate(`/pecas/novo`, { state: { fromPedidoId: pedidoId } })}>+ Nova Peça</button>
-                <button className="btn" disabled={isCancelado || ro} onClick={() => setPesquisaPecasOpen(true)}>Pesquisar peças</button>
+                <button className="btn btn-primary" disabled={isCancelado} onClick={() => navigate(`/pecas/novo`, { state: { fromPedidoId: pedidoId } })}>+ Nova Peça</button>
+                <button className="btn" disabled={isCancelado} onClick={() => setPesquisaPecasOpen(true)}>Pesquisar peças</button>
               </div>
               {pecasList.length > 0 && (
                 <div className="form-group full">
