@@ -31,17 +31,14 @@ PASSO 1 — Iniciar o servidor backend (Terminal 1):
 
    Deves ver:  "Servidor a correr na porta 3000"
 
-PASSO 2 — Servir o frontend (Terminal 2):
-      npx serve .
+PASSO 2 — Iniciar o frontend React (Terminal 2):
+      cd frontend
+      npm run dev
 
-   Ou em alternativa:
-      python3 -m http.server <-- usei este e funcionou
+   Deves ver:  "Local: http://localhost:5173/"
 
 PASSO 3 — Abrir no browser:
-   http://localhost:3000   (se usares o serve)
-   http://localhost:8000   (se usares o python). <--- usei este
-
-   Nota: confirma a porta que o "serve" indica no terminal.
+   http://localhost:5173
 
 
 VERIFICAR SE ESTÁ TUDO OK

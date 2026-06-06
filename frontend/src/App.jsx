@@ -25,16 +25,13 @@ function ProtectedRoutes() {
         <Route path="dashboard"       element={<Dashboard />} />
         <Route path="clientes"        element={<Clientes />} />
         <Route path="pedidos"          element={<Pedidos />} />
-        <Route path="pedidos/novo"    element={<Pedidos />} />
         <Route path="pedidos/:id"     element={<Pedidos />} />
         <Route path="orcamentos"      element={<Orcamentos />} />
-        <Route path="orcamentos/novo" element={<Orcamentos />} />
         <Route path="orcamentos/:id"  element={<Orcamentos />} />
         <Route path="ordens"          element={<Ordens />} />
         <Route path="ordens/:id"      element={<Ordens />} />
         <Route path="custos"          element={<Custos />} />
         <Route path="pecas"           element={<Pecas />} />
-        <Route path="pecas/novo"      element={<Pecas />} />
         <Route path="pecas/:id"       element={<Pecas />} />
         <Route path="materia-prima"         element={<MateriaPrima />} />
         <Route path="materia-prima/:id"     element={<MateriaPrima />} />
