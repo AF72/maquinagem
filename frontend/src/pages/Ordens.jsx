@@ -309,8 +309,13 @@ function OrdensDetalhe({ otId }) {
                     if (!pc) return null;
                     const mp = materia_prima.find(m => m.id === pc.materiaPrimaId);
                     const pesoKg = parseFloat(calcPeso(pc.forma, pc.comprimento, pc.largura, pc.altura, pc.diametro_ext, pc.diametro_int, mp?.peso_esp)) || 0;
-                    const custoStock = (pesoKg && pc.precoMpSnapshot) ? pesoKg * pc.precoMpSnapshot : null;
+                    const snap = pc.precoMpSnapshot;
+                    const custoStock = (pesoKg && snap) ? pesoKg * snap : null;
+                    const matLabel = mp ? ((mp.ref_wnr && mp.ref_wnr !== '-') ? `${mp.ref_wnr} – ${mp.ref_din}` : mp.ref_din) : '—';
                     const plano = pecas_processos.filter(pp => pp.pecaId === pc.id).sort((a, b) => a.ordem - b.ordem);
+                    const linhasProc = plano.map(pp => { const proc = processos.find(p => p.id === pp.processoId) || pp.processo || {}; return { pp, proc, custoEst: calcCustoEstimado(pp, proc) }; });
+                    const totalCustoPeca = linhasProc.reduce((s, { custoEst }) => s + (custoEst ?? 0), 0) + (custoStock ?? 0);
+                    const temCusto = linhasProc.some(({ custoEst }) => custoEst != null) || custoStock != null;
 
                     return (
                       <>
@@ -325,6 +330,11 @@ function OrdensDetalhe({ otId }) {
                           <td style={{ textAlign: 'center' }}>{item.quantidade}</td>
                           <td style={{ textAlign: 'right' }}>{formatEuro(item.precoUnitario)}</td>
                         </tr>
+                        <tr key={`stock-${item.id}`} style={{ background: 'var(--color-surface-alt,#f8f8f6)' }}>
+                          <td colSpan={9} style={{ padding: '0.3rem 1rem 0.3rem 1.5rem', fontSize: 11, color: 'var(--color-text-muted)', borderTop: 'none' }}>
+                            <strong>Material:</strong> {matLabel} &nbsp;|&nbsp; <strong>Peso:</strong> {pesoKg ? `${pesoKg.toFixed(4)} kg` : '—'} &nbsp;|&nbsp; <strong>Preço MP:</strong> {snap ? `${parseFloat(snap).toFixed(2)} €/kg` : '—'} &nbsp;|&nbsp; <strong>Custo stock:</strong> {custoStock != null ? <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{formatEuro(custoStock)}</span> : '—'}
+                          </td>
+                        </tr>
                         {plano.length > 0 && (
                           <tr key={`plan-${item.id}`}>
                             <td colSpan={9} style={{ padding: '0.4rem 1rem 0.75rem', background: 'var(--color-surface-alt,#f8f8f6)' }}>
@@ -338,21 +348,23 @@ function OrdensDetalhe({ otId }) {
                                   <th style={{ padding: '2px 8px', width: 100, textAlign: 'right' }}>Custo Est.</th>
                                 </tr></thead>
                                 <tbody>
-                                  {plano.map(pp => {
-                                    const proc = processos.find(p => p.id === pp.processoId) || pp.processo || {};
-                                    const custoEst = calcCustoEstimado(pp, proc);
-                                    return (
-                                      <tr key={pp.id}>
-                                        <td style={{ padding: '3px 8px', textAlign: 'center' }}>{pp.ordem + 1}</td>
-                                        <td style={{ padding: '3px 8px', fontWeight: 600 }}>{proc.ref || '—'}</td>
-                                        <td style={{ padding: '3px 8px' }}>{proc.descricao || '—'}</td>
-                                        <td style={{ padding: '3px 8px' }}>{proc.tipo || '—'}</td>
-                                        <td style={{ padding: '3px 8px' }}>{pp.tempoEstimado != null ? `${pp.tempoEstimado} ${pp.unidade_tempo}` : '—'}</td>
-                                        <td style={{ padding: '3px 8px', textAlign: 'right' }}>{custoEst != null ? formatEuro(custoEst) : '—'}</td>
-                                      </tr>
-                                    );
-                                  })}
+                                  {linhasProc.map(({ pp, proc, custoEst }) => (
+                                    <tr key={pp.id}>
+                                      <td style={{ padding: '3px 8px', textAlign: 'center' }}>{pp.ordem + 1}</td>
+                                      <td style={{ padding: '3px 8px', fontWeight: 600 }}>{proc.ref || '—'}</td>
+                                      <td style={{ padding: '3px 8px' }}>{proc.descricao || '—'}</td>
+                                      <td style={{ padding: '3px 8px' }}>{proc.tipo || '—'}</td>
+                                      <td style={{ padding: '3px 8px' }}>{pp.tempoEstimado != null ? `${pp.tempoEstimado} ${pp.unidade_tempo}` : '—'}</td>
+                                      <td style={{ padding: '3px 8px', textAlign: 'right' }}>{custoEst != null ? formatEuro(custoEst) : '—'}</td>
+                                    </tr>
+                                  ))}
                                 </tbody>
+                                {temCusto && (
+                                  <tfoot><tr>
+                                    <td colSpan={5} style={{ padding: '4px 8px', textAlign: 'right', fontSize: 10, color: 'var(--color-text-muted)', borderTop: '1px solid var(--color-border)' }}>Custo total por peça:</td>
+                                    <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, borderTop: '1px solid var(--color-border)' }}>{formatEuro(totalCustoPeca)}</td>
+                                  </tr></tfoot>
+                                )}
                               </table>
                             </td>
                           </tr>

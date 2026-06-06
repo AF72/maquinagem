@@ -369,7 +369,7 @@ function OrcamentosDetalhe({ orcId: rawId }) {
                       <td>und</td>
                       <td>{editMode ? <input type="number" min="0" step="0.01" value={item.precoUnitario} onChange={e => setPecaItem(pc.id, 'precoUnitario', e.target.value)} style={{ width: 90, padding: '4px 6px' }} /> : (item.precoUnitario > 0 ? formatEuro(item.precoUnitario) : '—')}</td>
                       <td style={{ fontWeight: 600 }}>{subtotal > 0 ? formatEuro(subtotal) : '—'}</td>
-                      {podeEliminar && <td><button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-danger,#c0392b)' }} onClick={() => removePecaItem(pc.id)}>✕</button></td>}
+                      {podeEliminar && <td><button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-danger,#c0392b)' }} onClick={() => removePecaItem(pc.id)} title="Remover"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></button></td>}
                     </tr>
                     <tr key={`stock-${pc.id}`} style={{ background: 'var(--color-surface-alt,#f8f8f6)' }}>
                       <td colSpan={podeEliminar ? 8 : 7} style={{ padding: '0.3rem 1rem 0.3rem 1.5rem', fontSize: 11, color: 'var(--color-text-muted)', borderTop: 'none' }}>
@@ -444,7 +444,7 @@ function OrcamentosDetalhe({ orcId: rawId }) {
                     <td>{sv.unidade || '—'}</td>
                     <td>{editMode ? <input type="number" min="0" step="0.01" value={item.precoUnitario} onChange={e => setSvItem(item.servicoId, 'precoUnitario', e.target.value)} style={{ width: 90 }} /> : formatEuro(item.precoUnitario)}</td>
                     <td style={{ fontWeight: 600 }}>{formatEuro(subtotal)}</td>
-                    {podeEliminar && <td><button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-danger,#c0392b)' }} onClick={() => removeSvItem(item.servicoId)}>✕</button></td>}
+                    {podeEliminar && <td><button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-danger,#c0392b)' }} onClick={() => removeSvItem(item.servicoId)} title="Remover"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></button></td>}
                   </tr>
                 );
               })}

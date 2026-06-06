@@ -8,6 +8,7 @@ import { calcPeso, resolverMaterial } from '../lib/pecaUtils';
 import { EstadoBadge, TipoBadge } from '../components/ui/Badge';
 import { Avatar } from '../components/ui/Avatar';
 import { Overlay } from '../components/ui/Overlay';
+import { useAuth } from '../context/AuthContext';
 
 const PER_PAGE = 15;
 const FILTER_STYLE = { width: '100%', boxSizing: 'border-box', fontSize: 12, padding: '5px 8px', border: '1.5px solid var(--color-primary)', borderRadius: 6, background: '#f0f5fa', color: 'var(--color-primary)', outline: 'none', height: 28 };
@@ -307,6 +308,7 @@ function PedidosList() {
 /* ---------- Detalhe ---------- */
 function PedidoDetalhe({ pedidoId: rawId }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isNew  = !rawId;
   const pedidoId = isNew ? null : Number(rawId);
 
@@ -374,8 +376,7 @@ function PedidoDetalhe({ pedidoId: rawId }) {
   const [adicionarSvOpen, setAdicionarSvOpen] = useState(false);
 
   // Notas
-  const [notaCriadoPor, setNotaCriadoPor] = useState('');
-  const [notaTexto, setNotaTexto]         = useState('');
+  const [notaTexto, setNotaTexto] = useState('');
 
   // historico_precos (carregado à mão)
   const [historico, setHistorico] = useState([]);
@@ -540,14 +541,14 @@ function PedidoDetalhe({ pedidoId: rawId }) {
   }
 
   async function adicionarNota() {
-    if (!notaCriadoPor) { toast.error('Selecione quem cria a nota.'); return; }
     if (!notaTexto.trim()) { toast.error('Escreva o texto da nota.'); return; }
+    if (!user?.id) { toast.error('Sessão inválida. Faça login novamente.'); return; }
     try {
-      const nova = await apiPost('/notas-pedido', { pedido_id: pedidoId, colaborador_dm_id: Number(notaCriadoPor), nota: notaTexto.trim() });
+      const nova = await apiPost('/notas-pedido', { pedido_id: pedidoId, colaborador_dm_id: user.id, nota: notaTexto.trim() });
       const dt = new Date(nova.criado_em);
       const mapped = { ...nova, pedidoId: nova.pedido_id, criadoPorId: nova.colaborador_dm_id, dataHora: `${dt.toLocaleDateString('pt-PT')} ${dt.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}` };
       useStore.setState(s => ({ notas_pedido: [...s.notas_pedido, mapped] }));
-      setNotaTexto(''); setNotaCriadoPor('');
+      setNotaTexto('');
       toast.success('Nota adicionada.');
     } catch (err) { toast.error('Erro: ' + err.message); }
   }
@@ -775,8 +776,7 @@ function PedidoDetalhe({ pedidoId: rawId }) {
                           const sv = servicos.find(s => s.id === sp.servicoId);
                           if (!sv) return null;
                           const total = sp.quantidade * sp.precoUnitario;
-                          const pedidoTemOrcAtivo = orcamentos.some(o => o.pedidoId === pedidoId && o.ativo);
-                          const emOrcamento = orcamento_itens.some(item => item.itemTipo === 'servico' && item.servicoId === sp.servicoId && orcamentos.some(o => o.id === item.orcamentoId && o.pedidoId === pedidoId)) || pedidoTemOrcAtivo;
+                          const emOrcamento = orcamento_itens.some(item => item.itemTipo === 'servico' && item.servicoId === sp.servicoId && orcamentos.some(o => o.id === item.orcamentoId && o.pedidoId === pedidoId));
                           return (
                             <tr key={sp.id}>
                               <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sv.ref}</td>
@@ -798,7 +798,7 @@ function PedidoDetalhe({ pedidoId: rawId }) {
                               <td style={{ fontWeight: 600 }}>{formatEuro(total)}</td>
                               <td>
                                 {!isCancelado && !emOrcamento && (
-                                  <button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-danger,#c0392b)' }} onClick={() => removerServico(sp.id)} title="Remover serviço">✕</button>
+                                  <button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-danger,#c0392b)' }} onClick={() => removerServico(sp.id)} title="Remover serviço"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
                                 )}
                               </td>
                             </tr>
@@ -876,18 +876,33 @@ function PedidoDetalhe({ pedidoId: rawId }) {
             <>
               <div className="form-group full"><h4 style={{ margin: '1.5rem 0 0.25rem', color: 'var(--color-primary)' }}>Notas</h4><hr style={{ border: 'none', borderTop: '2px solid var(--color-primary)', margin: '0 0 0.5rem' }} /></div>
               <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    style={{ flex: 1 }}
+                    placeholder={`Nota — ${user?.nome || ''}`}
+                    value={notaTexto}
+                    onChange={e => setNotaTexto(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') adicionarNota(); }}
+                  />
+                  <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={adicionarNota}>+ Adicionar Nota</button>
+                </div>
                 {notasList.length > 0 ? (
-                  <table className="table" style={{ fontSize: 12 }}>
-                    <thead><tr><th>Data</th><th>Criado por</th><th>Nota</th><th></th></tr></thead>
+                  <table className="table" style={{ fontSize: 12, tableLayout: 'fixed', width: '100%' }}>
+                    <thead><tr>
+                      <th style={{ width: 130 }}>Data</th>
+                      <th style={{ width: 140 }}>Criado por</th>
+                      <th>Nota</th>
+                      <th style={{ width: 40 }}></th>
+                    </tr></thead>
                     <tbody>
-                      {notasList.map(n => {
+                      {[...notasList].reverse().map((n, idx) => {
                         const colab = colaboradores_dm.find(c => c.id === n.criadoPorId);
                         return (
                           <tr key={n.id}>
                             <td style={{ whiteSpace: 'nowrap' }}>{n.dataHora}</td>
-                            <td style={{ whiteSpace: 'nowrap' }}>{colab ? colab.nome : '—'}</td>
+                            <td style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{colab ? colab.nome : '—'}</td>
                             <td style={{ whiteSpace: 'pre-wrap' }}>{n.nota}</td>
-                            <td><button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-danger,#c0392b)' }} onClick={() => apagarNota(n.id)} title="Apagar nota">✕</button></td>
+                            <td>{idx === 0 && <button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-danger,#c0392b)' }} onClick={() => apagarNota(n.id)} title="Apagar nota"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></button>}</td>
                           </tr>
                         );
                       })}
@@ -896,26 +911,6 @@ function PedidoDetalhe({ pedidoId: rawId }) {
                 ) : (
                   <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>Sem notas registadas.</p>
                 )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, background: 'var(--color-surface-alt)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: 180 }}>
-                      <label className="form-label" style={{ fontSize: 11 }}>Criado por</label>
-                      <select style={{ width: '100%' }} value={notaCriadoPor} onChange={e => setNotaCriadoPor(e.target.value)}>
-                        <option value="">Selecione...</option>
-                        {colaboradores_dm.filter(c => c.estado === 'ativo').map(c => (
-                          <option key={c.id} value={c.id}>{c.nome}{c.funcao ? ` — ${c.funcao}` : ''}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="form-label" style={{ fontSize: 11 }}>Nota</label>
-                    <textarea rows={3} style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical' }} placeholder="Escreva a nota aqui..." value={notaTexto} onChange={e => setNotaTexto(e.target.value)} />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <button className="btn btn-primary" onClick={adicionarNota}>+ Adicionar Nota</button>
-                  </div>
-                </div>
               </div>
             </>
           )}

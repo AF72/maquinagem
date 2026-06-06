@@ -113,7 +113,7 @@ function HistoricoPrecos({ processoId, onRefresh }) {
                   style={{ color: 'var(--color-danger, #c00)' }}
                   title="Remover"
                   onClick={() => remover(h.id)}
-                >✕</button>
+                ><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
               </td>
             </tr>
           ))}
@@ -143,8 +143,16 @@ function HistoricoPrecos({ processoId, onRefresh }) {
   );
 }
 
+const IconDelete = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+  </svg>
+);
+
 export default function Processos() {
-  const processos = useStore(s => s.processos);
+  const processos       = useStore(s => s.processos);
+  const servicos        = useStore(s => s.servicos);
+  const orcamento_itens = useStore(s => s.orcamento_itens);
 
   const [open,      setOpen]      = useState(false);
   const [currentId, setCurrentId] = useState(null);
@@ -165,6 +173,15 @@ export default function Processos() {
       ativo:      p ? p.ativo : true,
     });
     setOpen(true);
+  }
+
+  async function eliminarServico(id) {
+    if (!confirm('Eliminar este serviço?')) return;
+    try {
+      await apiDelete(`/servicos/${id}`);
+      useStore.setState(s => ({ servicos: s.servicos.filter(sv => sv.id !== id) }));
+      toast.success('Serviço eliminado.');
+    } catch (err) { toast.error('Erro ao eliminar: ' + err.message); }
   }
 
   async function handleSave() {
@@ -242,6 +259,54 @@ export default function Processos() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div style={{ marginTop: '2rem' }}>
+        <div className="section-header">
+          <span className="section-count">{servicos.length} serviço(s)</span>
+        </div>
+        <div className="full-card">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Ref.</th>
+                <th>Tipo</th>
+                <th>Descrição</th>
+                <th>Unidade</th>
+                <th style={{ width: '1%' }}>Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {servicos.length === 0 ? (
+                <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>
+                  Sem serviços registados.
+                </td></tr>
+              ) : servicos.map(sv => {
+                const usado = orcamento_itens.some(i => i.servicoId === sv.id && i.itemTipo === 'servico');
+                return (
+                  <tr key={sv.id}>
+                    <td><code>{sv.ref}</code></td>
+                    <td>{sv.tipo_servico}</td>
+                    <td>{sv.descricao || '—'}</td>
+                    <td>{sv.unidade}</td>
+                    <td>
+                      {!usado && (
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          title="Eliminar"
+                          style={{ color: 'var(--color-danger,#c0392b)' }}
+                          onClick={() => eliminarServico(sv.id)}
+                        >
+                          <IconDelete />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Overlay
