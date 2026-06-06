@@ -9,9 +9,9 @@ function valorOT(o, orcamentos) {
   return Number(orc?.valor || 0);
 }
 
-function MetricCard({ label, value, sub }) {
+function MetricCard({ label, value, sub, style }) {
   return (
-    <div className="metric-card">
+    <div className="metric-card" style={style}>
       <div className="metric-label">{label}</div>
       <div className="metric-value">{value}</div>
       <div className="metric-sub">{sub}</div>
@@ -26,7 +26,6 @@ export default function Custos() {
 
   const aFaturar        = ordens.filter(o => o.estado === 'Faturar').reduce((s, o) => s + valorOT(o, orcamentos), 0);
   const totalFaturado   = ordens.filter(o => o.estado === 'Concluída').reduce((s, o) => s + valorOT(o, orcamentos), 0);
-  const totalOrcamentado = orcamentos.filter(o => o.ativo).reduce((s, o) => s + Number(o.valor || 0), 0);
   const totalAprovados  = orcamentos.filter(o => o.estado === 'Aprovado').reduce((s, o) => s + Number(o.valor || 0), 0);
 
   const resumoClientes = (() => {
@@ -57,10 +56,9 @@ export default function Custos() {
   return (
     <>
       <div className="grid-metrics-4">
-        <MetricCard label="Total orçamentado"      value={formatEuro(totalOrcamentado)} sub="orçamentos ativos" />
-        <MetricCard label="Total Orc. Aprovados"   value={formatEuro(totalAprovados)}   sub="orçamentos aprovados" />
-        <MetricCard label="Total OT a faturar"     value={formatEuro(aFaturar)}         sub='ordens com estado "Faturar"' />
-        <MetricCard label="Total faturado"         value={formatEuro(totalFaturado)}    sub="ordens concluídas" />
+        <MetricCard label="Total Orc. Aprovados"   value={formatEuro(totalAprovados)}   sub="orçamentos aprovados" style={{ background: 'var(--color-blue-bg)', color: 'var(--color-blue-fg)' }} />
+        <MetricCard label="Total OT a faturar"     value={formatEuro(aFaturar)}         sub='ordens com estado "Faturar"' style={{ background: 'var(--color-red-bg)', color: 'var(--color-red-fg)' }} />
+        <MetricCard label="Total faturado"         value={formatEuro(totalFaturado)}    sub="ordens concluídas" style={{ background: 'var(--color-green-bg)', color: 'var(--color-green-fg)' }} />
       </div>
 
       <div className="full-card">
