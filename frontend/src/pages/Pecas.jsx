@@ -327,6 +327,12 @@ function PecaDetalhe({ pecaId: rawId }) {
   }
 
   async function handleSave() {
+    if (isNew || editMode) {
+      if (prefixo.includes('????')) { toast.error('Selecione um pedido para gerar a referência.'); return; }
+      if (!refXxx.trim()) { toast.error('Preencha o número da peça (campo XXX).'); return; }
+      if (!refNn.trim())  { toast.error('Preencha o número da variante (campo NN).'); return; }
+    }
+
     const refFull = editMode
       ? `${prefixo}-${refXxx.padStart(3, '0')}-${refNn.padStart(2, '0')}`
       : (pc?.ref || '');
@@ -367,7 +373,13 @@ function PecaDetalhe({ pecaId: rawId }) {
         toast.success('Peça gravada com sucesso.');
         setEditMode(false);
       }
-    } catch (err) { toast.error('Erro: ' + err.message); }
+    } catch (err) {
+      if (err.message?.includes('único') || err.message?.includes('409')) {
+        toast.error('Já existe uma peça com esta referência. Altere os campos XXX ou NN.');
+      } else {
+        toast.error('Erro: ' + err.message);
+      }
+    }
     finally { setSaving(false); }
   }
 
