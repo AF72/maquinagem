@@ -356,8 +356,8 @@ function OrcamentosDetalhe({ orcId: rawId }) {
                 const matLabel = mp ? ((mp.ref_wnr && mp.ref_wnr !== '-') ? `${mp.ref_wnr} – ${mp.ref_din}` : mp.ref_din) : '—';
                 const plano = pecas_processos.filter(pp => pp.pecaId === pc.id).sort((a,b) => a.ordem - b.ordem);
                 const linhasProc = plano.map(pp => { const proc = processos.find(p => p.id === pp.processoId) || {}; return { pp, proc, custoEst: calcCustoEstimado(pp, proc) }; });
-                const totalCustoPeca = linhasProc.reduce((s, { custoEst }) => s + (custoEst ?? 0), 0);
-                const temCusto = linhasProc.some(({ custoEst }) => custoEst != null);
+                const totalCustoPeca = linhasProc.reduce((s, { custoEst }) => s + (custoEst ?? 0), 0) + (custoStock ?? 0);
+                const temCusto = linhasProc.some(({ custoEst }) => custoEst != null) || custoStock != null;
 
                 return (
                   <>
