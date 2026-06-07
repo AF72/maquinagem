@@ -440,9 +440,9 @@ function saveColaborador(empresaId) {
         await apiPost('/colaboradores', {
             empresa_id: empresaId,
             nome,
-            cargo: document.getElementById('f-cargo').value,
-            email: document.getElementById('f-email').value,
-            tel:   document.getElementById('f-tel').value,
+            cargo: document.getElementById('f-cargo').value.trim(),
+            email: document.getElementById('f-email').value.trim(),
+            tel:   document.getElementById('f-tel').value.trim(),
             ativo: document.getElementById('f-ativo').checked,
         });
         DB.expanded['e' + empresaId] = true;
@@ -490,9 +490,9 @@ function saveEditColaborador(id) {
     _apiSave(async () => {
         await apiPut(`/colaboradores/${id}`, {
             nome:  document.getElementById('f-nome').value.trim(),
-            cargo: document.getElementById('f-cargo').value,
-            email: document.getElementById('f-email').value,
-            tel:   document.getElementById('f-tel').value,
+            cargo: document.getElementById('f-cargo').value.trim(),
+            email: document.getElementById('f-email').value.trim(),
+            tel:   document.getElementById('f-tel').value.trim(),
             ativo: document.getElementById('f-ativo').checked,
         });
         closeModal();

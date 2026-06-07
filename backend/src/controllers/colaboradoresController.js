@@ -6,9 +6,9 @@ const prisma = new PrismaClient();
 const schema = z.object({
   empresa_id: z.number().int(),
   nome: z.string().min(1),
-  cargo: z.string().optional(),
-  email: z.string().email().optional().or(z.literal('')),
-  tel: z.string().optional(),
+  cargo: z.string().nullable().optional(),
+  email: z.string().email().nullable().optional().or(z.literal('')),
+  tel: z.string().nullable().optional(),
   ativo: z.boolean().optional(),
 });
 
