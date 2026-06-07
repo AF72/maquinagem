@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import useStore from '../store';
 import { apiPost, apiPut, apiDelete } from '../lib/api';
@@ -270,6 +270,18 @@ function PecaDetalhe({ pecaId: rawId }) {
     return { prefixo, xxx: partes[0] || '', nn: partes[1] || '' };
   }
 
+  function sugerirSegmentos(prefixo, listaPecas) {
+    if (!prefixo || prefixo.includes('????')) return { xxx: '', nn: '' };
+    let max = 0;
+    listaPecas.forEach(p => {
+      if (p.ref?.startsWith(prefixo + '-')) {
+        const n = parseInt(p.ref.slice(prefixo.length + 1).split('-')[0], 10);
+        if (!isNaN(n) && n > max) max = n;
+      }
+    });
+    return { xxx: padNum(max + 1, 3), nn: '01' };
+  }
+
   const { prefixo: prefixoInicial, xxx: xxxInicial, nn: nnInicial } = parsearSegmentos(pc?.ref || '', pedidoAssoc);
 
   const [editMode, setEditMode] = useState(isNew);
@@ -300,6 +312,13 @@ function PecaDetalhe({ pecaId: rawId }) {
 
   const pedidoSel = pedidos.find(p => p.id === pedidoIdSel);
   const prefixo = pecaRefPrefixo(pedidoSel);
+
+  useEffect(() => {
+    if (!isNew) return;
+    const sug = sugerirSegmentos(prefixo, pecas);
+    setRefXxx(sug.xxx);
+    setRefNn(sug.nn);
+  }, [isNew, prefixo, pecas]);
 
   const ro = !editMode;
   const dimEnabled = campo => editMode && (FORMA_CAMPOS[campo] || []).includes(forma);
