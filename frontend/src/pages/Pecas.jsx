@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import useStore from '../store';
 import { apiPost, apiPut, apiDelete } from '../lib/api';
 import { toast } from '../lib/toast';
-import { formatEuro, padNum } from '../lib/helpers';
+import { formatEuro } from '../lib/helpers';
 import { calcPeso, calcCustoEstimado, resolverMaterial } from '../lib/pecaUtils';
 
 const PER_PAGE = 15;
@@ -270,16 +270,9 @@ function PecaDetalhe({ pecaId: rawId }) {
     return { prefixo, xxx: partes[0] || '', nn: partes[1] || '' };
   }
 
-  function sugerirSegmentos(prefixo, listaPecas) {
+  function sugerirSegmentos(prefixo) {
     if (!prefixo || prefixo.includes('????')) return { xxx: '', nn: '' };
-    let max = 0;
-    listaPecas.forEach(p => {
-      if (p.ref?.startsWith(prefixo + '-')) {
-        const n = parseInt(p.ref.slice(prefixo.length + 1).split('-')[0], 10);
-        if (!isNaN(n) && n > max) max = n;
-      }
-    });
-    return { xxx: padNum(max + 1, 3), nn: '01' };
+    return { xxx: '000', nn: '00' };
   }
 
   const { prefixo: prefixoInicial, xxx: xxxInicial, nn: nnInicial } = parsearSegmentos(pc?.ref || '', pedidoAssoc);
@@ -315,10 +308,10 @@ function PecaDetalhe({ pecaId: rawId }) {
 
   useEffect(() => {
     if (!isNew) return;
-    const sug = sugerirSegmentos(prefixo, pecas);
+    const sug = sugerirSegmentos(prefixo);
     setRefXxx(sug.xxx);
     setRefNn(sug.nn);
-  }, [isNew, prefixo, pecas]);
+  }, [isNew, prefixo]);
 
   const ro = !editMode;
   const dimEnabled = campo => editMode && (FORMA_CAMPOS[campo] || []).includes(forma);
