@@ -22,8 +22,8 @@ const IconUserPlus = () => (
   </svg>
 );
 
-/* ---------- Campos de Empresa ---------- */
-const EMPTY_EMP = { nome: '', nif: '', tel: '', email: '', morada: '', codigo_postal: '', localidade: '' };
+/* ---------- Formulários ---------- */
+const EMPTY_EMP  = { nome: '', nif: '', tel: '', email: '', morada: '', codigo_postal: '', localidade: '' };
 const EMPTY_PART = { nome: '', cc: '', tel: '', email: '', morada: '', codigo_postal: '', localidade: '' };
 const EMPTY_COLAB = { nome: '', cargo: '', email: '', tel: '', ativo: true };
 
@@ -47,7 +47,7 @@ function ParticularForm({ form, setForm }) {
   return (
     <div className="form-grid">
       <div className="form-group"><label className="form-label">Nome completo</label><input placeholder="Nome e apelido" value={form.nome} onChange={f('nome')} /></div>
-      <div className="form-group"><label className="form-label">Nº Cartão Cidadão</label><input placeholder="XXXXXXXX" value={form.cc} onChange={f('cc')} /></div>
+      <div className="form-group"><label className="form-label">Nº de Contribuinte</label><input placeholder="XXXXXXXXX" value={form.cc} onChange={f('cc')} /></div>
       <div className="form-group"><label className="form-label">Telefone</label><input placeholder="9XX XXX XXX" value={form.tel} onChange={f('tel')} /></div>
       <div className="form-group"><label className="form-label">Email</label><input placeholder="nome@email.com" value={form.email} onChange={f('email')} /></div>
       <div className="form-group full"><label className="form-label">Morada</label><input placeholder="Rua, nº" value={form.morada} onChange={f('morada')} /></div>
@@ -91,7 +91,7 @@ function ColabRow({ colab, pedidos, onEdit }) {
           {colab.nome}
         </span>
       </td>
-      <td />
+      <td style={{ color: 'var(--color-text-muted)', fontSize: 12 }}>{colab.cargo || '—'}</td>
       <td style={{ color: 'var(--color-text-muted)', fontSize: 12 }}>{colab.tel || '—'}</td>
       <td style={{ color: 'var(--color-text-muted)', fontSize: 12 }}>{colab.email || '—'}</td>
       <td>—</td>
@@ -114,7 +114,7 @@ function EmpresaRow({ empresa, colaboradores, pedidos, expanded, onToggle, onEdi
           </button>
         </td>
         <td><span className="inline-flex"><span className="avatar av-empresa">{initials(empresa.nome)}</span>{empresa.nome}</span></td>
-        <td><span className="badge badge-teal">Empresa</span></td>
+        <td>{empresa.localidade || '—'}</td>
         <td>{empresa.tel || '—'}</td>
         <td>{empresa.email || '—'}</td>
         <td>{empresa.nif || '—'}</td>
@@ -139,10 +139,10 @@ function ParticularRow({ particular, pedidos, onEdit }) {
     <tr>
       <td />
       <td><span className="inline-flex"><span className="avatar av-particular">{initials(particular.nome)}</span>{particular.nome}</span></td>
-      <td><span className="badge badge-coral">Particular</span></td>
+      <td>{particular.localidade || '—'}</td>
       <td>{particular.tel || '—'}</td>
       <td>{particular.email || '—'}</td>
-      <td>{particular.nif || particular.cc || '—'}</td>
+      <td>{particular.nif || '—'}</td>
       <td>{pedP}</td>
       <td><button className="btn btn-ghost btn-sm" onClick={() => onEdit(particular)}><IconPencil /></button></td>
     </tr>
@@ -156,16 +156,16 @@ export default function Clientes() {
   const particulares  = useStore(s => s.particulares);
   const pedidos       = useStore(s => s.pedidos);
   const expanded      = useStore(s => s.expanded);
-  const clienteFilter = useStore(s => s.clienteFilter);
-  const toggleExpanded   = useStore(s => s.toggleExpanded);
-  const setClienteFilter = useStore(s => s.setClienteFilter);
+  const toggleExpanded = useStore(s => s.toggleExpanded);
 
-  // Modal: novo cliente (empresa ou particular)
-  const [novoOpen, setNovoOpen]   = useState(false);
-  const [novoTipo, setNovoTipo]   = useState('empresa');
-  const [empForm,  setEmpForm]    = useState(EMPTY_EMP);
-  const [partForm, setPartForm]   = useState(EMPTY_PART);
-  const [saving,   setSaving]     = useState(false);
+  const [aba, setAba] = useState('empresas');
+
+  // Modal: novo cliente
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [novoTipo, setNovoTipo] = useState('empresa');
+  const [empForm,  setEmpForm]  = useState(EMPTY_EMP);
+  const [partForm, setPartForm] = useState(EMPTY_PART);
+  const [saving,   setSaving]   = useState(false);
 
   // Modal: editar empresa
   const [editEmpOpen, setEditEmpOpen] = useState(false);
@@ -177,14 +177,23 @@ export default function Clientes() {
   const [editPart,     setEditPart]     = useState(null);
   const [editPartForm, setEditPartForm] = useState(EMPTY_PART);
 
-  // Modal: colaborador (novo ou editar)
+  // Modal: colaborador
   const [colabOpen,    setColabOpen]    = useState(false);
   const [colabEmpresa, setColabEmpresa] = useState(null);
   const [colabId,      setColabId]      = useState(null);
   const [colabForm,    setColabForm]    = useState(EMPTY_COLAB);
 
+  const empresasOrdenadas   = [...empresas].sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+  const particularesOrdenados = [...particulares].sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+
+  function openNovo() {
+    setNovoTipo(aba === 'empresas' ? 'empresa' : 'particular');
+    setEmpForm(EMPTY_EMP);
+    setPartForm(EMPTY_PART);
+    setNovoOpen(true);
+  }
+
   function openAddColab(empresa) {
-    // Se receber um colab (editar), detectamos pelo campo empresaId
     if (empresa.empresaId !== undefined) {
       const emp = empresas.find(e => e.id === empresa.empresaId);
       setColabEmpresa(emp || null);
@@ -211,7 +220,6 @@ export default function Clientes() {
         useStore.setState(s => ({ particulares: [...s.particulares, novo] }));
       }
       setNovoOpen(false);
-      setEmpForm(EMPTY_EMP); setPartForm(EMPTY_PART);
       toast.success('Cliente criado com sucesso.');
     } catch (err) { toast.error('Erro: ' + err.message); }
     finally { setSaving(false); }
@@ -233,7 +241,7 @@ export default function Clientes() {
     if (!editPartForm.nome.trim()) { toast.error('O nome é obrigatório.'); return; }
     setSaving(true);
     try {
-      const upd = await apiPut(`/particulares/${editPart.id}`, { nome: editPartForm.nome.trim(), cc: editPartForm.cc || null, tel: editPartForm.tel || null, email: editPartForm.email || null, morada: editPartForm.morada || null, codigo_postal: editPartForm.codigo_postal || null, localidade: editPartForm.localidade || null });
+      const upd = await apiPut(`/particulares/${editPart.id}`, { nome: editPartForm.nome.trim(), nif: editPartForm.cc || null, tel: editPartForm.tel || null, email: editPartForm.email || null, morada: editPartForm.morada || null, codigo_postal: editPartForm.codigo_postal || null, localidade: editPartForm.localidade || null });
       useStore.setState(s => ({ particulares: s.particulares.map(p => p.id === editPart.id ? upd : p) }));
       setEditPartOpen(false);
       toast.success('Particular atualizado.');
@@ -259,57 +267,68 @@ export default function Clientes() {
     finally { setSaving(false); }
   }
 
-  const showEmpresas    = clienteFilter === 'todos' || clienteFilter === 'empresa';
-  const showParticulares = clienteFilter === 'todos' || clienteFilter === 'particular';
+  const countLabel = aba === 'empresas'
+    ? `${empresas.length} empresa${empresas.length !== 1 ? 's' : ''} · ${colaboradores.length} colaborador${colaboradores.length !== 1 ? 'es' : ''}`
+    : `${particulares.length} particular${particulares.length !== 1 ? 'es' : ''}`;
 
   return (
     <>
       <div className="section-header">
-        <span className="section-count">
-          {empresas.length} empresas · {colaboradores.length} colaboradores · {particulares.length} particulares
-        </span>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="filter-tabs">
-            {[['todos', 'Todos'], ['empresa', 'Empresas'], ['particular', 'Particulares']].map(([val, label]) => (
-              <div key={val} className={`tab${clienteFilter === val ? ' active' : ''}`} onClick={() => setClienteFilter(val)}>{label}</div>
-            ))}
-          </div>
-          <button className="btn btn-primary" onClick={() => { setNovoOpen(true); setNovoTipo('empresa'); setEmpForm(EMPTY_EMP); setPartForm(EMPTY_PART); }}>
-            + Novo cliente
+        <div className="filter-tabs">
+          <div className={`tab${aba === 'empresas' ? ' active' : ''}`} onClick={() => setAba('empresas')}>Empresas</div>
+          <div className={`tab${aba === 'particulares' ? ' active' : ''}`} onClick={() => setAba('particulares')}>Particulares</div>
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <span className="section-count">{countLabel}</span>
+          <button className="btn btn-primary" onClick={openNovo}>
+            {aba === 'empresas' ? '+ Nova empresa' : '+ Novo particular'}
           </button>
         </div>
       </div>
 
       <div className="full-card">
-        <table className="table">
-          <thead>
-            <tr><th></th><th>Nome</th><th>Tipo</th><th>Telefone</th><th>E-mail</th><th>NIF / CC</th><th>Pedidos</th><th>Ações</th></tr>
-          </thead>
-          <tbody>
-            {showEmpresas && empresas.map(emp => (
-              <EmpresaRow
-                key={emp.id} empresa={emp} colaboradores={colaboradores} pedidos={pedidos}
-                expanded={expanded}
-                onToggle={id => toggleExpanded('e' + id)}
-                onEditEmp={e => { setEditEmp(e); setEditEmpForm({ nome: e.nome || '', nif: e.nif || '', tel: e.tel || '', email: e.email || '', morada: e.morada || '', codigo_postal: e.codigo_postal || '', localidade: e.localidade || '' }); setEditEmpOpen(true); }}
-                onAddColab={openAddColab}
-              />
-            ))}
-            {showParticulares && particulares.map(p => (
-              <ParticularRow
-                key={p.id} particular={p} pedidos={pedidos}
-                onEdit={pt => { setEditPart(pt); setEditPartForm({ nome: pt.nome || '', cc: pt.cc || pt.nif || '', tel: pt.tel || '', email: pt.email || '', morada: pt.morada || '', codigo_postal: pt.codigo_postal || '', localidade: pt.localidade || '' }); setEditPartOpen(true); }}
-              />
-            ))}
-            {empresas.length === 0 && particulares.length === 0 && (
-              <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Nenhum cliente encontrado.</td></tr>
-            )}
-          </tbody>
-        </table>
+        {aba === 'empresas' ? (
+          <table className="table">
+            <thead>
+              <tr><th></th><th>Nome</th><th>Localidade</th><th>Telefone</th><th>E-mail</th><th>NIF</th><th>Pedidos</th><th>Ações</th></tr>
+            </thead>
+            <tbody>
+              {empresasOrdenadas.map(emp => (
+                <EmpresaRow
+                  key={emp.id} empresa={emp} colaboradores={colaboradores} pedidos={pedidos}
+                  expanded={expanded}
+                  onToggle={id => toggleExpanded('e' + id)}
+                  onEditEmp={e => { setEditEmp(e); setEditEmpForm({ nome: e.nome || '', nif: e.nif || '', tel: e.tel || '', email: e.email || '', morada: e.morada || '', codigo_postal: e.codigo_postal || '', localidade: e.localidade || '' }); setEditEmpOpen(true); }}
+                  onAddColab={openAddColab}
+                />
+              ))}
+              {empresasOrdenadas.length === 0 && (
+                <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Nenhuma empresa registada.</td></tr>
+              )}
+            </tbody>
+          </table>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr><th></th><th>Nome</th><th>Localidade</th><th>Telefone</th><th>E-mail</th><th>Nº Contribuinte</th><th>Pedidos</th><th>Ações</th></tr>
+            </thead>
+            <tbody>
+              {particularesOrdenados.map(p => (
+                <ParticularRow
+                  key={p.id} particular={p} pedidos={pedidos}
+                  onEdit={pt => { setEditPart(pt); setEditPartForm({ nome: pt.nome || '', cc: pt.nif || '', tel: pt.tel || '', email: pt.email || '', morada: pt.morada || '', codigo_postal: pt.codigo_postal || '', localidade: pt.localidade || '' }); setEditPartOpen(true); }}
+                />
+              ))}
+              {particularesOrdenados.length === 0 && (
+                <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Nenhum particular registado.</td></tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Modal: Novo Cliente */}
-      <Overlay open={novoOpen} onClose={() => setNovoOpen(false)} title="Novo Cliente" maxWidth={560}>
+      <Overlay open={novoOpen} onClose={() => setNovoOpen(false)} title={novoTipo === 'empresa' ? 'Nova Empresa' : 'Novo Particular'} maxWidth={560}>
         <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem' }}>
           {[['empresa', 'Empresa'], ['particular', 'Particular']].map(([val, label]) => (
             <button key={val} className={`btn ${novoTipo === val ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setNovoTipo(val)}>{label}</button>
