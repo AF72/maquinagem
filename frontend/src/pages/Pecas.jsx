@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import useStore from '../store';
-import { apiPost, apiPut, apiDelete } from '../lib/api';
+import { apiFetch, apiPost, apiPut, apiDelete } from '../lib/api';
 import { toast } from '../lib/toast';
 import { formatEuro } from '../lib/helpers';
 import { calcPeso, calcCustoEstimado, resolverMaterial } from '../lib/pecaUtils';
@@ -254,8 +254,6 @@ function PecaDetalhe({ pecaId: rawId }) {
     ? (fromPedidoId || null)
     : (pecas_pedidos.find(pp => pp.pecaId === pecaId)?.pedidoId ?? null);
 
-  const pedidoAssoc = pedidos.find(p => p.id === pedidoIdInicial) || null;
-
   function pecaRefPrefixo(pedido) {
     const ano = new Date().getFullYear().toString().slice(-2);
     if (!pedido) return `DM${ano}-????`;
@@ -263,11 +261,10 @@ function PecaDetalhe({ pecaId: rawId }) {
     return `DM${ano}-${seq}`;
   }
 
-  function parsearSegmentos(ref, pedido) {
-    const prefixo = pecaRefPrefixo(pedido);
-    const restante = ref && ref.startsWith(prefixo + '-') ? ref.slice(prefixo.length + 1) : '';
-    const partes = restante.split('-');
-    return { prefixo, xxx: partes[0] || '', nn: partes[1] || '' };
+  function parsearSegmentos(ref) {
+    const partes = (ref || '').split('-');
+    if (partes.length !== 4) return { prefixo: '', xxx: '', nn: '' };
+    return { prefixo: `${partes[0]}-${partes[1]}`, xxx: partes[2], nn: partes[3] };
   }
 
   function sugerirSegmentos(prefixo) {
@@ -275,7 +272,7 @@ function PecaDetalhe({ pecaId: rawId }) {
     return { xxx: '000', nn: '00' };
   }
 
-  const { prefixo: prefixoInicial, xxx: xxxInicial, nn: nnInicial } = parsearSegmentos(pc?.ref || '', pedidoAssoc);
+  const { xxx: xxxInicial, nn: nnInicial } = parsearSegmentos(pc?.ref || '');
 
   const [editMode, setEditMode] = useState(isNew);
   const [pedidoIdSel, setPedidoIdSel] = useState(pedidoIdInicial);
@@ -372,7 +369,7 @@ function PecaDetalhe({ pecaId: rawId }) {
       if (isNew) {
         const novo = await apiPost('/pecas', dados);
         useStore.setState(s => ({ pecas: [...s.pecas, { ...novo, materiaPrimaId: novo.materia_prima_id, precoMpSnapshot: novo.preco_mp_snapshot != null ? Number(novo.preco_mp_snapshot) : null }] }));
-        if (fromPedidoId) {
+        if (pedidoIdSel) {
           const pps = await apiFetch('/pecas-pedidos');
           useStore.setState({ pecas_pedidos: pps.map(j => ({ ...j, pecaId: j.peca_id, pedidoId: j.pedido_id })) });
         }
