@@ -5,12 +5,12 @@ const prisma = new PrismaClient();
 
 const schema = z.object({
   nome: z.string().min(1),
-  nif: z.string().optional(),
-  morada: z.string().optional(),
-  codigo_postal: z.string().optional(),
-  localidade: z.string().optional(),
-  email: z.string().email().optional().or(z.literal('')),
-  tel: z.string().optional(),
+  nif: z.string().nullable().optional(),
+  morada: z.string().nullable().optional(),
+  codigo_postal: z.string().nullable().optional(),
+  localidade: z.string().nullable().optional(),
+  email: z.string().email().nullable().optional().or(z.literal('')),
+  tel: z.string().nullable().optional(),
 });
 
 async function listar(req, res, next) {

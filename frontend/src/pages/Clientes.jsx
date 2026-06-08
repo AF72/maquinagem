@@ -207,7 +207,7 @@ export default function Clientes() {
         useStore.setState(s => ({ empresas: [...s.empresas, novo] }));
       } else {
         if (!partForm.nome.trim()) { toast.error('O nome é obrigatório.'); return; }
-        const novo = await apiPost('/particulares', { nome: partForm.nome.trim(), cc: partForm.cc || null, tel: partForm.tel || null, email: partForm.email || null, morada: partForm.morada || null, codigo_postal: partForm.codigo_postal || null, localidade: partForm.localidade || null });
+        const novo = await apiPost('/particulares', { nome: partForm.nome.trim(), nif: partForm.cc || null, tel: partForm.tel || null, email: partForm.email || null, morada: partForm.morada || null, codigo_postal: partForm.codigo_postal || null, localidade: partForm.localidade || null });
         useStore.setState(s => ({ particulares: [...s.particulares, novo] }));
       }
       setNovoOpen(false);
