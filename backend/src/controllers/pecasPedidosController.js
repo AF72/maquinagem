@@ -16,7 +16,11 @@ async function criar(req, res, next) {
       peca_id:   z.number().int(),
       pedido_id: z.number().int(),
     }).parse(req.body);
-    const registo = await prisma.pecaPedido.create({ data: { peca_id, pedido_id } });
+    const registo = await prisma.pecaPedido.upsert({
+      where: { peca_id_pedido_id: { peca_id, pedido_id } },
+      create: { peca_id, pedido_id },
+      update: {},
+    });
     res.status(201).json(registo);
   } catch (err) { next(err); }
 }
