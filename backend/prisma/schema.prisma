@@ -208,6 +208,7 @@ model OrdemTrabalho {
   data_limite_entrega DateTime? @db.Date
   n_ft                String?   @db.VarChar(50)
   n_gt                String?   @db.VarChar(50)
+  n_orc_sage          String?   @db.VarChar(50)
   observacoes         String?
   prazo               Int?
   pedido              Pedido    @relation(fields: [pedido_id], references: [id])

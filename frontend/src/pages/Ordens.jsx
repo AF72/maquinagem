@@ -155,6 +155,7 @@ function OrdensDetalhe({ otId }) {
     estado: ot.estado,
     n_gt: ot.n_gt || '',
     n_ft: ot.n_ft || '',
+    n_orc_sage: ot.n_orc_sage || '',
   };
 
   function startEdit() { setForm({ ...currentForm }); setEditMode(true); }
@@ -177,6 +178,7 @@ function OrdensDetalhe({ otId }) {
         estado: currentForm.estado || undefined,
         n_gt: currentForm.n_gt || null,
         n_ft: currentForm.n_ft || null,
+        n_orc_sage: currentForm.n_orc_sage || null,
       };
       const upd = await apiPut(`/ordens/${otId}`, payload);
       useStore.setState(s => ({ ordens: s.ordens.map(o => o.id === Number(otId) ? { ...o, ...upd, pedidoId: upd.pedido_id, moObra: Number(upd.mo_obra ?? 0), prazo: upd.prazo ?? null, dataLimiteEntrega: upd.data_limite_entrega?.slice(0, 10) ?? '' } : o) }));
@@ -275,6 +277,7 @@ function OrdensDetalhe({ otId }) {
           </div>
           <div style={{ gridColumn: '1/-1', display: 'flex', gap: 16 }}>
             <div className="form-group" style={{ flex: 1 }}><label className="form-label">Ordem de Compra</label><input value={dp.ordem_compra || '—'} readOnly /></div>
+            <div className="form-group" style={{ flex: 1 }}><label className="form-label">Nº Orç. SAGE</label><input value={currentForm.n_orc_sage} disabled={ro} onChange={e => setForm(f => ({ ...f, n_orc_sage: e.target.value }))} /></div>
             <div className="form-group" style={{ flex: 1 }}><label className="form-label">Nº Orçamento</label><input value={orc ? orc.ref : '—'} readOnly /></div>
             <div className="form-group" style={{ flex: 1 }}><label className="form-label">Valor Orçamento</label><input value={orc ? formatEuro(orc.valor) : '—'} readOnly /></div>
           </div>

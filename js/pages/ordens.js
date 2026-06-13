@@ -285,6 +285,10 @@ function renderOrdemDetalhe() {
             <input value="${dp.ordem_compra || '—'}" readonly>
           </div>
           <div class="form-group" style="flex:1;">
+            <label class="form-label">Nº Orç. SAGE</label>
+            <input id="f-n_orc_sage" value="${ot.n_orc_sage || ''}" ${!_isOTEditMode ? 'disabled' : ''}>
+          </div>
+          <div class="form-group" style="flex:1;">
             <label class="form-label">Nº Orçamento</label>
             <input value="${orc ? orc.ref : '—'}" readonly>
           </div>
@@ -450,6 +454,7 @@ async function saveOrdemDetalhe(otId) {
         estado: estado || undefined,
         n_gt: document.getElementById('f-n_gt')?.value || null,
         n_ft: document.getElementById('f-n_ft')?.value || null,
+        n_orc_sage: document.getElementById('f-n_orc_sage')?.value || null,
     };
     try {
         await apiPut(`/ordens/${otId}`, payload);

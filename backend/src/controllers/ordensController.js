@@ -14,6 +14,7 @@ const schema = z.object({
   concluido_em: z.string().optional().nullable(),
   n_gt: z.string().optional().nullable(),
   n_ft: z.string().optional().nullable(),
+  n_orc_sage: z.string().optional().nullable(),
   observacoes: z.string().optional(),
 });
 
