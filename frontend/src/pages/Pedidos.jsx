@@ -288,7 +288,7 @@ function PedidosList() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <button className="btn btn-ghost btn-sm" title="Ver pedido" onClick={() => navigate(`/pedidos/${p.id}`)}><IconView /></button>
                       {ot
-                        ? <Link to={`/ordens/${ot.id}`} className="badge badge-blue" style={{ textDecoration: 'none', cursor: 'pointer' }}>{ot.num}</Link>
+                        ? <Link to={`/ordens/${ot.id}`} style={{ color: '#000', textDecoration: 'none', fontSize: '0.8rem', cursor: 'pointer' }}>{ot.num}</Link>
                         : canOT
                           ? <button className="btn btn-ghost btn-sm" title="Criar OT" onClick={() => criarOT(p.id)}><IconOT /></button>
                           : null}

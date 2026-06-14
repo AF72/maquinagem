@@ -162,7 +162,7 @@ function _pedidosRows(pedidos) {
       <td style="vertical-align: middle;">
         <div style="display: flex; align-items: center; gap: 4px;">
           <button class="btn btn-ghost btn-sm" title="Ver pedido" onclick="showPedidoDetalhe(${p.id})">${ICON_VIEW}</button>
-          ${ot ? `<a href="#" onclick="verDetalheOT(${ot.id});return false;" class="badge ${{ 'Em curso': 'badge-blue', 'Faturar': 'badge-red', 'Concluída': 'badge-green', 'Cancelada': 'badge-black' }[ot.estado] || 'badge-gray'}" style="text-decoration:none;cursor:pointer;">${ot.num}</a>` : canOT ? `<button class="btn btn-ghost btn-sm" title="Criar OT" onclick="criarOT(${p.id})">${ICON_CREATE_OT}</button>` : ''}
+          ${ot ? `<a href="#" onclick="verDetalheOT(${ot.id});return false;" style="color:#000;text-decoration:none;font-size:0.8rem;cursor:pointer;">${ot.num}</a>` : canOT ? `<button class="btn btn-ghost btn-sm" title="Criar OT" onclick="criarOT(${p.id})">${ICON_CREATE_OT}</button>` : ''}
         </div>
       </td>
     </tr>`;
