@@ -73,9 +73,10 @@ export default function Dashboard() {
       return 0;
     });
 
-  const estadosData = Object.entries(
-    ordens.reduce((acc, o) => ({ ...acc, [o.estado]: (acc[o.estado] || 0) + 1 }), {})
-  ).map(([label, value]) => ({ label, value }));
+  const estadosData = Object.keys(ESTADO_CORES).map(label => ({
+    label,
+    value: ordens.filter(o => o.estado === label).length,
+  }));
 
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
 
