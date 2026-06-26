@@ -37,8 +37,9 @@ const useStore = create((set) => ({
   clienteFilter: 'todos',
 
   // --- Estado de carregamento ---
-  carregando:   false,
-  backendErro:  null,
+  carregando:        false,
+  backendErro:       null,
+  dadosCarregados:   false, // true depois do primeiro carregarDados() completo
 
   // --- Actions ---
   setClienteFilter: (f) => set({ clienteFilter: f }),
@@ -163,7 +164,8 @@ const useStore = create((set) => ({
 
     set({
       ...updates,
-      carregando:  false,
+      carregando:      false,
+      dadosCarregados: true,
       backendErro: erros > 0
         ? `Backend indisponível (${erros} endpoint(s) com falha). Verifica a ligação ao servidor.`
         : null,

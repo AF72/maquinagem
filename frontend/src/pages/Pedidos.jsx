@@ -385,11 +385,6 @@ function PedidoDetalhe({ pedidoId: rawId }) {
     apiFetch(`/historico-precos/pedido/${pedidoId}`).then(setHistorico).catch(() => setHistorico([]));
   }, [pedidoId]);
 
-  if (!isNew && !p) return <p style={{ padding: '2rem' }}>Pedido não encontrado.</p>;
-
-  const isCancelado = !isNew && ['Cancelado', 'Concluido'].includes(p.estado_pedido) && !editMode;
-  const ro = !editMode;
-
   // Client key computation
   const clienteKey = useMemo(() => {
     if (empOuPartKey.startsWith('part:')) return empOuPartKey;
@@ -401,6 +396,11 @@ function PedidoDetalhe({ pedidoId: rawId }) {
     const empId = Number(empOuPartKey.split(':')[1]);
     return colaboradores.filter(c => c.empresaId === empId);
   }, [empOuPartKey, colaboradores]);
+
+  if (!isNew && !p) return <p style={{ padding: '2rem' }}>Pedido não encontrado.</p>;
+
+  const isCancelado = !isNew && ['Cancelado', 'Concluido'].includes(p.estado_pedido) && !editMode;
+  const ro = !editMode;
 
   function handleEmpOuPartChange(val) {
     setEmpOuPartKey(val);
@@ -923,6 +923,16 @@ function PedidoDetalhe({ pedidoId: rawId }) {
 /* ---------- Raiz ---------- */
 export default function Pedidos() {
   const { id } = useParams();
-  if (id) return <PedidoDetalhe pedidoId={id === 'novo' ? null : id} />;
+  const dadosCarregados = useStore(s => s.dadosCarregados);
+
+  if (id) {
+    // Para um pedido existente, só monta o detalhe depois dos dados estarem
+    // carregados — montá-lo antes faria os useState do formulário arrancarem
+    // com valores por defeito que nunca se corrigem (ver pedidoId abaixo).
+    if (id !== 'novo' && !dadosCarregados) {
+      return <p style={{ padding: '2rem' }}>A carregar…</p>;
+    }
+    return <PedidoDetalhe pedidoId={id === 'novo' ? null : id} />;
+  }
   return <PedidosList />;
 }
