@@ -182,6 +182,10 @@ function OrdensDetalhe({ otId }) {
       };
       const upd = await apiPut(`/ordens/${otId}`, payload);
       useStore.setState(s => ({ ordens: s.ordens.map(o => o.id === Number(otId) ? { ...o, ...upd, pedidoId: upd.pedido_id, moObra: Number(upd.mo_obra ?? 0), prazo: upd.prazo ?? null, dataLimiteEntrega: upd.data_limite_entrega?.slice(0, 10) ?? '' } : o) }));
+      if (payload.estado === 'Faturar') {
+        // Gravar o estado da ordem como "Faturar" marca também o pedido associado como "Faturar" no backend.
+        await useStore.getState().carregarDados();
+      }
       setEditMode(false); setForm(null);
       toast.success('Ordem de trabalho gravada com sucesso.');
     } catch (err) { toast.error('Erro ao guardar: ' + err.message); }

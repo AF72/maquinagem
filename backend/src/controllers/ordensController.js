@@ -52,6 +52,12 @@ async function atualizar(req, res, next) {
     const updateSchema = schema.partial().omit({ num: true, pedido_id: true });
     const dados = parseDados(updateSchema.parse(req.body));
     const ordem = await prisma.ordemTrabalho.update({ where: { id }, data: dados, include });
+    if (dados.estado === 'Faturar') {
+      await prisma.pedido.update({
+        where: { id: ordem.pedido_id },
+        data: { estado_pedido: 'Faturar' },
+      });
+    }
     res.json(ordem);
   } catch (err) { next(err); }
 }

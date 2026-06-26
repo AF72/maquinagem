@@ -611,7 +611,7 @@ function PedidoDetalhe({ pedidoId: rawId }) {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <label className="form-label">Estado do Pedido</label>
               <select disabled={ro} value={estado} onChange={e => setEstado(e.target.value)} style={{ height: 30 }}>
-                {['Orçamentar', 'Pendente', 'Produção', 'Concluido', 'Cancelado'].map(s => <option key={s} value={s}>{s}</option>)}
+                {['Orçamentar', 'Pendente', 'Produção', 'Faturar', 'Concluido', 'Cancelado'].map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
