@@ -8,13 +8,13 @@ import { Avatar } from '../components/ui/Avatar';
 
 Chart.register(...registerables);
 
-const ESTADO_CORES = {
-  'Em curso':  '#185fa5',
-  'Pendente':  '#854f0b',
-  'Falta OC':  '#c05c00',
-  'Faturar':   '#a32d2d',
-  'Concluída': '#3b6d11',
-  'Cancelada': '#3d3d3d',
+const ESTADO_PEDIDO_CORES = {
+  'Orçamentar': '#5f5e5a',
+  'Pendente':   '#854f0b',
+  'Produção':   '#185fa5',
+  'Faturar':    '#a32d2d',
+  'Concluido':  '#3b6d11',
+  'Cancelado':  '#3d3d3d',
 };
 
 function MetricCard({ label, value }) {
@@ -73,9 +73,9 @@ export default function Dashboard() {
       return 0;
     });
 
-  const estadosData = Object.keys(ESTADO_CORES).map(label => ({
+  const estadosPedidoData = Object.keys(ESTADO_PEDIDO_CORES).map(label => ({
     label,
-    value: ordens.filter(o => o.estado === label).length,
+    value: pedidos.filter(p => p.estado_pedido === label).length,
   }));
 
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
@@ -183,9 +183,9 @@ export default function Dashboard() {
 
       {/* Gráficos */}
       <div className="full-card">
-        <div className="card-title">Ordens por estado</div>
+        <div className="card-title">Pedidos por estado</div>
         <div style={{ position: 'relative', height: 240 }}>
-          <BarChartHorizontal data={estadosData} colors={estadosData.map(d => ESTADO_CORES[d.label] || '#9e9c96')} />
+          <BarChartHorizontal data={estadosPedidoData} colors={estadosPedidoData.map(d => ESTADO_PEDIDO_CORES[d.label] || '#9e9c96')} />
         </div>
       </div>
     </>
