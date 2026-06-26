@@ -26,7 +26,7 @@ function MetricCard({ label, value }) {
   );
 }
 
-function DonutChart({ id, data, colors }) {
+function BarChartHorizontal({ data, colors }) {
   const ref = useRef(null);
   const instance = useRef(null);
 
@@ -34,15 +34,17 @@ function DonutChart({ id, data, colors }) {
     if (!ref.current) return;
     instance.current?.destroy();
     instance.current = new Chart(ref.current, {
-      type: 'doughnut',
+      type: 'bar',
       data: {
         labels: data.map(d => d.label),
         datasets: [{ data: data.map(d => d.value), backgroundColor: colors, borderWidth: 0 }],
       },
       options: {
+        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10, padding: 8 } } },
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { precision: 0 } } },
       },
     });
     return () => instance.current?.destroy();
@@ -74,11 +76,6 @@ export default function Dashboard() {
   const estadosData = Object.entries(
     ordens.reduce((acc, o) => ({ ...acc, [o.estado]: (acc[o.estado] || 0) + 1 }), {})
   ).map(([label, value]) => ({ label, value }));
-
-  const tiposData = [
-    { label: 'Empresa',    value: pedidos.filter(p => p.clienteTipo === 'colaborador').length },
-    { label: 'Particular', value: pedidos.filter(p => p.clienteTipo === 'particular').length },
-  ];
 
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
 
@@ -119,22 +116,6 @@ export default function Dashboard() {
                 <div className="metric-value">{ordens.filter(o => o.estado === estado).length}</div>
               </div>
             ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Gráficos */}
-      <div className="grid-2">
-        <div className="card">
-          <div className="card-title">Ordens por estado</div>
-          <div style={{ position: 'relative', height: 190 }}>
-            <DonutChart data={estadosData} colors={estadosData.map(d => ESTADO_CORES[d.label] || '#9e9c96')} />
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-title">Pedidos por tipo de cliente</div>
-          <div style={{ position: 'relative', height: 190 }}>
-            <DonutChart data={tiposData} colors={['#1D9E75', '#D85A30']} />
           </div>
         </div>
       </div>
@@ -197,6 +178,14 @@ export default function Dashboard() {
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Gráficos */}
+      <div className="full-card">
+        <div className="card-title">Ordens por estado</div>
+        <div style={{ position: 'relative', height: 240 }}>
+          <BarChartHorizontal data={estadosData} colors={estadosData.map(d => ESTADO_CORES[d.label] || '#9e9c96')} />
+        </div>
       </div>
     </>
   );
