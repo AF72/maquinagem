@@ -51,7 +51,7 @@ function OrdensList() {
           <thead>
             <tr>
               <th>OT Nº</th><th>Pedido</th><th>Cliente</th>
-              <th>Ordem de Compra</th><th>Prazo</th><th>Data Limite Entrega</th>
+              <th>Nº Orç. SAGE</th><th>Prazo</th><th>Data Limite Entrega</th>
               <th>Nº GT</th><th>Nº FT</th><th>Estado</th><th>Ação</th>
             </tr>
           </thead>
@@ -61,7 +61,6 @@ function OrdensList() {
             ) : paginadas.map(o => {
               const pd = pedidos.find(x => x.id === o.pedidoId) || {};
               const cl = resolveCliente(pd.clienteTipo, pd.clienteId);
-              const dp = getDadosPedido(pd.dadosPedidoId);
               const label = pd.clienteTipo === 'particular'
                 ? <div style={{ lineHeight: 1.2 }}><div>{cl.nome}</div><div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Particular</div></div>
                 : <div style={{ lineHeight: 1.2 }}><div>{cl.subtexto}</div><div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{cl.nome}</div></div>;
@@ -71,7 +70,7 @@ function OrdensList() {
                   <td><strong>{o.num}</strong></td>
                   <td><Link to={`/pedidos/${pd.id}`} style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>{pd.ref}</Link></td>
                   <td><span className="inline-flex"><Avatar name={cl.nome} cls={cl.avClass} small />{label}</span></td>
-                  <td>{dp.ordem_compra || '—'}</td>
+                  <td>{o.n_orc_sage || '—'}</td>
                   <td>{o.prazo != null ? `${o.prazo} sem.` : '—'}</td>
                   <td>{o.dataLimiteEntrega || '—'}</td>
                   <td>{o.n_gt || '—'}</td>
