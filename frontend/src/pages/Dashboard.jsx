@@ -75,29 +75,32 @@ export default function Dashboard() {
 
   const estadosPedidoData = Object.keys(ESTADO_PEDIDO_CORES).map(label => ({
     label,
-    value: pedidos.filter(p => p.estado_pedido === label).length,
+    value: pedidosAno.filter(p => p.estado_pedido === label).length,
   }));
 
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
 
   return (
     <>
+      {/* Seletor de ano — partilhado entre o card "Pedidos em" e o gráfico "Pedidos por estado" */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: '0.75rem' }}>
+        <label style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Ano</label>
+        <select
+          value={ano}
+          onChange={e => setAno(Number(e.target.value))}
+          style={{ fontSize: 12, padding: '2px 6px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer' }}
+        >
+          {anosDisponiveis.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+      </div>
+
       {/* Métricas */}
       <div style={{ display: 'flex', gap: 16, marginBottom: '1.5rem', alignItems: 'stretch' }}>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div className="dash-section-label">Pedidos</div>
           <div className="grid-metrics" style={{ marginBottom: 0, flex: 1, alignItems: 'stretch' }}>
             <div className="metric-card">
-              <div className="metric-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                Pedidos em
-                <select
-                  value={ano}
-                  onChange={e => setAno(Number(e.target.value))}
-                  style={{ fontSize: 12, padding: '2px 6px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer' }}
-                >
-                  {anosDisponiveis.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
-              </div>
+              <div className="metric-label">Pedidos em {ano}</div>
               <div className="metric-value">{pedidosAno.length}</div>
             </div>
             {['Orçamentar', 'Pendente', 'Produção'].map(estado => (
@@ -183,7 +186,7 @@ export default function Dashboard() {
 
       {/* Gráficos */}
       <div className="full-card">
-        <div className="card-title">Pedidos por estado</div>
+        <div className="card-title">Pedidos por estado em {ano}</div>
         <div style={{ position: 'relative', height: 240 }}>
           <BarChartHorizontal data={estadosPedidoData} colors={estadosPedidoData.map(d => ESTADO_PEDIDO_CORES[d.label] || '#9e9c96')} />
         </div>
