@@ -1,4 +1,5 @@
 backup.sql
+backup_producao_*.sql
 frontend/dist/
 frontend/node_modules/
 .DS_Store
