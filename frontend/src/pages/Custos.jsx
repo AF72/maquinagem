@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import useStore from '../store';
 import { formatEuro, resolveCliente, getColab, getEmpresa, getParticular } from '../lib/helpers';
@@ -24,13 +25,25 @@ export default function Custos() {
   const orcamentos = useStore(s => s.orcamentos);
   const pedidos   = useStore(s => s.pedidos);
 
+  const anoAtual = new Date().getFullYear();
+  const anosDisponiveis = [...new Set([
+    ...orcamentos.map(o => o.dataEmissao?.slice(0, 4)),
+    ...ordens.map(o => o.concluido_em?.slice(0, 4)),
+    ...pedidos.map(p => p.data?.slice(0, 4)),
+  ].filter(Boolean))].map(Number).sort((a, b) => b - a);
+  const [ano, setAno] = useState(anosDisponiveis[0] || anoAtual);
+
   const aFaturar        = ordens.filter(o => o.estado === 'Faturar').reduce((s, o) => s + valorOT(o, orcamentos), 0);
-  const totalFaturado   = ordens.filter(o => o.estado === 'Concluída').reduce((s, o) => s + valorOT(o, orcamentos), 0);
-  const totalAprovados  = orcamentos.filter(o => o.estado === 'Aprovado').reduce((s, o) => s + Number(o.valor || 0), 0);
+  const totalFaturado   = ordens
+    .filter(o => o.estado === 'Concluída' && o.concluido_em?.startsWith(String(ano)))
+    .reduce((s, o) => s + valorOT(o, orcamentos), 0);
+  const totalAprovados  = orcamentos
+    .filter(o => o.estado === 'Aprovado' && o.dataEmissao?.startsWith(String(ano)))
+    .reduce((s, o) => s + Number(o.valor || 0), 0);
 
   const resumoClientes = (() => {
     const stats = {};
-    pedidos.forEach(p => {
+    pedidos.filter(p => p.data?.startsWith(String(ano))).forEach(p => {
       let key, nome;
       if (p.clienteTipo === 'particular') {
         const part = getParticular(p.clienteId);
@@ -55,14 +68,25 @@ export default function Custos() {
 
   return (
     <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: '0.75rem' }}>
+        <label style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Ano</label>
+        <select
+          value={ano}
+          onChange={e => setAno(Number(e.target.value))}
+          style={{ fontSize: 12, padding: '2px 6px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer' }}
+        >
+          {anosDisponiveis.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+      </div>
+
       <div className="grid-metrics-4">
-        <MetricCard label="Total Orc. Aprovados"   value={formatEuro(totalAprovados)}   sub="orçamentos aprovados" style={{ background: 'var(--color-blue-bg)', color: 'var(--color-blue-fg)' }} />
+        <MetricCard label={`Total Orc. Aprovados em ${ano}`}   value={formatEuro(totalAprovados)}   sub="orçamentos aprovados" style={{ background: 'var(--color-blue-bg)', color: 'var(--color-blue-fg)' }} />
         <MetricCard label="Total OT a faturar"     value={formatEuro(aFaturar)}         sub='ordens com estado "Faturar"' style={{ background: 'var(--color-red-bg)', color: 'var(--color-red-fg)' }} />
-        <MetricCard label="Total faturado"         value={formatEuro(totalFaturado)}    sub="ordens concluídas" style={{ background: 'var(--color-green-bg)', color: 'var(--color-green-fg)' }} />
+        <MetricCard label={`Total faturado em ${ano}`}         value={formatEuro(totalFaturado)}    sub="ordens concluídas" style={{ background: 'var(--color-green-bg)', color: 'var(--color-green-fg)' }} />
       </div>
 
       <div className="full-card">
-        <div className="card-title">Resumo por cliente</div>
+        <div className="card-title">Resumo por cliente em {ano}</div>
         <table className="table">
           <thead>
             <tr>
