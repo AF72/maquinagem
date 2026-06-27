@@ -10,7 +10,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { Overlay } from '../components/ui/Overlay';
 import { useAuth } from '../context/AuthContext';
 
-const PER_PAGE = 15;
+const PER_PAGE = 13;
 const FILTER_STYLE = { width: '100%', boxSizing: 'border-box', fontSize: 12, padding: '5px 8px', border: '1.5px solid var(--color-primary)', borderRadius: 6, background: '#f0f5fa', color: 'var(--color-primary)', outline: 'none', height: 28 };
 const ESTADOS_PEDIDO = ['Orçamentar', 'Pendente', 'Produção', 'Faturar', 'Concluido', 'Cancelado'];
 
