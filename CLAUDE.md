@@ -4,11 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**MaquinaGest** is a browser-based production management system for a machining/manufacturing shop. The frontend is a vanilla HTML + CSS + JavaScript SPA (no framework, no build step). The backend is Node.js + Express + PostgreSQL + Prisma.
+**MaquinaGest** is a browser-based production management system for a machining/manufacturing shop (DrawMech). Backend is Node.js + Express + PostgreSQL + Prisma. There are **two frontends in this repo** — see "Two frontends" below before editing any UI.
 
-The UI language is **Portuguese**. Variable names, comments, labels, and module concepts are all in Portuguese (e.g. `pedidos` = orders, `ordens` = work orders, `orcamentos` = quotes, `pecas` = parts, `clientes` = clients, `estado` = status).
+The UI language is **Portuguese**. Variable names, comments, labels, and module concepts are all in Portuguese (e.g. `pedidos` = client requests/orders, `ordens`/`ordens_trabalho` = work orders, `orcamentos` = quotes, `pecas` = parts, `clientes` = clients, `estado` = status).
 
-## Running the App
+## Two frontends — which one to edit
+
+- **`frontend/`** — React 18 + Vite + react-router-dom + zustand. **This is the actively developed and deployed frontend.** Unless told otherwise, this is the one to edit.
+- **`js/` + `css/` + root `index.html`** — the original vanilla-JS SPA (no build step, no framework). It still receives occasional parallel edits and is functionally similar, but it is **not deployed** (the root `railway.toml` builds and serves `frontend/dist`, not this). Treat it as legacy/reference unless explicitly asked to change it.
+
+The two are independent implementations of the same features (own copies of API-fetch logic, state, components) — a fix in one does not apply to the other.
+
+## Running the app
 
 ### First-time setup
 
@@ -18,8 +25,10 @@ cp .env.example .env
 # Edit .env: DATABASE_URL="postgresql://USER:PASS@localhost:5433/maquinagemdev"
 npm install
 npx prisma generate
-npm run db:seed   # optional — seeds test data
+npm run db:seed   # optional — wipes and seeds test data
 ```
+
+> Local PostgreSQL runs on **port 5433** (not the default 5432), db name `maquinagemdev`.
 
 ### Normal startup (two terminals)
 
@@ -27,10 +36,11 @@ npm run db:seed   # optional — seeds test data
 # Terminal 1 — backend API on port 3000
 cd backend && npm run dev
 
-# Terminal 2 — frontend static server
-python3 -m http.server   # opens at http://localhost:8000
-# OR: npx serve .
+# Terminal 2 — React frontend on port 5173
+cd frontend && npm run dev
 ```
+
+There is no lint or test setup in this repo (no test files, no lint scripts in any `package.json`).
 
 ### Useful backend commands
 
@@ -40,70 +50,25 @@ npm run db:studio    # Prisma Studio GUI at http://localhost:5555
 npm run db:seed      # WARNING: wipes and reseeds all data
 npm run db:generate  # regenerate Prisma client after schema changes
 npm run db:pull      # pull schema from DB (reverse engineer)
-node prisma/limpar.js  # clears all data without reseeding
+node prisma/limpar.js tudo            # wipe all data without reseeding
+node prisma/limpar.js pedidos ordens  # wipe selected modules only (see LIMPAR_DADOS_BD.txt)
 ```
 
-> The local PostgreSQL instance runs on **port 5433** (not the default 5432). DB name: `maquinagemdev`.
+### Frontend build
+
+```bash
+cd frontend
+npm run build    # production build to frontend/dist
+npm run preview
+```
 
 ## Architecture
 
-### Two-layer design
-
-The frontend is a plain SPA that fetches all data from the backend REST API on load. The frontend has **no persistence of its own** — everything lives in PostgreSQL.
-
-### Frontend global state (`js/data.js`)
-
-All data fetched from the API is stored in the `DB` global object. Collections: `empresas`, `colaboradores`, `particulares`, `dados_pedido`, `pedidos`, `ordens`, `orcamentos`, `orcamento_itens`, `pecas`, `pecas_pedidos`, `materia_prima`, `colaboradores_dm`, `fornecedores`, `notas_pedido`, `servicos`, `servicos_pedidos`, `historico_precos`.
-
-`DB` also holds UI state: `DB.expanded` (accordion state) and `DB.clienteFilter` (filter on the clientes page).
-
-> **Note:** `historico_precos` is declared in `DB` but is **not** populated by `carregarDados()` — there is no startup fetch for that endpoint. It stays empty unless explicitly loaded.
-
-### API layer (`js/api.js`)
-
-`carregarDados()` fetches all endpoints in parallel via `Promise.allSettled` and populates `DB`. It shows a red banner if any endpoint fails. Field-name mapping between snake_case API responses and camelCase frontend properties is done via `map*` functions (e.g. `mapColaborador`, `mapPedido`, `mapOrdem`). The API base is `http://localhost:3000/api`. CRUD helpers: `apiFetch`, `apiPost`, `apiPut`, `apiPatch`, `apiDelete`.
-
-`orcamento_itens` is **not** fetched from its own endpoint — it is populated as a side-effect inside the `orcamentos` map function when `carregarDados()` loads `/orcamentos`.
-
-### Routing and rendering (`js/app.js`)
-
-`PAGE_RENDERERS` maps 15 page names to render functions. `showPage(pageName)` activates the corresponding `.page` div and calls its renderer. `renderAll()` re-renders only the current page — call it after any `DB` mutation.
-
-Each page under `js/pages/` has a single `render<PageName>()` function that builds an HTML string and sets `innerHTML`. Event listeners are attached via `onclick` attributes or by querying the DOM after setting `innerHTML`.
-
-The `*_detalhe` pages (`pedido_detalhe`, `ordem_detalhe`, `orcamento_detalhe`, `peca_detalhe`, `materia_prima_detalhe`) are sub-views navigated to from list pages via `showPage('pedido_detalhe')`. They are not sidebar items.
-
-### Modal / form system (`js/modal.js`)
-
-`openModal(type, extra)` builds a form via `buildModalForm`'s switch and injects it into `.modal-wrap`. The `.btn-save` button calls `saveForm()`, which writes to the API and calls `renderAll()`. All form types are registered in `modal.js`.
-
-To add a new form: add a builder function → register in `buildModalForm`'s switch → call `openModal('myType', …)` from the relevant page renderer.
-
-### Helpers (`js/helpers.js`)
-
-Pure lookup and HTML-builder functions over `DB`:
-- **Lookups:** `getEmpresa`, `getColab`, `getParticular`, `getDadosPedido`, `getPedido`, `resolveCliente`
-- **HTML:** `estadoBadge`, `avatarHtml`, `tipoBadge`, `inlineFlex`
-- **Date:** `today()`, `addDays(n)`
-- **IDs:** `nextId()` — returns `Date.now()` (timestamp-based)
-
-Use these instead of accessing `DB` directly.
-
-### Client types
-
-The `clientes` page merges two data models:
-- `colaboradores` — employees of client companies (`Empresa`). A `Colaborador` always belongs to an `Empresa`.
-- `particulares` — individual clients with no company affiliation.
-
-`colaboradores_dm` (DM = shop's own team) are internal workshop staff who author `notas_pedido`. They are **not** clients — do not confuse with `colaboradores`.
-
 ### Backend (`backend/`)
 
-Express REST API. Routes in `backend/src/routes/`, controllers in `backend/src/controllers/`. Prisma schema at `backend/prisma/schema.prisma`. The full SQL schema is documented in `docs/base_dados.md`.
+Express REST API. Routes in `backend/src/routes/`, controllers in `backend/src/controllers/`, one pair per resource. Prisma schema at `backend/prisma/schema.prisma`; full SQL schema also documented in `docs/base_dados.md`.
 
 #### Controller pattern
-
-Every controller follows the same pattern:
 
 ```js
 const schema = z.object({ ... });
@@ -121,47 +86,55 @@ async function criar(req, res, next) {
 - Always forward errors via `next(err)` — never `res.status(500)` directly
 - Clearable optional fields must be sent as `null`, not `undefined`, and the Zod schema must include `.nullable()`
 
-#### Error handler (`backend/src/middleware/errorHandler.js`)
+`backend/src/middleware/errorHandler.js` automatically maps `ZodError` → 400, Prisma `P2002` (unique constraint) → 409, Prisma `P2025` (not found) → 404.
 
-Automatically maps:
-- `ZodError` → 400 `{ erro: 'Dados inválidos', detalhes: [...] }`
-- Prisma `P2002` (unique constraint) → 409
-- Prisma `P2025` (record not found) → 404
+#### Auth
 
-#### Auth middleware
+JWT auth **is enforced**: `backend/src/app.js` applies `auth` middleware globally (`app.use(auth)`) to everything mounted after it; only `/api/auth/*` is public. Login (`POST /api/auth/login`) checks `colaboradores_dm.email` + `password_hash` (bcrypt) and issues a JWT (`{id, role, nome}`, default 8h, configurable via `JWT_EXPIRES_IN`). `colaboradores_dm` doubles as the staff/user table — don't confuse it with `colaboradores` (client-company employees).
 
-`backend/src/middleware/auth.js` exists but is **not applied** to any routes. Authentication is not enforced.
+`authController.js` also has one-off, non-idempotent-by-design admin endpoints (`/setup`, `/migrate`, `/reset-admin`) that run raw SQL via `$executeRawUnsafe` to patch production schema/seed the first admin. These are a deliberate substitute for `prisma migrate` in this project (see "Deployment").
 
-### CSS structure
+#### Cross-entity state sync
 
-Four files loaded in order: `base.css` (reset, CSS variables), `layout.css` (sidebar 240 px, `.page` toggling via `.active`), `components.css` (buttons, cards, tables, badges), `modal.css`.
+Some `estado` transitions on one entity are meant to cascade to a related entity. The established (and only currently *active*) pattern lives in `ordensController.atualizar` (the generic `PUT /ordens/:id` handler, which is what the frontend actually calls for every ordem edit): when the saved `estado` is `'Faturar'`, it also sets the linked `pedido.estado_pedido` to `'Faturar'`.
 
-Badge class mapping (defined in `components.css`, generated by `estadoBadge()`):
-- `'Orçamentar'` → `badge-gray`
-- `'Pendente'` → `badge-amber`
-- `'Produção'` / `'Em curso'` → `badge-blue`
-- `'Faturar'` → `badge-red`
-- `'Concluido'` / `'Concluída'` → `badge-green`
-- `'Cancelado'` → `badge-black`
-- `'Falta OC'` → `badge-orange`
+There is also a `PATCH /ordens/:id/concluir` endpoint that sets a pedido to `'Concluido'` when its ordem completes — but **no frontend code calls it**; ordem completion goes through the same generic `PUT` above with no pedido side-effect. If you need to add another cascading transition, add it to `atualizar`, not to `concluir`.
 
-### Script load order
+### React frontend (`frontend/`)
 
-`data.js` → `helpers.js` → `modal.js` → all page scripts → `api.js` → `app.js`. New page scripts must be added before `api.js` in `index.html`.
+- `src/App.jsx` — routes, wrapped in `AuthProvider`; unauthenticated users are redirected to `/login`.
+- `src/context/AuthContext.jsx` — JWT + user kept in `localStorage`; decodes the JWT payload client-side to check expiry; registers a 401 callback with the API layer (`setOn401`) to force logout on session expiry.
+- `src/lib/api.js` — `apiFetch/apiPost/apiPut/apiPatch/apiDelete`, all attaching the `Authorization: Bearer` header. `API_BASE` switches between `localhost:3000` and the Railway production URL based on `location.hostname`. Also holds the snake_case→camelCase `map*` functions (`mapPedido`, `mapOrdem`, etc.) used when loading data.
+- `src/store/index.js` (zustand) — single global store; one array per backend collection (`pedidos`, `ordens`, `pecas`, …). `carregarDados()` fetches every endpoint in parallel via `Promise.allSettled` and populates the store; it sets `backendErro` if any endpoint fails, and sets `dadosCarregados: true` once the first load completes (see gotcha below). `Layout.jsx` triggers `carregarDados()` once on mount.
+- `src/pages/*.jsx` — one file per module, typically bundling **both** the list view and the detail view (e.g. `Pedidos.jsx` exports a root component that reads `useParams().id` and renders either `PedidosList` or `PedidoDetalhe`), routed via the same path with and without `/:id` (see `App.jsx`).
+- `src/lib/helpers.js` — lookups (`getEmpresa`, `getColab`, `resolveCliente`, …) that read `useStore.getState()` directly, so they work outside React components too; also formatting helpers (`formatEuro`, `today`, `addDays`).
+- Dashboard charts use Chart.js directly (not a React wrapper): a `<canvas>` ref + `useEffect` that constructs/destroys a `Chart` instance on data change.
 
-### Key status values
+#### Gotcha: don't read store data in a `useState` initializer for a detail view
 
-- **pedidos** `estado_pedido`: `'Orçamentar'` → `'Pendente'` → `'Produção'` → `'Faturar'` → `'Concluido'` / `'Cancelado'`
-- **ordens** `estado`: `'Em curso'` / `'Concluída'` / `'Cancelada'`
+`useState(p?.campo ?? default)`-style initializers only run once, on mount. If the component mounts before `carregarDados()` has resolved (e.g. a hard refresh/direct link straight to a detail route), `p` is still `undefined`, the field locks onto the fallback value forever, and saving later silently overwrites real data with that fallback. The store's `dadosCarregados` flag exists for this: gate mounting of the detail component on `dadosCarregados` (see `Pedidos.jsx`'s root component for the pattern) instead of relying on hooks to "catch up" once data arrives — React won't re-run a `useState` initializer on its own, and conditionally skipping hooks based on data-readiness inside the detail component itself causes a "Rendered more hooks than during the previous render" crash. `Pedidos.jsx` and `Orcamentos.jsx` are both fixed (their root component gates on `dadosCarregados` before mounting the detail view). `Ordens.jsx` doesn't need it — its detail view derives the editable form from a plain `const` recomputed every render, not from `useState` initializers, so it isn't affected.
 
-Marking an ordem as `'Concluída'` also sets its linked pedido to `'Concluido'`.
+### Data model
 
-### ID generation
+Prisma schema (`backend/prisma/schema.prisma`) centers on: `Pedido` (client request) → `Orcamento` (quote, with `OrcamentoItem` lines pointing at either a `Peca` or a `Servico`) and `OrdemTrabalho` (work order). `Peca` links to `MateriaPrima` (raw material) and ordered `PecaProcesso` steps (linking to `Processo`, which has an hourly cost). Clients are either `Empresa`+`Colaborador` (company + employee) or `Particular` (individual) — don't confuse `Colaborador` (client-side) with `ColaboradorDm` (internal shop staff, used for auth and `NotaPedido` authorship). Price history is tracked in three parallel tables: `HistoricoPreco` (parts, per supplier/pedido), `HistoricoPrecoMp` (raw material), `HistoricoPrecoProcesso` (process hourly rate).
 
-Backend IDs use PostgreSQL `autoincrement()`. `nextId()` (timestamp-based) in `helpers.js` exists as a legacy utility. References are auto-generated from the current year: `PT26-XXXX` for pedidos, `OT26-XXXX` for ordens.
+### Status workflows
+
+- **pedidos** `estado_pedido`: `Orçamentar → Pendente → Produção → Faturar → Concluido / Cancelado`
+- **ordens** `estado`: `Em curso / Pendente / Falta OC / Faturar / Concluída / Cancelada`
+
+Badge color classes (`badge-gray/amber/blue/red/green/black/orange`, defined in `components.css`) are mapped from these state strings in `helpers.js` (`ESTADO_BADGE_CLASS`) on the legacy frontend and per-page in the React one — keep new states' colors consistent across both if you add one.
+
+References auto-generate from the current year: `PT26-XXXX` for pedidos, `OT26-XXXX` for ordens.
+
+### Deployment
+
+Two separate Railway services from this one repo:
+- Root `railway.toml` builds `frontend/` (`npm --prefix frontend run build`) and serves `frontend/dist` as a static site.
+- `backend/railway.toml` builds the backend and runs `prisma generate && prisma db push --accept-data-loss` — schema changes ship via `db push`, not `prisma migrate deploy`. Combined with the raw-SQL endpoints in `authController.js`, this means schema evolution in production is push-based/imperative rather than migration-file-based.
 
 ## Docs
 
 - `docs/base_dados.md` — full PostgreSQL schema (tables, FKs, indexes)
-- `docs/evolucao.md` — migration roadmap to React + Node/Express + PostgreSQL + Prisma
 - `docs/modulos.md` — business logic description per module
+- `docs/evolucao.md` — the original migration plan (vanilla JS → React/Node/Postgres/Prisma); largely historical now since that migration has happened, but still useful for the reasoning behind some structural choices

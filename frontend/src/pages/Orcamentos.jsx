@@ -459,6 +459,17 @@ function OrcamentosDetalhe({ orcId: rawId }) {
 /* ---------- Raiz ---------- */
 export default function Orcamentos() {
   const { id } = useParams();
-  if (id) return <OrcamentosDetalhe orcId={id === 'novo' ? null : id} />;
+  const dadosCarregados = useStore(s => s.dadosCarregados);
+
+  if (id) {
+    // Para um orçamento existente, só monta o detalhe depois dos dados estarem
+    // carregados — montá-lo antes faria os useState do formulário (estado,
+    // datas, peças/serviços do orçamento) arrancarem com valores por defeito
+    // que nunca se corrigem.
+    if (id !== 'novo' && !dadosCarregados) {
+      return <p style={{ padding: '2rem' }}>A carregar…</p>;
+    }
+    return <OrcamentosDetalhe orcId={id === 'novo' ? null : id} />;
+  }
   return <OrcamentosList />;
 }
