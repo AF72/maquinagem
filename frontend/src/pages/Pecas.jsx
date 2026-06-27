@@ -6,7 +6,7 @@ import { toast } from '../lib/toast';
 import { formatEuro } from '../lib/helpers';
 import { calcPeso, calcCustoEstimado, resolverMaterial } from '../lib/pecaUtils';
 
-const PER_PAGE = 15;
+const PER_PAGE = 11;
 const FORMA_CAMPOS = {
   comprimento:  ['quadrado', 'redondo_macico', 'redondo_oco'],
   largura:      ['quadrado'],
