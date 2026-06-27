@@ -68,17 +68,6 @@ export default function Custos() {
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: '0.75rem' }}>
-        <label style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Ano</label>
-        <select
-          value={ano}
-          onChange={e => setAno(Number(e.target.value))}
-          style={{ fontSize: 12, padding: '2px 6px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer' }}
-        >
-          {anosDisponiveis.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-      </div>
-
       <div className="full-card">
         <div className="card-title">Ordens de trabalho a faturar</div>
         <table className="table">
@@ -113,8 +102,19 @@ export default function Custos() {
         </table>
       </div>
 
-      <div className="grid-metrics">
+      <div className="grid-metrics" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         <MetricCard label="Total OT a faturar"     value={formatEuro(aFaturar)}         sub='ordens com estado "Faturar"' style={{ background: 'var(--color-red-bg)', color: 'var(--color-red-fg)' }} />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: '0.75rem' }}>
+        <label style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Ano</label>
+        <select
+          value={ano}
+          onChange={e => setAno(Number(e.target.value))}
+          style={{ fontSize: 12, padding: '2px 6px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer' }}
+        >
+          {anosDisponiveis.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
       </div>
 
       <div className="full-card">
@@ -143,7 +143,7 @@ export default function Custos() {
         </table>
       </div>
 
-      <div className="grid-metrics">
+      <div className="grid-metrics" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         <MetricCard label={`Total Orc. Aprovados em ${ano}`}   value={formatEuro(totalAprovados)}   sub="orçamentos aprovados" style={{ background: 'var(--color-blue-bg)', color: 'var(--color-blue-fg)' }} />
         <MetricCard label={`Total faturado em ${ano}`}         value={formatEuro(totalFaturado)}    sub="ordens concluídas" style={{ background: 'var(--color-green-bg)', color: 'var(--color-green-fg)' }} />
       </div>
