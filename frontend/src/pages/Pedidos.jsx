@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 
 const PER_PAGE = 15;
 const FILTER_STYLE = { width: '100%', boxSizing: 'border-box', fontSize: 12, padding: '5px 8px', border: '1.5px solid var(--color-primary)', borderRadius: 6, background: '#f0f5fa', color: 'var(--color-primary)', outline: 'none', height: 28 };
+const ESTADOS_PEDIDO = ['Orçamentar', 'Pendente', 'Produção', 'Faturar', 'Concluido', 'Cancelado'];
 
 /* ---------- Ícones ---------- */
 const IconView = () => (
@@ -185,22 +186,20 @@ function PedidosList() {
   const navigate        = useNavigate();
 
   const [page, setPage]     = useState(1);
-  const [filtros, setFiltros] = useState({ ref: '', descricao: '', orcamento: '', ordemCompra: '' });
+  const [filtros, setFiltros] = useState({ ref: '', descricao: '', ordemCompra: '', estado: '' });
 
   const pedidosFiltrados = useMemo(() => {
-    const { ref, descricao, orcamento, ordemCompra } = filtros;
-    if (!ref && !descricao && !orcamento && !ordemCompra) return pedidos;
+    const { ref, descricao, ordemCompra, estado } = filtros;
+    if (!ref && !descricao && !ordemCompra && !estado) return pedidos;
     return pedidos.filter(p => {
       const dp = dados_pedido.find(d => d.id === p.dadosPedidoId) || {};
-      const orc = orcamentos.find(o => o.pedidoId === p.id && o.ativo && o.estado === 'Aprovado')
-               || orcamentos.find(o => o.pedidoId === p.id && o.ativo);
       if (ref && !(p.ref || '').toLowerCase().includes(ref.toLowerCase())) return false;
       if (descricao && !(dp.breveDescricao || '').toLowerCase().includes(descricao.toLowerCase())) return false;
-      if (orcamento && !(orc?.ref || '').toLowerCase().includes(orcamento.toLowerCase())) return false;
       if (ordemCompra && !(dp.ordem_compra || '').toLowerCase().includes(ordemCompra.toLowerCase())) return false;
+      if (estado && p.estado_pedido !== estado) return false;
       return true;
     });
-  }, [pedidos, dados_pedido, orcamentos, filtros]);
+  }, [pedidos, dados_pedido, filtros]);
 
   const totalPages = Math.max(1, Math.ceil(pedidosFiltrados.length / PER_PAGE));
   const p = Math.min(page, totalPages);
@@ -253,17 +252,22 @@ function PedidosList() {
           <thead>
             <tr>
               <th style={{ width: 90 }}>Ref.</th><th>Cliente</th><th>Breve Descrição</th>
-              <th>Nº Orçamento</th><th>Custo Líquido</th><th style={{ width: 140, whiteSpace: 'nowrap' }}>Ordem de Compra</th>
+              <th>Custo Líquido</th><th style={{ width: 140, whiteSpace: 'nowrap' }}>Ordem de Compra</th>
               <th>Ação</th><th style={{ width: 90 }}>Estado</th>
             </tr>
             <tr>
               <th><input style={FILTER_STYLE} type="text" placeholder="filtrar…" value={filtros.ref} onChange={e => filtrar('ref', e.target.value)} /></th>
               <th></th>
               <th><input style={FILTER_STYLE} type="text" placeholder="filtrar…" value={filtros.descricao} onChange={e => filtrar('descricao', e.target.value)} /></th>
-              <th><input style={FILTER_STYLE} type="text" placeholder="filtrar…" value={filtros.orcamento} onChange={e => filtrar('orcamento', e.target.value)} /></th>
               <th></th>
               <th><input style={FILTER_STYLE} type="text" placeholder="filtrar…" value={filtros.ordemCompra} onChange={e => filtrar('ordemCompra', e.target.value)} /></th>
-              <th></th><th></th>
+              <th></th>
+              <th>
+                <select style={FILTER_STYLE} value={filtros.estado} onChange={e => filtrar('estado', e.target.value)}>
+                  <option value="">Todos</option>
+                  {ESTADOS_PEDIDO.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -281,7 +285,6 @@ function PedidosList() {
                   <td>{p.ref}</td>
                   <td><span className="inline-flex"><Avatar name={cl.nome} cls={cl.avClass} small />{label}</span></td>
                   <td>{dp.breveDescricao || '-'}</td>
-                  <td>{orcAprovado ? orcAprovado.ref : '-'}</td>
                   <td>{orcAprovado?.valor ? formatEuro(orcAprovado.valor) : '-'}</td>
                   <td>{dp.ordem_compra || '-'}</td>
                   <td style={{ verticalAlign: 'middle' }}>
@@ -611,7 +614,7 @@ function PedidoDetalhe({ pedidoId: rawId }) {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <label className="form-label">Estado do Pedido</label>
               <select disabled={ro} value={estado} onChange={e => setEstado(e.target.value)} style={{ height: 30 }}>
-                {['Orçamentar', 'Pendente', 'Produção', 'Faturar', 'Concluido', 'Cancelado'].map(s => <option key={s} value={s}>{s}</option>)}
+                {ESTADOS_PEDIDO.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
