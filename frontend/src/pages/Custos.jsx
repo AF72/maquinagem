@@ -79,38 +79,6 @@ export default function Custos() {
         </select>
       </div>
 
-      <div className="grid-metrics-4">
-        <MetricCard label={`Total Orc. Aprovados em ${ano}`}   value={formatEuro(totalAprovados)}   sub="orçamentos aprovados" style={{ background: 'var(--color-blue-bg)', color: 'var(--color-blue-fg)' }} />
-        <MetricCard label="Total OT a faturar"     value={formatEuro(aFaturar)}         sub='ordens com estado "Faturar"' style={{ background: 'var(--color-red-bg)', color: 'var(--color-red-fg)' }} />
-        <MetricCard label={`Total faturado em ${ano}`}         value={formatEuro(totalFaturado)}    sub="ordens concluídas" style={{ background: 'var(--color-green-bg)', color: 'var(--color-green-fg)' }} />
-      </div>
-
-      <div className="full-card">
-        <div className="card-title">Resumo por cliente em {ano}</div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th style={{ textAlign: 'center' }}>Nº Pedidos</th>
-              <th style={{ textAlign: 'center' }}>Nº Ordens</th>
-              <th style={{ textAlign: 'right' }}>Total Orçamentado (€)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {resumoClientes.length === 0 ? (
-              <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Sem dados.</td></tr>
-            ) : resumoClientes.map((r, i) => (
-              <tr key={i}>
-                <td>{r.nome}</td>
-                <td style={{ textAlign: 'center' }}>{r.pedidos}</td>
-                <td style={{ textAlign: 'center' }}>{r.ordens}</td>
-                <td style={{ textAlign: 'right' }}><strong>{formatEuro(r.valorTotal)}</strong></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
       <div className="full-card">
         <div className="card-title">Ordens de trabalho a faturar</div>
         <table className="table">
@@ -143,6 +111,41 @@ export default function Custos() {
             })}
           </tbody>
         </table>
+      </div>
+
+      <div className="grid-metrics">
+        <MetricCard label="Total OT a faturar"     value={formatEuro(aFaturar)}         sub='ordens com estado "Faturar"' style={{ background: 'var(--color-red-bg)', color: 'var(--color-red-fg)' }} />
+      </div>
+
+      <div className="full-card">
+        <div className="card-title">Resumo por cliente em {ano}</div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th style={{ textAlign: 'center' }}>Nº Pedidos</th>
+              <th style={{ textAlign: 'center' }}>Nº Ordens</th>
+              <th style={{ textAlign: 'right' }}>Total Orçamentado (€)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {resumoClientes.length === 0 ? (
+              <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Sem dados.</td></tr>
+            ) : resumoClientes.map((r, i) => (
+              <tr key={i}>
+                <td>{r.nome}</td>
+                <td style={{ textAlign: 'center' }}>{r.pedidos}</td>
+                <td style={{ textAlign: 'center' }}>{r.ordens}</td>
+                <td style={{ textAlign: 'right' }}><strong>{formatEuro(r.valorTotal)}</strong></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="grid-metrics">
+        <MetricCard label={`Total Orc. Aprovados em ${ano}`}   value={formatEuro(totalAprovados)}   sub="orçamentos aprovados" style={{ background: 'var(--color-blue-bg)', color: 'var(--color-blue-fg)' }} />
+        <MetricCard label={`Total faturado em ${ano}`}         value={formatEuro(totalFaturado)}    sub="ordens concluídas" style={{ background: 'var(--color-green-bg)', color: 'var(--color-green-fg)' }} />
       </div>
     </>
   );
